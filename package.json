@@ -1,0 +1,8 @@
+{
+  "name": "perfect-pour",
+  "private": true,
+  "description": "Prototype. The game is index.html and has no dependencies; this file only runs the headless tests.",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

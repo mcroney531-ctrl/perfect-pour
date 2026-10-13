@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Perfect Pour (prototype)</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #1b1510; color: #f3eadb; font: 16px/1.4 system-ui, sans-serif; }
+  pre { padding: 12px; }
+</style>
+</head>
+<body>
+<h1>Perfect Pour, step 1: sim only</h1>
+<p>Hold Space to pour. Left/Right = angle in 5° steps. S serves, R restarts.</p>
+<pre id="readout"></pre>
+
+<!-- The simulation. Pure: no DOM, no clock, no randomness, so a ghost replay or
+     a headless test gets bit-for-bit the same pour every time. test/sim.test.js
+     lifts this exact block out of the page and runs it under Node, which is why
+     it publishes onto globalThis instead of touching anything else. -->
+<script id="sim">
+(function (root) {
+  'use strict';
+
+  const HZ = 60;
+  const STEP = 1 / HZ;
+
+  // All values are placeholders tuned for feel, not sourced (spec §2, §9).
+  // k moved 0.5 -> 0.55 so the ghost lands mid-band on head height; everything
+  // else is the spec's starting config.
+  const PILSNER = {
+    verified: false,
+    flowRate: 0.12,          // glass-heights per second at full flow
+    k: 0.6,                  // foam conversion at full turbulence
+    d: 0.08, r: 0.3,         // head settle rate, share returned to liquid
+    turbAngle: 45,           // deg at which turbulence bottoms out (spec's "45")
+    fillLine: 0.95, fillTol: 0.04,
+    headBand: [0.08, 0.16],
+    wasteTol: 0.02,
+    tiltThreshold: 35,       // deg, "tilted" at or above
+    straightenThreshold: 15, // deg, "upright" at or below
+    straightenWindow: [0.72, 0.82] // total height range for the guided cue
+  };
+
+  // Feel of the controls themselves, separate from the beer. Not beer facts.
+  const CONTROL = {
+    flowRamp: 0.15,   // s for the tap to go fully open (and fully closed)
+    sliderTau: 0.033, // s; exponential ease, ~95% of the way in 100 ms
+    toggleRate: 150,  // deg/s; 45 deg in 300 ms, linear
+    tiltAngle: 45,    // what the Tilt side of the toggle means
+    maxAngle: 60
+  };
+
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  function initState() {
+    return {
+      tick: 0, elapsed: 0,
+      angle: 0, target: 0,
+      flow: 0, fill: 0, foam: 0, waste: 0,
+      turb: 1, spill: 0,     // per-tick values, kept for the renderer and debug
+      opened: false, pourTime: 0,
+      startAngle: null, straightenFill: null
+    };
+  }
+
+  // input: { pour: bool, target: deg, variant: 'slider' | 'toggle' }
+  // Returns a new state; never mutates the one passed in.
+  function step(s, input, dt = STEP, cfg = PILSNER, ctl = CONTROL) {
+    const n = Object.assign({}, s);
+
+    // Logged before this tick moves the glass, so "angle when flow first
+    // opens" is the angle the player actually had at the moment they pressed.
+    if (input.pour && !n.opened) { n.opened = true; n.startAngle = s.angle; }
+
+    // The tap is binary; only the ramp makes it read as a valve and not a switch.
+    const ramp = dt / ctl.flowRamp;
+    n.flow = input.pour ? Math.min(1, n.flow + ramp) : Math.max(0, n.flow - ramp);
+
+    // The glass chases the control rather than snapping to it. For the toggle
+    // that transition is deliberately slow and linear: the sim uses the
+    // in-between angles, so when you flip it is part of the technique.
+    const target = clamp(input.target, 0, ctl.maxAngle);
+    n.target = target;
+    if (input.variant === 'toggle') {
+      const diff = target - n.angle, max = ctl.toggleRate * dt;
+      n.angle = Math.abs(diff) <= max ? target : n.angle + Math.sign(diff) * max;
+    } else {
+      n.angle += (target - n.angle) * (1 - Math.exp(-dt / ctl.sliderTau));
+      if (Math.abs(target - n.angle) < 0.05) n.angle = target;
+    }
+
+    // Spec §2, steps 1-6, in order.
+    const inflow = n.flow * cfg.flowRate * dt;
+    const turb = clamp(0.15 + 0.85 * (1 - n.angle / cfg.turbAngle), 0.15, 1);
+    const foamShare = turb * cfg.k;
+    n.fill += inflow * (1 - foamShare);
+    n.foam += inflow * foamShare;
+    const settle = n.foam * cfg.d * dt;
+    n.foam -= settle;
+    n.fill += settle * cfg.r;
+    n.spill = 0;
+    const excess = n.fill + n.foam - 1;
+    if (excess > 0) {
+      const fromFoam = Math.min(n.foam, excess);
+      n.foam -= fromFoam;
+      n.fill -= excess - fromFoam;
+      n.waste += excess;
+      n.spill = excess;
+    }
+
+    if (input.pour) n.pourTime += dt;
+    // "Upright" is at or below the threshold, matching the config comment. A
+    // pour that opens upright records ~0 here, which is the honest answer.
+    if (n.opened && n.flow > 0 && n.straightenFill === null && n.angle <= cfg.straightenThreshold) {
+      n.straightenFill = n.fill + n.foam;
+    }
+
+    n.turb = turb;
+    n.tick = s.tick + 1;
+    n.elapsed = n.tick * dt;
+    return n;
+  }
+
+  const total = s => s.fill + s.foam;
+
+  // Serve is only offered once there is a pour to judge and the tap is shut.
+  const canServe = s => s.opened && s.flow === 0;
+
+  // ---- Evaluation (spec §4) and cause ranking (spec §5) ------------------
+
+  // Causes in the spec's priority order. The last three are not in the spec's
+  // table: without them a pour can fail with nothing to say (stopping between
+  // the line and the rim, or straightening on time but holding upright too
+  // long), and "Not quite" with no reason teaches nothing.
+  function evaluate(s, cfg = PILSNER) {
+    const tot = total(s), head = s.foam;
+    const [b0, b1] = cfg.headBand;
+    const [w0, w1] = cfg.straightenWindow;
+    const EPS = 1e-9;
+    const checks = {
+      head: head >= b0 - EPS && head <= b1 + EPS,
+      total: tot >= cfg.fillLine - cfg.fillTol - EPS && tot <= cfg.fillLine + EPS,
+      waste: s.waste <= cfg.wasteTol + EPS
+    };
+    const pass = checks.head && checks.total && checks.waste;
+    const sf = s.straightenFill;
+    const causes = [];
+    if (!pass) {
+      if (s.startAngle !== null && s.startAngle < cfg.tiltThreshold) causes.push('upright');
+      if (!checks.waste) causes.push('overflow');
+      if (head > b1 && sf !== null && sf < w0) causes.push('early');
+      if (head < b0 && (sf === null || sf > w1)) causes.push('stayedTilted');
+      if (tot < cfg.fillLine - cfg.fillTol) causes.push('short');
+      if (checks.waste && tot > cfg.fillLine + EPS) causes.push('overLine');
+      if (head > b1 && !causes.includes('early')) causes.push('headHigh');
+      if (head < b0 && !causes.includes('stayedTilted')) causes.push('headLow');
+    }
+    return {
+      pass, checks, causes,
+      primary: pass ? 'pass' : (causes[0] || 'headHigh'),
+      secondary: pass ? null : (causes[1] || null),
+      metrics: {
+        startAngle: s.startAngle, straightenFill: sf,
+        finalFill: s.fill, finalFoam: s.foam, waste: s.waste,
+        pourDuration: s.pourTime
+      }
+    };
+  }
+
+  // ---- Feedback copy ----------------------------------------------------
+  // CLAIM flags mark sentences that state real-world beer behaviour as fact.
+  // They are true of this sim; none is verified against a brewery or
+  // beer-service source yet (spec §9). Do not ship until they are.
+  const pct = v => Math.round(v * 100);
+  const COPY = {
+    upright: (m, cfg) => (m.startAngle <= cfg.straightenThreshold
+        ? `You opened the tap with the glass upright (${Math.round(m.startAngle)}°).`
+        : `You opened the tap before the glass was fully tilted (${Math.round(m.startAngle)}°).`) +
+      // CLAIM: an upright stream turns mostly to foam.
+      ' The stream dropped straight onto the beer and turned mostly to foam. Tilt first.',
+    // CLAIM: on overflow, the head spills before the beer.
+    overflow: m => `You kept pouring past the line and the glass overflowed (${pct(m.waste)}% spilled). The head spills first.`,
+    // CLAIM: pouring upright builds foam.
+    early: m => `You straightened early, at about ${pct(m.straightenFill)}% full. Most of the pour landed upright, which builds foam, so the head came out too big (${pct(m.finalFoam)}%).`,
+    stayedTilted: m => (m.straightenFill === null
+        ? 'You stayed tilted to the end,'
+        : `You stayed tilted until about ${pct(m.straightenFill)}% full,`) +
+      ` so there wasn't enough foam to build a head (${pct(m.finalFoam)}%). Straighten near the end.`,
+    short: (m, cfg) => `You stopped short of the line (${pct(m.finalFill + m.finalFoam)}% full; the line is at ${pct(cfg.fillLine)}%).`,
+    overLine: (m, cfg) => `You stopped above the line (${pct(m.finalFill + m.finalFoam)}% full; the line is at ${pct(cfg.fillLine)}%). Let go a little sooner.`,
+    headHigh: (m, cfg) => `The head came out too big (${pct(m.finalFoam)}%; the band is ${pct(cfg.headBand[0])}-${pct(cfg.headBand[1])}%). You were upright for too much of the pour.`,
+    headLow: (m, cfg) => `The head came out too small (${pct(m.finalFoam)}%; the band is ${pct(cfg.headBand[0])}-${pct(cfg.headBand[1])}%). Stay upright a little longer at the end.`,
+    pass: m => m.straightenFill === null
+      ? 'Clean pour.'
+      : `Clean pour. You tilted first and straightened at about ${pct(m.straightenFill)}% full.`
+  };
+
+  function feedback(result, cfg = PILSNER) {
+    const m = result.metrics;
+    return {
+      primary: COPY[result.primary](m, cfg),
+      secondary: result.secondary ? COPY[result.secondary](m, cfg) : null
+    };
+  }
+
+  // ---- Guided hints (spec §3) ---------------------------------------------
+  // Pure: given the tick before and after, which hints become due. The caller
+  // owns the "at most once per pour" set and passes it in.
+  //
+  // Two deliberate departures from a literal reading of the spec, both because
+  // the literal version gives advice that fails the pour:
+  //   - "Stop pouring" waits until the level is also inside the fill zone. Read
+  //     literally ("head reaches band") it fires at the very start of an
+  //     upright pour, or around 86% full on a good one, and obeying it then
+  //     fails the pour as short.
+  //   - "Close to the line" fires a little before the fill zone, so it reads
+  //     as a warning and lands before "Stop pouring", not after.
+  const HINTS = {
+    tiltFirst: 'Tilt the glass before you open the tap.',
+    straighten: 'Straighten now.',
+    nearLine: 'Close to the line.',
+    stop: 'Stop pouring.'
+  };
+  const NEAR_LINE_LEAD = 0.04;
+
+  function guidedHints(prev, s, fired, cfg = PILSNER) {
+    const due = [];
+    const tot = total(s);
+    const zone = cfg.fillLine - cfg.fillTol;
+    const want = (id, cond) => { if (cond && !fired.has(id)) due.push(id); };
+    want('tiltFirst', s.opened && !prev.opened && s.startAngle < cfg.tiltThreshold);
+    want('straighten', s.flow > 0 && tot >= cfg.straightenWindow[0] && tot <= cfg.straightenWindow[1] &&
+      s.angle > cfg.straightenThreshold);
+    want('nearLine', s.flow > 0 && tot >= zone - NEAR_LINE_LEAD);
+    want('stop', s.flow > 0 && s.foam >= cfg.headBand[0] && tot >= zone);
+    return due;
+  }
+
+  // ---- Scripted timelines ---------------------------------------------------
+  // A timeline is a list of keyframes { t, pour?, target?, caption?, serve? }.
+  // Each value holds until a later keyframe changes it. Times are snapped to
+  // whole ticks so a replay never depends on float drift.
+  const tickOf = t => Math.round(t * HZ);
+
+  function inputAt(timeline, tick) {
+    const out = { pour: false, target: 0, caption: null, stepIndex: -1, serve: false };
+    for (const k of timeline) {
+      if (tickOf(k.t) > tick) break;
+      if ('pour' in k) out.pour = k.pour;
+      if ('target' in k) out.target = k.target;
+      if (k.caption) { out.caption = k.caption; out.stepIndex = k.stepIndex; }
+      if (k.serve) out.serve = true;
+    }
+    return out;
+  }
+
+  // Runs a timeline to its serve keyframe (or a 30 s cap) and judges it.
+  function runTimeline(timeline, variant = 'slider', cfg = PILSNER, ctl = CONTROL) {
+    let s = initState();
+    for (let tick = 0; tick < 30 * HZ; tick++) {
+      const inp = inputAt(timeline, tick);
+      if (inp.serve) break;
+      s = step(s, { pour: inp.pour, target: inp.target, variant }, STEP, cfg, ctl);
+    }
+    const result = evaluate(s, cfg);
+    return { state: s, result, text: feedback(result, cfg) };
+  }
+
+  root.PourSim = {
+    HZ, STEP, PILSNER, CONTROL,
+    initState, step, total, canServe, evaluate, feedback, COPY,
+    HINTS, guidedHints, tickOf, inputAt, runTimeline
+  };
+})(globalThis);
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const { STEP, PILSNER, CONTROL, initState, step, total, canServe, evaluate, feedback } = PourSim;
+
+  let s = initState();
+  let target = 0, keyPour = false, served = null;
+
+  window.addEventListener('keydown', e => {
+    const k = e.key;
+    if (k === ' ') { e.preventDefault(); if (!served) keyPour = true; }
+    else if (k === 'ArrowLeft') { e.preventDefault(); target = Math.max(0, target - 5); }
+    else if (k === 'ArrowRight') { e.preventDefault(); target = Math.min(CONTROL.maxAngle, target + 5); }
+    else if (k === 's' && canServe(s) && !served) { const r = evaluate(s); served = { r, fb: feedback(r) }; }
+    else if (k === 'r') { s = initState(); served = null; keyPour = false; target = 0; }
+  });
+  window.addEventListener('keyup', e => { if (e.key === ' ') keyPour = false; });
+
+  let acc = 0, last = performance.now();
+  function frame(now) {
+    acc += Math.min(0.25, (now - last) / 1000); last = now;
+    while (acc >= STEP) {
+      if (!served) s = step(s, { pour: keyPour, target, variant: 'slider' });
+      acc -= STEP;
+    }
+    const f = v => v === null ? 'null' : v.toFixed(3);
+    document.getElementById('readout').textContent =
+      `angle ${s.angle.toFixed(1)} (target ${target})\nflow ${f(s.flow)}  turb ${f(s.turb)}\n` +
+      `fill ${f(s.fill)}  foam ${f(s.foam)}  total ${f(total(s))}\nwaste ${f(s.waste)}\n` +
+      `elapsed ${s.elapsed.toFixed(2)}  pourTime ${s.pourTime.toFixed(2)}\n` +
+      `startAngle ${f(s.startAngle)}  straightenFill ${f(s.straightenFill)}\n` +
+      (served ? `\n${served.r.pass ? 'PASS' : 'FAIL'} ${served.r.primary}/${served.r.secondary}\n${served.fb.primary}\n${served.fb.secondary || ''}` : '');
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
