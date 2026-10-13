@@ -132,6 +132,9 @@
 
   #actions, #ghostActions { display: flex; gap: 10px; }
   #actions button, #ghostActions button { flex: 1; min-height: 48px; font-weight: 700; }
+  /* During the demo the controls are locked but must stay fully visible: the
+     point is to watch them move. */
+  #controls.demo #pour, #controls.demo #angleToggle, #controls.demo #angleSlider { opacity: 1; pointer-events: none; }
   #serve:not(:disabled) { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
   #transcriptBox { font-size: 0.85rem; color: var(--muted); }
@@ -163,13 +166,10 @@
   #resultActions button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 
   /* Debug panel (?debug=1). Plain and dense on purpose. */
-  #debugToggle {
-    position: fixed; top: max(6px, env(safe-area-inset-top)); left: 6px; z-index: 20;
-    min-height: 32px; min-width: 32px; padding: 0 8px; font-size: 0.75rem; opacity: 0.8;
-  }
+  #debugToggle { position: relative; z-index: 20; padding: 0; margin-right: auto; }
   #debug {
     position: fixed; z-index: 19; top: 0; left: 0; width: min(380px, 100vw); max-height: 85dvh;
-    overflow-y: auto; overscroll-behavior: contain; padding: 44px 12px 12px;
+    overflow-y: auto; overscroll-behavior: contain; padding: 64px 12px 12px;
     background: rgba(15, 11, 8, 0.94); border: 1px solid var(--line); border-radius: 0 0 12px 0;
     font: 12px/1.35 ui-monospace, Menlo, monospace; -webkit-user-select: text; user-select: text;
   }
@@ -205,6 +205,7 @@
 <div id="app">
   <header>
     <div class="brand">Perfect Pour<small>Pilsner · prototype</small></div>
+    <button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" aria-label="Debug panel" hidden>⚙</button>
     <nav id="modes" aria-label="Mode">
       <button type="button" data-mode="watch">Watch</button>
       <button type="button" data-mode="guided">Guided</button>
@@ -336,7 +337,6 @@
 
 <div id="live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-<button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" hidden>debug</button>
 <aside id="debug" aria-label="Debug panel" hidden>
   <div class="warn">verified: false · all constants are placeholders</div>
   <h3>Angle control</h3>
@@ -601,6 +601,19 @@
     return out;
   }
 
+  // The Watch demo. Tuned so it lands mid-band on head height under both
+  // angle controls (test/sim.test.js checks it passes; README has the numbers).
+  // CLAIM: step 3's "to build the head" states technique as fact; unverified.
+  const GHOST = [
+    { t: 0, target: 0, caption: 'Tilt the glass.', stepIndex: 0 },
+    { t: 0.5, target: 45 },
+    { t: 1.6, pour: true, caption: 'Open the tap fully.', stepIndex: 1 },
+    { t: 8.4, target: 0, caption: 'Straighten near the end to build the head.', stepIndex: 2 },
+    { t: 9.6, pour: false, caption: 'Stop at the line and serve.', stepIndex: 3 },
+    { t: 10.6, serve: true }
+  ];
+  const GHOST_STEPS = GHOST.filter(k => k.caption).map(k => k.caption);
+
   // Runs a timeline to its serve keyframe (or a 30 s cap) and judges it.
   function runTimeline(timeline, variant = 'slider', cfg = PILSNER, ctl = CONTROL) {
     let s = initState();
@@ -616,7 +629,7 @@
   root.PourSim = {
     HZ, STEP, PILSNER, CONTROL,
     initState, step, total, canServe, evaluate, feedback, COPY,
-    HINTS, guidedHints, tickOf, inputAt, runTimeline
+    HINTS, guidedHints, tickOf, inputAt, runTimeline, GHOST, GHOST_STEPS
   };
 })(globalThis);
 </script>
@@ -626,7 +639,8 @@
 <script>
 (function () {
   'use strict';
-  const { STEP, PILSNER, CONTROL, initState, step, total, canServe, evaluate, feedback } = PourSim;
+  const { STEP, PILSNER, CONTROL, initState, step, total, canServe, evaluate, feedback,
+    GHOST, GHOST_STEPS, inputAt } = PourSim;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const DEBUG = params.get('debug') === '1';
@@ -824,10 +838,26 @@
   let tapMode = false;
   let sim = initState();
   let served = null;
+  let mode = 'watch';
+  const ghost = { pour: false, stepIndex: -1 };
 
   const pourBtn = $('pour'), slider = $('angleSlider'), toggle = $('angleToggle');
-  const locked = () => served !== null;
-  const pourWanted = () => !locked() && (input.pointer || input.key || input.latch);
+  // Locked = the player's inputs do nothing: during the demo, and after Serve.
+  const locked = () => served !== null || mode === 'watch';
+  const pourWanted = () => served === null &&
+    (mode === 'watch' ? ghost.pour : (input.pointer || input.key || input.latch));
+
+  // One polite live region for everything spoken. Clearing first makes a
+  // repeated message ("Straighten now." on a second pour) announce again.
+  const live = $('live');
+  function announce(msg) {
+    live.textContent = '';
+    setTimeout(() => { live.textContent = msg; }, 60);
+  }
+  function setCaption(text, kind) {
+    setText($('caption'), text || '');
+    $('caption').classList.toggle('hint', kind === 'hint');
+  }
 
   function stopPour() {
     input.pointer = input.key = input.latch = false;
@@ -864,7 +894,7 @@
     input.target = Math.max(0, Math.min(ctl.maxAngle, Math.round(v)));
   }
   slider.addEventListener('input', () => setTarget(+slider.value));
-  toggle.addEventListener('click', () => setTarget(input.target > 0 ? 0 : ctl.tiltAngle));
+  toggle.addEventListener('click', () => { if (!locked()) setTarget(input.target > 0 ? 0 : ctl.tiltAngle); });
 
   function setVariant(v) {
     variant = v === 'toggle' ? 'toggle' : 'slider';
@@ -898,7 +928,7 @@
     } else if (variant === 'toggle' && (k === 't' || k === 'T')) {
       e.preventDefault();
       if (!locked()) toggle.click();
-    } else if (k === 's' || k === 'S') {
+    } else if ((k === 's' || k === 'S') && mode !== 'watch') {
       e.preventDefault(); serve();
     } else if (k === 'r' || k === 'R') {
       e.preventDefault(); restart();
@@ -917,26 +947,79 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopPour(); });
 
   // ==== Pour lifecycle ====================================================
+  // ---- Modes ----
+  const MODE_LABEL = { watch: 'Watch', guided: 'Guided', solo: 'Solo' };
+
+  const transcript = $('transcript');
+  GHOST_STEPS.forEach(text => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    transcript.appendChild(li);
+  });
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('#modes button').forEach(b => {
+      if (b.dataset.mode === m) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    });
+    const watching = m === 'watch';
+    $('actions').hidden = watching;
+    $('ghostActions').hidden = !watching;
+    $('transcriptBox').hidden = !watching;
+    $('controls').classList.toggle('demo', watching);
+    restart();
+    announce(`${MODE_LABEL[m]} mode.` + (watching ? ' A demo pour is playing.' : ''));
+  }
+  document.querySelectorAll('#modes button').forEach(b =>
+    b.addEventListener('click', () => setMode(b.dataset.mode)));
+  $('replay').addEventListener('click', () => { restart(); $('replay').focus(); });
+  $('skip').addEventListener('click', () => setMode('guided'));
+
+  // ---- Pour lifecycle ----
   function restart() {
     stopPour();
     sim = initState();
     served = null;
+    ghost.pour = false;
+    ghost.stepIndex = -1;
     setTarget(0);
-    setText($('caption'), '');
+    setCaption('');
+    [...transcript.children].forEach(li => li.removeAttribute('aria-current'));
   }
 
-  function serve() {
-    if (locked() || !canServe(sim)) return;
+  function serve(fromGhost) {
+    if (served || !canServe(sim) || (mode === 'watch' && !fromGhost)) return;
     stopPour();
     const r = evaluate(sim, cfg);
     served = { result: r, text: feedback(r, cfg) };
-    setText($('caption'), (r.pass ? 'Pass. ' : 'Not quite. ') + served.text.primary);
+    setCaption((r.pass ? 'Pass. ' : 'Not quite. ') + served.text.primary);
   }
-  $('serve').addEventListener('click', serve);
+  $('serve').addEventListener('click', () => serve(false));
   $('restart').addEventListener('click', restart);
 
+  // The demo drives the same inputs a player would: the slider or switch
+  // moves and the pour button presses, so the learner sees which control does
+  // what. It runs on sim ticks, not wall time, so it replays identically.
+  function ghostTick() {
+    const inp = inputAt(GHOST, sim.tick);
+    if (inp.serve) { serve(true); return false; }
+    ghost.pour = inp.pour;
+    if (variant === 'toggle') setTarget(inp.target >= ctl.tiltAngle / 2 ? ctl.tiltAngle : 0);
+    else setTarget(inp.target);
+    if (inp.stepIndex !== ghost.stepIndex) {
+      ghost.stepIndex = inp.stepIndex;
+      setCaption(inp.caption);
+      announce(inp.caption);
+      [...transcript.children].forEach((li, i) => {
+        if (i === inp.stepIndex) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+      });
+    }
+    return true;
+  }
+
   function tick() {
-    if (locked()) return;
+    if (served) return;
+    if (mode === 'watch' && !ghostTick()) return;
     sim = step(sim, { pour: pourWanted(), target: input.target, variant }, STEP, cfg, ctl);
   }
 
@@ -952,10 +1035,14 @@
     const pouring = pourWanted();
     setAttr(pourBtn, 'aria-pressed', pouring);
     setAttr(pourBtn, 'aria-disabled', locked());
-    setText($('pourText'), locked() ? 'Locked' : pouring ? (tapMode || input.latch ? 'Tap to stop' : 'Pouring…') :
+    setText($('pourText'), mode === 'watch' && !served ? (pouring ? 'Demo: pouring…' : 'Demo') :
+      locked() ? 'Locked' : pouring ? (tapMode || input.latch ? 'Tap to stop' : 'Pouring…') :
       (tapMode ? 'Tap to pour' : 'Hold to pour'));
-    setText($('pourSub'), tapMode ? 'Space / Enter toggles' : 'or hold Space / Enter');
+    setText($('pourSub'), mode === 'watch' ? 'watch the controls move' :
+      tapMode ? 'Space / Enter toggles' : 'or hold Space / Enter');
     $('serve').disabled = locked() || !canServe(sim);
+    slider.disabled = locked();
+    setAttr(toggle, 'aria-disabled', locked());
 
     if (+slider.value !== input.target) slider.value = input.target;
     setAttr(slider, 'aria-valuetext', valueText(input.target));
@@ -1008,7 +1095,7 @@
     function update() {
       if (panel.hidden) return;
       setText($('dbgState'),
-        `variant ${variant}  tapMode ${tapMode}\n` +
+        `mode ${mode}  variant ${variant}  tapMode ${tapMode}\n` +
         `angle ${f(sim.angle)}  target ${input.target}\nflow ${f(sim.flow)}  turb ${f(sim.turb)}\n` +
         `fill ${f(sim.fill)}  foam ${f(sim.foam)}\ntotal ${f(total(sim))}  waste ${f(sim.waste)}\n` +
         `elapsed ${sim.elapsed.toFixed(2)}  pourTime ${sim.pourTime.toFixed(2)}\n` +
@@ -1034,7 +1121,7 @@
   }
 
   setVariant(variant);
-  restart();
+  setMode('watch');
   requestAnimationFrame(frame);
 })();
 </script>

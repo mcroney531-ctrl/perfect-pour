@@ -58,6 +58,37 @@ test('overflow spills foam first, then beer, and counts it as waste', () => {
   assert.ok(s.foam < 0.1, 'foam went first');
 });
 
+// ---- The ghost (Watch) run --------------------------------------------------
+
+for (const v of VARIANTS) {
+  test(`ghost run passes all three criteria (${v})`, () => {
+    const r = S.runTimeline(S.GHOST, v);
+    const msg = `ghost/${v}: ${fmt(r)}`;
+    assert.equal(r.result.pass, true, msg);
+    assert.deepEqual({ ...r.result.checks }, { head: true, total: true, waste: true }, msg);
+  });
+
+  test(`ghost lands mid-band on head height (${v})`, () => {
+    const r = S.runTimeline(S.GHOST, v);
+    const [b0, b1] = S.PILSNER.headBand;
+    const mid = (b0 + b1) / 2, quarter = (b1 - b0) / 4;
+    assert.ok(Math.abs(r.state.foam - mid) <= quarter / 2,
+      `head ${r.state.foam.toFixed(3)} should be within ${(quarter / 2).toFixed(3)} of ${mid}`);
+    const zoneMid = S.PILSNER.fillLine - S.PILSNER.fillTol / 2;
+    assert.ok(Math.abs(S.total(r.state) - zoneMid) <= S.PILSNER.fillTol / 4, `total ${S.total(r.state).toFixed(3)}`);
+  });
+}
+
+test('ghost demo is 10-12 s with about 8 s of open tap, straightening inside the window', () => {
+  const r = S.runTimeline(S.GHOST, 'slider');
+  const end = S.GHOST[S.GHOST.length - 1].t;
+  assert.ok(end >= 10 && end <= 12);
+  assert.ok(Math.abs(r.state.pourTime - 8) <= 0.5, `pourTime ${r.state.pourTime}`);
+  const [w0, w1] = S.PILSNER.straightenWindow;
+  assert.ok(r.state.straightenFill >= w0 && r.state.straightenFill <= w1, `straightenFill ${r.state.straightenFill}`);
+  assert.equal(S.GHOST_STEPS.length, 4);
+});
+
 // ---- Known-bad timelines (spec §10) ----------------------------------------
 // Each is a plausible first-timer mistake, scripted by time. Times assume the
 // current tuning (about 0.12 glass-heights a second); if the constants move a
