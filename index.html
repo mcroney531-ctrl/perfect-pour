@@ -640,7 +640,7 @@
 (function () {
   'use strict';
   const { STEP, PILSNER, CONTROL, initState, step, total, canServe, evaluate, feedback,
-    GHOST, GHOST_STEPS, inputAt } = PourSim;
+    GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints } = PourSim;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const DEBUG = params.get('debug') === '1';
@@ -672,6 +672,12 @@
     const halfAt = h => G.in0 + (G.in1 - G.in0) * h;
     const yAt = h => -G.base - h * G.H;
     const GAUGE = { top: 136, bottom: 366, max: 0.25 };
+    // The glass is drawn at 3/4 of the sim angle. The sim reasons in upright
+    // heights, and a glass really held at 45 degrees cannot hold 80% of its
+    // volume: drawn true, the beer reached the low lip right as the guided
+    // "Straighten now" cue fired, which read as an overflow that was not
+    // happening. Readouts and the sim keep the true angle.
+    const VISUAL_TILT = 0.75;
     const gaugeY = h => GAUGE.bottom - Math.min(h, GAUGE.max) / GAUGE.max * (GAUGE.bottom - GAUGE.top);
 
     const E = {};
@@ -705,7 +711,7 @@
       const a = angle * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
       // The rim drifts toward the tap as the glass tilts, the way a hand keeps
       // the opening under the spout, so the stream lands on the lower wall.
-      const u = angle / 45;
+      const u = angle / (45 * VISUAL_TILT);
       const ax = G.tapX + 22 * u, ay = G.rimY + 14 * u;
       const px = ax + RIM * s, py = ay - RIM * c;
       const w = (x, y) => [px + x * c - y * s, py + x * s + y * c];
@@ -723,11 +729,12 @@
     function render(s, view) {
       const calm = view.reducedMotion;
       const t = s.elapsed;
-      const g = geom(s.angle);
+      const va = s.angle * VISUAL_TILT;
+      const g = geom(va);
       const tot = s.fill + s.foam;
 
       setAttr(E.clipPoly, 'points', INNER.map(p => g.w(p[0], p[1]).map(v => v.toFixed(2)).join(',')).join(' '));
-      setAttr(E.glass, 'transform', `translate(${g.px.toFixed(2)} ${g.py.toFixed(2)}) rotate(${s.angle.toFixed(2)})`);
+      setAttr(E.glass, 'transform', `translate(${g.px.toFixed(2)} ${g.py.toFixed(2)}) rotate(${va.toFixed(2)})`);
 
       // Liquid. Foam is drawn first and the beer over it, so the visible head
       // is exactly the band between the two surfaces.
@@ -840,6 +847,9 @@
   let served = null;
   let mode = 'watch';
   const ghost = { pour: false, stepIndex: -1 };
+  let hintsFired = new Set();
+  let milestones = new Set();
+  let soloFailStreak = 0;
 
   const pourBtn = $('pour'), slider = $('angleSlider'), toggle = $('angleToggle');
   // Locked = the player's inputs do nothing: during the demo, and after Serve.
@@ -849,10 +859,18 @@
 
   // One polite live region for everything spoken. Clearing first makes a
   // repeated message ("Straighten now." on a second pour) announce again.
+  // Messages raised on the same tick (a hint and a milestone) are joined, so
+  // the second does not overwrite the first before it is read.
   const live = $('live');
+  let pending = [], flushTimer = null;
   function announce(msg) {
+    pending.push(msg);
+    if (flushTimer) return;
     live.textContent = '';
-    setTimeout(() => { live.textContent = msg; }, 60);
+    flushTimer = setTimeout(() => {
+      live.textContent = pending.join(' ');
+      pending = []; flushTimer = null;
+    }, 80);
   }
   function setCaption(text, kind) {
     setText($('caption'), text || '');
@@ -934,6 +952,17 @@
       e.preventDefault(); restart();
     }
   });
+  // A mouse or finger click leaves focus on that button, and Space would then
+  // press it again instead of pouring (found in testing: click Guided, hold
+  // Space, Guided reloads). Pointer clicks drop focus; keyboard activation
+  // (detail 0) keeps it where keyboard users expect it.
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button');
+    if (b && b !== pourBtn && e.detail > 0 && !b.closest('#debug')) setTimeout(() => {
+      if (document.activeElement === b) b.blur();
+    }, 0);
+  });
+
   window.addEventListener('keyup', e => {
     if ((e.key === ' ' || e.key === 'Enter') && input.key) { input.key = false; e.preventDefault(); }
   });
@@ -982,17 +1011,91 @@
     served = null;
     ghost.pour = false;
     ghost.stepIndex = -1;
+    hintsFired = new Set();
+    milestones = new Set();
     setTarget(0);
-    setCaption('');
+    setCaption(OPENING[mode]);
+    $('angleCtl').classList.remove('pulse');
+    $('result').hidden = true;
     [...transcript.children].forEach(li => li.removeAttribute('aria-current'));
   }
+  const OPENING = {
+    watch: '',
+    guided: 'Guided: hints show up here while you pour.',
+    solo: 'Solo: no hints. Serve when it looks right.'
+  };
 
   function serve(fromGhost) {
     if (served || !canServe(sim) || (mode === 'watch' && !fromGhost)) return;
     stopPour();
+    $('angleCtl').classList.remove('pulse');
     const r = evaluate(sim, cfg);
     served = { result: r, text: feedback(r, cfg) };
-    setCaption((r.pass ? 'Pass. ' : 'Not quite. ') + served.text.primary);
+    if (mode === 'solo') soloFailStreak = r.pass ? 0 : soloFailStreak + 1;
+    showResult(r, served.text);
+  }
+
+  // ---- Result sheet ----
+  const pctOf = v => Math.round(v * 100);
+  function showResult(r, text) {
+    const m = r.metrics, tot = m.finalFill + m.finalFoam;
+    const [b0, b1] = cfg.headBand;
+    const demo = mode === 'watch';
+    const title = r.pass ? (demo ? 'Demo pour: clean' : 'Clean pour') : 'Not quite';
+    setText($('resultTitle'), title);
+    setCaption(title + '.');
+
+    // Each check says pass or miss in words and a symbol, not just a colour.
+    const checks = [
+      ['Head', r.checks.head, `${pctOf(m.finalFoam)}%`, `aim ${pctOf(b0)}–${pctOf(b1)}%`,
+        m.finalFoam > b1 ? 'too big' : 'too small'],
+      ['Level', r.checks.total, `${pctOf(tot)}%`, `aim ${pctOf(cfg.fillLine - cfg.fillTol)}–${pctOf(cfg.fillLine)}%`,
+        tot > cfg.fillLine ? 'too high' : 'too low'],
+      ['Spill', r.checks.waste, `${pctOf(m.waste)}%`, `max ${pctOf(cfg.wasteTol)}%`, 'too much']
+    ];
+    const ul = $('checks');
+    ul.textContent = '';
+    for (const [name, ok, val, aim, why] of checks) {
+      const li = document.createElement('li');
+      li.className = ok ? 'ok' : 'miss';
+      const b = document.createElement('b');
+      b.textContent = `${ok ? '✓' : '✗'} ${val}`;
+      li.append(b, `${name}: ${ok ? 'in range' : why}`, document.createElement('br'), aim);
+      ul.appendChild(li);
+    }
+
+    setText($('fbPrimary'), text.primary);
+    $('fbSecondary').hidden = !text.secondary;
+    setText($('fbSecondary'), text.secondary ? 'Also: ' + text.secondary : '');
+    const suggest = mode === 'solo' && !r.pass && soloFailStreak >= 3;
+    $('suggest').hidden = !suggest;
+    setText($('suggest'), suggest ? `${soloFailStreak} misses in a row. Guided mode shows hints while you pour, if you want them.` : '');
+
+    // Next steps per mode (spec §3). Nothing is forced, even the suggestion.
+    const again = () => { restart(); pourBtn.focus(); };
+    let actions;
+    if (demo) actions = [['Try it guided', () => setMode('guided')], ['Watch again', () => setMode('watch')]];
+    else if (mode === 'guided') actions = r.pass
+      ? [['Try solo', () => setMode('solo')], ['Pour again', again]]
+      : [['Try again', again], ['Watch again', () => setMode('watch')]];
+    else actions = r.pass
+      ? [['Pour again', again], ['Watch again', () => setMode('watch')]]
+      : [['Try again', again], ['Watch again', () => setMode('watch')], ['Guided again', () => setMode('guided')]];
+    const primaryIndex = suggest ? 2 : 0;
+    const host = $('resultActions');
+    host.textContent = '';
+    actions.forEach(([label, fn], i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (i === primaryIndex) b.className = 'primary';
+      b.addEventListener('click', fn);
+      host.appendChild(b);
+    });
+
+    $('result').hidden = false;
+    announce(`${title}. ${text.primary}${text.secondary ? ' Also: ' + text.secondary : ''}`);
+    host.children[primaryIndex].focus({ preventScroll: true });
   }
   $('serve').addEventListener('click', () => serve(false));
   $('restart').addEventListener('click', restart);
@@ -1020,7 +1123,36 @@
   function tick() {
     if (served) return;
     if (mode === 'watch' && !ghostTick()) return;
+    const prev = sim;
     sim = step(sim, { pour: pourWanted(), target: input.target, variant }, STEP, cfg, ctl);
+    if (mode === 'guided') guidedTick(prev);
+    milestoneTick();
+  }
+
+  // Advisory only: a hint changes the caption and may pulse the angle
+  // control, and never touches input. Each fires at most once per pour.
+  function guidedTick(prev) {
+    for (const id of guidedHints(prev, sim, hintsFired, cfg)) {
+      hintsFired.add(id);
+      setCaption(HINTS[id], 'hint');
+      announce(HINTS[id]);
+      if (id === 'straighten') $('angleCtl').classList.add('pulse');
+    }
+    if (sim.angle <= cfg.straightenThreshold || sim.flow === 0) $('angleCtl').classList.remove('pulse');
+  }
+
+  // Spoken progress for screen-reader users (spec §6): level at 25/50/75%,
+  // and the head entering the band.
+  function milestoneTick() {
+    const tot = total(sim);
+    for (const q of [0.25, 0.5, 0.75]) {
+      if (tot >= q && !milestones.has(q)) { milestones.add(q); announce(`Level ${q * 100}%.`); }
+    }
+    const [b0, b1] = cfg.headBand;
+    if (!milestones.has('head') && sim.foam >= b0 && sim.foam <= b1) {
+      milestones.add('head');
+      announce(`Head in band, ${pctOf(sim.foam)}%.`);
+    }
   }
 
   // ==== UI sync (DOM other than the scene) =================================
