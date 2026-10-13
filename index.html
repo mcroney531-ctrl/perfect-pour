@@ -902,9 +902,19 @@
   pourBtn.addEventListener('pointercancel', endPointer);
   pourBtn.addEventListener('lostpointercapture', endPointer);
   pourBtn.addEventListener('contextmenu', e => e.preventDefault());
-  // A click with detail 0 came from assistive tech (VoiceOver, Switch
-  // Control) rather than a pointer; those cannot hold, so it toggles instead.
-  pourBtn.addEventListener('click', e => { if (e.detail === 0 && !locked()) input.latch = !input.latch; });
+  // A click with no pointer press just before it came from assistive tech
+  // (screen reader, Switch Control); those cannot hold, so it toggles instead.
+  // Keyboard presses never get here: the key handlers below swallow them.
+  // (Not e.detail === 0: Chromium reports 0 for real touch taps too, which
+  // made a tap in tap mode switch the tap on and straight back off.)
+  // Pointerup counts too: a 10 s hold ends in a click whose pointerdown is
+  // long past, and that click must not latch the tap open.
+  let lastPointerAt = -Infinity;
+  const notePointer = () => { lastPointerAt = performance.now(); };
+  document.addEventListener('pointerdown', notePointer, true);
+  document.addEventListener('pointerup', notePointer, true);
+  const fromPointer = () => performance.now() - lastPointerAt < 1000;
+  pourBtn.addEventListener('click', () => { if (!fromPointer() && !locked()) input.latch = !input.latch; });
 
   $('tapMode').addEventListener('change', e => { tapMode = e.target.checked; stopPour(); });
 
@@ -955,10 +965,10 @@
   // A mouse or finger click leaves focus on that button, and Space would then
   // press it again instead of pouring (found in testing: click Guided, hold
   // Space, Guided reloads). Pointer clicks drop focus; keyboard activation
-  // (detail 0) keeps it where keyboard users expect it.
+  // keeps it where keyboard users expect it.
   document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('button');
-    if (b && b !== pourBtn && e.detail > 0 && !b.closest('#debug')) setTimeout(() => {
+    if (b && b !== pourBtn && fromPointer() && !b.closest('#debug')) setTimeout(() => {
       if (document.activeElement === b) b.blur();
     }, 0);
   });
@@ -987,6 +997,8 @@
   });
 
   function setMode(m) {
+    if (mode !== 'watch' && sim.opened && !served) Log.record(sim, null, false);
+    sim = initState();
     mode = m;
     document.querySelectorAll('#modes button').forEach(b => {
       if (b.dataset.mode === m) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
@@ -1007,6 +1019,8 @@
   // ---- Pour lifecycle ----
   function restart() {
     stopPour();
+    // A pour walked away from is data too: it is how "gave up" shows up.
+    if (mode !== 'watch' && sim.opened && !served) Log.record(sim, null, false);
     sim = initState();
     served = null;
     ghost.pour = false;
@@ -1016,7 +1030,11 @@
     setTarget(0);
     setCaption(OPENING[mode]);
     $('angleCtl').classList.remove('pulse');
+    // Hiding the sheet would strand keyboard focus on a hidden button, where
+    // the next Space press would activate it instead of pouring.
+    const focusWasInSheet = $('result').contains(document.activeElement);
     $('result').hidden = true;
+    if (focusWasInSheet) (mode === 'watch' ? $('replay') : pourBtn).focus({ preventScroll: true });
     [...transcript.children].forEach(li => li.removeAttribute('aria-current'));
   }
   const OPENING = {
@@ -1032,6 +1050,7 @@
     const r = evaluate(sim, cfg);
     served = { result: r, text: feedback(r, cfg) };
     if (mode === 'solo') soloFailStreak = r.pass ? 0 : soloFailStreak + 1;
+    if (mode !== 'watch') Log.record(sim, r, true);
     showResult(r, served.text);
   }
 
@@ -1182,6 +1201,47 @@
     setAttr(toggle, 'aria-checked', input.target > 0);
   }
 
+  // ==== Metrics log (spec §8) ===============================================
+  // One entry per pour, served or abandoned, in localStorage so a tester's
+  // session survives a reload and can be exported as JSON from the debug
+  // panel. Storage can throw (private mode, quota), so the game never depends
+  // on it: a failed write just means that pour is not logged.
+  const Log = (() => {
+    const KEY = 'perfectPour.log.v0', CAP = 2000;
+    const session = Math.random().toString(36).slice(2, 8);
+    let attempt = 0;
+    const r4 = v => v === null || v === undefined ? null : Math.round(v * 1e4) / 1e4;
+    function read() {
+      try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (_) { return []; }
+    }
+    function write(list) {
+      try { localStorage.setItem(KEY, JSON.stringify(list.slice(-CAP))); return true; } catch (_) { return false; }
+    }
+    function record(state, result, wasServed) {
+      attempt++;
+      const m = evaluate(state, cfg).metrics;
+      const entry = {
+        v: 1, session, attempt, at: new Date().toISOString(),
+        mode, variant, tapMode,
+        orientation: innerWidth > innerHeight ? 'landscape' : 'portrait',
+        served: wasServed,
+        pass: result ? result.pass : null,
+        primary: result ? result.primary : null,
+        secondary: result ? result.secondary : null,
+        checks: result ? Object.assign({}, result.checks) : null,
+        startAngle: r4(m.startAngle), straightenFill: r4(m.straightenFill),
+        finalFill: r4(m.finalFill), finalFoam: r4(m.finalFoam), waste: r4(m.waste),
+        pourDuration: r4(m.pourDuration),
+        hints: mode === 'guided' ? [...hintsFired] : null,
+        config: Object.assign(JSON.parse(JSON.stringify(cfg)), { control: Object.assign({}, ctl) })
+      };
+      const list = read();
+      list.push(entry);
+      write(list);
+    }
+    return { read, record, clear: () => write([]), key: KEY };
+  })();
+
   // ==== Debug panel (?debug=1) =============================================
   const Debug = (() => {
     if (!DEBUG) return { update() {} };
@@ -1223,9 +1283,41 @@
       build();
     });
 
+    $('dbgDownload').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(Log.read(), null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `perfect-pour-log-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    $('dbgCopy').addEventListener('click', async () => {
+      const json = JSON.stringify(Log.read(), null, 2);
+      try { await navigator.clipboard.writeText(json); setText($('dbgGhostOut'), 'Log copied.'); }
+      catch (_) { setText($('dbgGhostOut'), json); } // select it by hand instead
+    });
+    $('dbgClear').addEventListener('click', () => {
+      if (confirm('Delete every logged pour on this device?')) Log.clear();
+    });
+    $('dbgGhost').addEventListener('click', () => {
+      const out = ['slider', 'toggle'].map(v => {
+        const r = PourSim.runTimeline(GHOST, v, cfg, ctl);
+        return `${v}: ${r.result.pass ? 'PASS' : 'FAIL ' + r.result.primary}  head ${r.state.foam.toFixed(3)}  ` +
+          `level ${total(r.state).toFixed(3)}  waste ${r.state.waste.toFixed(3)}`;
+      });
+      setText($('dbgGhostOut'), out.join('\n'));
+    });
+
     const f = v => v === null ? 'null' : typeof v === 'number' ? v.toFixed(3) : String(v);
+    let lastCount = -1, countAt = 0;
     function update() {
       if (panel.hidden) return;
+      // Re-reading storage every frame is wasteful; twice a second is plenty.
+      if (performance.now() - countAt > 500) {
+        countAt = performance.now();
+        const n = Log.read().length;
+        if (n !== lastCount) { lastCount = n; setText($('dbgLogCount'), `${n} pours logged (${Log.key})`); }
+      }
       setText($('dbgState'),
         `mode ${mode}  variant ${variant}  tapMode ${tapMode}\n` +
         `angle ${f(sim.angle)}  target ${input.target}\nflow ${f(sim.flow)}  turb ${f(sim.turb)}\n` +
