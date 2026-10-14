@@ -1,4 +1,4 @@
-# Perfect Pour: prototype v2.1 (one glass, one pilsner)
+# Perfect Pour: prototype v2.2 (one glass, one pilsner)
 
 A prototype for E-Learning Heroes challenge #570: gamified onboarding for a new
 bartender at a fictional brewery. The goal is **procedural memory first,
@@ -17,6 +17,7 @@ input differs.
 | `/?angle=staged` (default) | **A: staged.** Hold the pad to pour; swipe up once to start straightening. The glass comes upright at a fixed rate. |
 | `/?angle=continuous` | **B: continuous.** Hold the pad to pour; slide up to bring the glass upright (down to tilt more). |
 | `/?debug=1` | Adds ⚙: live state, tuning, variant switch, ghost check, pour log download |
+| `/v2.1/` | v2.1 (fixed dial), frozen for comparison |
 | `/v2/` | v2 as first playtested (moving arc), frozen for comparison |
 | `/v1/` | The v1 prototype, frozen as a comparison baseline |
 
@@ -34,6 +35,40 @@ accessible fallbacks.
 - "Tap to start/stop pouring" turns hold into tap-on/tap-off; in that mode a
   drag on the pad still moves the glass without toggling the tap.
 - `S` serves, `R` restarts.
+
+## What v2.2 changed: the glass is the meter
+
+Playtest finding on v2.1: it still wasn't clear what the dial asked you to
+do. The needle moved by itself, so there was nothing to "hit". v2.2 removes
+the dial. **The glass is the meter, the rising beer is the indicator, and the
+player's existing actions are the timing decisions**, like a 2K release
+window but with real beer.
+
+- **Two distinct windows on the training glass:** a green dotted
+  **BRING UP** band (start bringing the glass upright when the beer gets
+  there; the sourced half-to-two-thirds range) and the hatched white **LINE**
+  band (stop). Both are a couple of seconds of pour wide, not frame-perfect.
+- **Feedback on the action, at the action** (Guided): when the glass starts
+  coming up, and when the tap fully closes, a mark appears on the glass at
+  that level and the caption names that action only, e.g. "Started
+  straightening in range" or "Stopped above the line". It never says the
+  pour as a whole was good; the debrief does that.
+- **Verdict bands are measured, not guessed:** "early"/"late" only where the
+  head will miss; "a little early/late" just outside the window where a pour
+  can still pass; "in range" with a good stop always passes. A test sweep
+  holds that promise.
+- **Solo:** no BRING UP band and no live verdicts; the beer, foam, glass and
+  the normal fill line stay. The result sheet shows a small training glass
+  with both bands and where you acted (approach 3, after the pour).
+- **The Guided straighten hint is now a backup:** it fires only if the beer
+  passes the BRING UP band without the player acting.
+- Event capture (`state.events`) is tested at the edges: one straighten
+  event at the moment the glass starts coming up, a stop event when the tap
+  has fully closed (closing ramp included), one per stop when a pour is
+  paused and restarted, nothing for pre-pour adjustments or small wobbles,
+  straightening during a pause captured on resume.
+- The head gauge stays for now; flagged for the next usability review.
+- Controls, sim behaviour and scoring are unchanged. Log key `perfectPour.log.v2.2` (now includes the events).
 
 ## What v2.1 changed (instructional clarity only)
 

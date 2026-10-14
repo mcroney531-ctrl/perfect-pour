@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Perfect Pour v2.1 (frozen)</title>
+<style>
+  :root {
+    --bg: #1b1510; --panel: #2a2119; --panel-2: #33281e; --ink: #f6eedf; --muted: #c9b89c;
+    --line: #5c4a37; --accent: #f2b632; --accent-ink: #1b1510; --focus: #8fd0ff;
+    --good: #9fdc8a; --bad: #ff9b85;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  /* No page scroll and no rubber-band: every pixel of a phone in portrait is
+     spoken for, and a bounce mid-pour reads as the glass jumping. Scrolling is
+     re-allowed only inside the panels that need it (result sheet, debug). */
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-text-size-adjust: 100%;
+  }
+  [hidden] { display: none !important; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  /* 44 px floor on every target (spec §6). manipulation kills double-tap zoom,
+     which otherwise eats the second of two quick taps on Restart or the toggle. */
+  button {
+    min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 12px;
+    border: 2px solid var(--line); background: var(--panel); cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:disabled, button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  kbd {
+    font: 600 0.75em/1 ui-monospace, monospace; padding: 2px 5px; margin-left: 6px;
+    border: 1px solid currentColor; border-radius: 4px; opacity: 0.7;
+  }
+  /* Key hints are clutter on a phone, where there is no keyboard to press. */
+  @media (hover: none) { kbd { display: none; } }
+
+  #app {
+    height: 100vh; height: 100dvh;
+    max-width: 520px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 6px;
+    padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+             max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .brand { font-weight: 800; letter-spacing: 0.01em; line-height: 1.1; }
+  .brand small { display: block; font-weight: 500; color: var(--muted); font-size: 0.75rem; }
+  /* The mode switcher doubles as the always-visible mode label (spec §1). */
+  #modes { display: flex; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
+  #modes button { border: 0; border-radius: 0; background: transparent; padding: 0 12px; font-weight: 600; }
+  #modes button + button { border-left: 2px solid var(--line); }
+  #modes button[aria-current="true"] { background: var(--ink); color: var(--bg); }
+
+  #caption {
+    min-height: 2.8em; margin: 0; display: flex; align-items: center; justify-content: center;
+    text-align: center; font-weight: 700; font-size: 1.08rem;
+  }
+  #caption.hint { color: var(--accent); }
+
+  /* The pour button and the scene never scroll or zoom under a finger; a slip
+     sideways while holding must not turn into a pan (lesson from Dine-O Dash). */
+  #stage { position: relative; flex: 1 1 auto; min-height: 170px; touch-action: none; }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #scene text { font-family: system-ui, sans-serif; fill: var(--muted); }
+
+  #controls { display: flex; flex-direction: column; gap: 12px; }
+  /* Space between the angle control and the pour button: a thumb heading for
+     one must not clip the other (spec §6, prototype question 3). */
+  #angleCtl { padding: 4px 8px; border-radius: 14px; border: 2px solid transparent; touch-action: none; }
+  #angleCtl.pulse { animation: pulse 0.9s ease-in-out infinite; border-color: var(--accent); }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(242, 182, 50, 0.35); } }
+  .ctl-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; }
+  .ctl-head output { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin: 0;
+    background: transparent; touch-action: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 10px; border-radius: 5px; background: var(--panel-2); border: 1px solid var(--line);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 10px; border-radius: 5px; background: var(--panel-2); border: 1px solid var(--line);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 40px; height: 40px; margin-top: -16px; border-radius: 50%;
+    background: var(--ink); border: 4px solid var(--accent);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--ink); border: 4px solid var(--accent);
+  }
+  .ticks { position: relative; height: 1.1em; font-size: 0.75rem; color: var(--muted); }
+  .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .ticks span:first-child { transform: none; }
+
+  #angleToggle {
+    width: 100%; min-height: 52px; padding: 0; display: flex; overflow: hidden; border-radius: 14px;
+  }
+  #angleToggle .opt {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-weight: 700; color: var(--muted);
+  }
+  /* The selected side is marked by fill, a tick and bold text, not hue alone. */
+  #angleToggle .opt::before { content: "○"; font-weight: 400; }
+  #angleToggle[aria-checked="false"] .opt-up,
+  #angleToggle[aria-checked="true"] .opt-tilt { background: var(--ink); color: var(--bg); }
+  #angleToggle[aria-checked="false"] .opt-up::before,
+  #angleToggle[aria-checked="true"] .opt-tilt::before { content: "●"; }
+
+  #pourRow { display: flex; gap: 10px; align-items: stretch; }
+  #pour {
+    flex: 1; min-height: 76px; font-size: 1.25rem; font-weight: 800;
+    background: var(--accent); color: var(--accent-ink); border-color: transparent;
+    touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  #pour[aria-pressed="true"] { background: #ffd877; box-shadow: inset 0 5px 0 rgba(0, 0, 0, 0.28); }
+  #pour .sub { display: block; font-size: 0.78rem; font-weight: 600; opacity: 0.8; }
+  /* The pour pad: big enough for a thumb to rest on and slide. The track at
+     its right edge shows the glass angle (top = upright), so the thumb and the
+     glass report the same thing. */
+  #pour { position: relative; min-height: 112px; display: flex; align-items: center; justify-content: center; padding: 0 56px 0 16px; }
+  #pour.cue { box-shadow: 0 0 0 4px var(--ink); }
+  #pour:has(#padTrack[hidden]) { padding: 0 16px; }
+  #padTrack { position: absolute; right: 16px; top: 14px; bottom: 14px; width: 8px; border-radius: 4px; background: rgba(27, 21, 16, 0.25); }
+  #padThumb { position: absolute; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--accent-ink); border: 3px solid #fff6dc; }
+  #padTrack::before { content: "▲"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); font-size: 9px; opacity: 0.6; }
+  .tapmode {
+    width: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; text-align: center; font-size: 0.72rem; line-height: 1.15; color: var(--muted);
+    border: 2px solid var(--line); border-radius: 12px; padding: 4px; cursor: pointer;
+  }
+  .tapmode input { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); }
+
+  #actions, #ghostActions { display: flex; gap: 10px; }
+  #actions button, #ghostActions button { flex: 1; min-height: 48px; font-weight: 700; }
+  /* During the demo the controls are locked but must stay fully visible: the
+     point is to watch them move. */
+  #controls.demo #pour, #controls.demo #angleToggle, #controls.demo #angleSlider { opacity: 1; pointer-events: none; }
+  #serve:not(:disabled) { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  #transcriptBox { font-size: 0.85rem; color: var(--muted); }
+  #transcript { margin: 4px 0 0; padding-left: 1.4em; }
+  #transcript li[aria-current="step"] { color: var(--ink); font-weight: 700; }
+  #transcript li[aria-current="step"]::marker { content: "▶ "; }
+  .fineprint { font-size: 0.72rem; color: var(--muted); margin: 4px 0 0; }
+
+  /* Result sheet: slides over the controls, leaves the glass in view. */
+  #result {
+    position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+    width: min(520px, 100%); max-height: 72dvh; overflow-y: auto; overscroll-behavior: contain;
+    background: var(--panel); border: 2px solid var(--line); border-bottom: 0;
+    border-radius: 18px 18px 0 0; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.5);
+    padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    -webkit-user-select: text; user-select: text;
+  }
+  #result h2 { margin: 0 0 8px; font-size: 1.35rem; }
+  .chk-head { margin: 4px 0 4px; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .checks { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .checks.two { grid-template-columns: repeat(2, 1fr); }
+  .checks li { border: 2px solid var(--line); border-radius: 10px; padding: 6px; font-size: 0.82rem; text-align: center; }
+  .checks li b { display: block; font-size: 1.0rem; }
+  .checks li.ok { border-color: var(--good); }
+  .checks li.miss { border-color: var(--bad); border-style: dashed; }
+  #fbPrimary { margin: 0 0 6px; font-size: 1.02rem; }
+  #fbSecondary { margin: 0 0 6px; color: var(--muted); font-size: 0.92rem; }
+  #suggest { margin: 0 0 6px; color: var(--accent); font-weight: 600; }
+  #resultActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  #resultActions button { flex: 1 1 30%; min-height: 48px; font-weight: 700; }
+  #resultActions button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+
+  /* Debug panel (?debug=1). Plain and dense on purpose. */
+  #debugToggle { position: relative; z-index: 20; padding: 0; margin-right: auto; }
+  #debug {
+    position: fixed; z-index: 19; top: 0; left: 0; width: min(380px, 100vw); max-height: 85dvh;
+    overflow-y: auto; overscroll-behavior: contain; padding: 64px 12px 12px;
+    background: rgba(15, 11, 8, 0.94); border: 1px solid var(--line); border-radius: 0 0 12px 0;
+    font: 12px/1.35 ui-monospace, Menlo, monospace; -webkit-user-select: text; user-select: text;
+  }
+  #debug h3 { font: 700 12px/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 12px 0 6px; }
+  #debug pre { margin: 0; white-space: pre-wrap; }
+  #debug .grid { display: grid; grid-template-columns: 1fr 88px; gap: 4px 8px; align-items: center; }
+  #debug input, #debug select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; width: 100%; -webkit-user-select: text; user-select: text; }
+  #debug button { min-height: 36px; font-size: 12px; padding: 0 10px; margin: 4px 4px 0 0; }
+  #debug .warn { color: var(--accent); }
+
+  /* Landscape on a phone: glass on the left, everything you touch on the right. */
+  @media (orientation: landscape) and (max-height: 560px) {
+    #app {
+      max-width: none; display: grid; column-gap: 20px; row-gap: 4px;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
+      grid-template-rows: auto auto minmax(0, 1fr);
+    }
+    header { grid-column: 1 / -1; }
+    #stage { grid-column: 1; grid-row: 2 / 4; }
+    #caption { grid-column: 2; grid-row: 2; min-height: 2.4em; }
+    #controls { grid-column: 2; grid-row: 3; overflow-y: auto; gap: 8px; }
+    #pour { min-height: 84px; }
+  }
+
+  /* Reduced motion: no pulse, no bubbles, no wobble (the renderer checks the
+     same query). The pulse becomes a static dashed ring so the cue survives. */
+  @media (prefers-reduced-motion: reduce) {
+    #angleCtl.pulse, #pour.cue { animation: none; border-style: dashed; box-shadow: none; }
+    #pour.cue { outline: 4px dashed var(--ink); outline-offset: 2px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">Perfect Pour<small>Pilsner · v2.1</small></div>
+    <button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" aria-label="Debug panel" hidden>⚙</button>
+    <nav id="modes" aria-label="Mode">
+      <button type="button" data-mode="watch">Watch</button>
+      <button type="button" data-mode="guided">Guided</button>
+      <button type="button" data-mode="solo">Solo</button>
+    </nav>
+  </header>
+
+  <p id="caption"></p>
+
+  <div id="stage">
+    <svg id="scene" viewBox="0 -24 340 424" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="sceneTitle sceneDesc">
+      <title id="sceneTitle">Pilsner glass under the tap.</title>
+      <desc id="sceneDesc">Level and head are announced as you pour.</desc>
+      <defs>
+        <clipPath id="glassClip" clipPathUnits="userSpaceOnUse"><polygon id="clipPoly" points="0,0"/></clipPath>
+        <linearGradient id="beerGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f7c948"/>
+          <stop offset="0.6" stop-color="#e7a526"/>
+          <stop offset="1" stop-color="#c9811a"/>
+        </linearGradient>
+        <pattern id="foamPat" width="9" height="8" patternUnits="userSpaceOnUse">
+          <circle cx="2.5" cy="2.5" r="1.7" fill="#e9dcbd"/>
+          <circle cx="7" cy="6" r="1.2" fill="#ece1c6"/>
+        </pattern>
+        <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#f6eedf" stroke-width="1.4"/>
+        </pattern>
+      </defs>
+
+      <!-- Tap. The handle follows sim flow, so the 150 ms ramp is visible. -->
+      <g id="tap">
+        <rect x="220" y="30" width="130" height="14" rx="4" fill="#8d8a86"/>
+        <rect x="196" y="26" width="28" height="36" rx="7" fill="#b9b6b1"/>
+        <rect x="205" y="60" width="10" height="12" rx="2" fill="#9c9994"/>
+        <g id="handle">
+          <rect x="203" y="-14" width="14" height="42" rx="6" fill="#3b2a1c" stroke="#6b5139" stroke-width="2"/>
+          <text x="210" y="12" text-anchor="middle" font-size="7" font-weight="700" transform="rotate(-90 210 7)" style="fill:#e9c675">PILS</text>
+        </g>
+      </g>
+
+      <g clip-path="url(#glassClip)">
+        <path id="foamFill" fill="#fbf4e2"/>
+        <path id="foamTex" fill="url(#foamPat)"/>
+        <path id="beerFill" fill="url(#beerGrad)"/>
+        <g id="bubbles" fill="#fff6d2" fill-opacity="0.7"></g>
+      </g>
+      <path id="stream" fill="none" stroke="#f0b53a" stroke-linecap="round" stroke-linejoin="round"/>
+      <g id="splash" fill="#fbf4e2"></g>
+      <path id="spill" fill="none" stroke="#fbf4e2" stroke-width="4" stroke-linecap="round"/>
+
+      <g id="glass">
+        <path id="glassBody" fill="rgba(210,228,255,0.07)" stroke="rgba(230,240,255,0.8)" stroke-width="2.5" stroke-linejoin="round"/>
+        <path id="glassInner" fill="none" stroke="rgba(230,240,255,0.35)" stroke-width="1"/>
+        <path d="M-33,-205 L-21,-34" stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-linecap="round"/>
+        <!-- Target zone: hatched band plus a dashed line plus a label, so it
+             does not rely on colour (spec §6). -->
+        <polygon id="zoneBand" fill="url(#hatch)" fill-opacity="0.45" stroke="#f6eedf" stroke-width="0.8" stroke-dasharray="2 2"/>
+        <line id="fillLine" stroke="#f6eedf" stroke-width="1.6" stroke-dasharray="5 3"/>
+        <text id="fillLabel" font-size="10" font-weight="700" text-anchor="end">LINE</text>
+        <!-- Training mark only: real glassware has no such line. Shown in Watch
+             and Guided so the learner links "about half to two-thirds" to what
+             they see; gone in Solo, where they judge it by eye. -->
+        <g id="bringMark">
+          <polygon id="bringBand" fill="rgba(159,220,138,0.16)" stroke="#9fdc8a" stroke-width="1" stroke-dasharray="1 2"/>
+          <text id="bringLabel" font-size="9" font-weight="700" style="fill:#9fdc8a">BRING UP</text>
+        </g>
+      </g>
+
+      <!-- Glass dial. Fixed in the corner the glass never reaches, so it is
+           an instrument you learn once rather than a moving target. The needle
+           is the glass angle. The highlight is the stage the BEER is in (see
+           stageAt); it changes only when the level crosses the BRING UP mark,
+           never drifts. Solo shows the needle alone. -->
+      <g id="dial" aria-hidden="true">
+        <path id="dialTrack" fill="none" stroke="rgba(246,238,223,0.18)" stroke-width="9" stroke-linecap="round"/>
+        <path id="dialHi" fill="none" stroke="#9fdc8a" stroke-opacity="0.85" stroke-width="9"/>
+        <path id="dialHiEdge" fill="none" stroke="#f6eedf" stroke-width="1.2" stroke-dasharray="3 2"/>
+        <path id="dialTicks" fill="none" stroke="rgba(246,238,223,0.6)" stroke-width="1.5"/>
+        <line id="dialNeedle" stroke="#f6eedf" stroke-width="3" stroke-linecap="round"/>
+        <circle id="dialHub" r="4" fill="#f6eedf"/>
+        <text id="dialUp" font-size="8" font-weight="700" text-anchor="middle">UP</text>
+        <text id="dialTilt" font-size="8" font-weight="700">45°</text>
+        <text id="dialLabel" font-size="9" text-anchor="end">GLASS</text>
+        <text id="dialStage" font-size="10" font-weight="700" text-anchor="end" style="fill:#f6eedf"></text>
+      </g>
+
+      <!-- Head gauge: the head band is a thickness, not a place on the glass,
+           so it gets its own scale. Top-left is the one corner the glass never
+           reaches at any tilt. -->
+      <g id="gauge">
+        <text x="23" y="30" text-anchor="middle" font-size="10" font-weight="700">HEAD</text>
+        <rect x="14" y="38" width="18" height="140" rx="3" fill="rgba(255,255,255,0.04)" stroke="#5c4a37" stroke-width="1.5"/>
+        <rect id="gaugeBar" x="16" width="14" rx="2" fill="#fbf4e2"/>
+        <rect id="gaugeBarTex" x="16" width="14" fill="url(#foamPat)"/>
+        <rect id="gaugeBand" x="10" width="26" fill="url(#hatch)" fill-opacity="0.55" stroke="#f6eedf" stroke-width="1.2"/>
+        <text id="gaugeHi" x="40" font-size="9"></text>
+        <text id="gaugeLo" x="40" font-size="9"></text>
+        <text id="gaugeVal" x="10" y="196" font-size="12" font-weight="700" style="fill:#f6eedf"></text>
+        <text id="gaugeState" x="10" y="209" font-size="9"></text>
+      </g>
+      <text id="levelText" x="10" y="228" font-size="11"></text>
+    </svg>
+  </div>
+
+  <section id="controls" aria-label="Pour controls">
+    <div id="angleCtl">
+      <div id="sliderWrap">
+        <div class="ctl-head"><label for="angleSlider">Glass angle</label><output id="angleOut" for="angleSlider">0°</output></div>
+        <input type="range" id="angleSlider" min="0" max="60" step="1" value="0" aria-valuetext="0 degrees, upright">
+        <div class="ticks" aria-hidden="true"><span style="left:0">Upright 0°</span><span style="left:75%">45°</span><span style="left:100%;transform:translateX(-100%)">60°</span></div>
+      </div>
+      <div id="toggleWrap" hidden>
+        <button type="button" id="angleToggle" role="switch" aria-checked="false" aria-label="Tilt the glass to 45 degrees">
+          <span class="opt opt-up" aria-hidden="true">Upright</span>
+          <span class="opt opt-tilt" aria-hidden="true">Tilted ~45°</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="pourRow">
+      <button type="button" id="pour" aria-pressed="false" aria-describedby="pourHelp">
+        <span class="padText"><span id="pourText">Hold to pour</span><span class="sub" id="pourSub"></span></span>
+        <span id="padTrack" aria-hidden="true"><span id="padThumb"></span></span>
+      </button>
+      <label class="tapmode"><input type="checkbox" id="tapMode"><span>Tap to start/stop pouring</span></label>
+    </div>
+    <p id="pourHelp" class="sr-only">Hold the button, or hold Space or Enter, to pour. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass and to bring it upright.</p>
+
+    <div id="actions">
+      <button type="button" id="serve" disabled>Serve<kbd>S</kbd></button>
+      <button type="button" id="restart">Restart<kbd>R</kbd></button>
+    </div>
+
+    <div id="ghostActions" hidden>
+      <button type="button" id="replay">Replay</button>
+      <button type="button" id="skip">Skip to Guided</button>
+    </div>
+    <div id="transcriptBox" hidden>
+      <span id="transcriptTitle">Steps in this demo</span>
+      <ol id="transcript" aria-labelledby="transcriptTitle"></ol>
+      <p class="fineprint">BRING UP is a training mark; real glasses don't have one. On the job, judge it by eye: about half to two-thirds full.</p>
+    </div>
+  </section>
+</div>
+
+<section id="result" aria-labelledby="resultTitle" hidden>
+  <h2 id="resultTitle"></h2>
+  <h3 class="chk-head">Technique</h3>
+  <ul id="checksTech" class="checks two"></ul>
+  <h3 class="chk-head">The pour</h3>
+  <ul id="checks" class="checks"></ul>
+  <p id="fbPrimary"></p>
+  <p id="fbSecondary" hidden></p>
+  <p id="suggest" hidden></p>
+  <p class="fineprint">Prototype: the steps follow common beer-service guidance (see docs/pour-procedure.md); the exact numbers are placeholders, not yet checked first-hand.</p>
+  <div id="resultActions"></div>
+</section>
+
+<div id="live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<aside id="debug" aria-label="Debug panel" hidden>
+  <div class="warn">verified: false · all constants are placeholders</div>
+  <h3>Angle control</h3>
+  <select id="dbgVariant" aria-label="Angle control variant">
+    <option value="staged">A: staged (swipe up to straighten)</option>
+    <option value="continuous">B: continuous (slide to tilt)</option>
+    <option value="slider">v1 fallback: slider</option>
+    <option value="toggle">v1 fallback: switch only</option>
+  </select>
+  <h3>Live state</h3>
+  <pre id="dbgState"></pre>
+  <h3>Pilsner constants</h3>
+  <div class="grid" id="dbgCfg"></div>
+  <h3>Control feel</h3>
+  <div class="grid" id="dbgCtl"></div>
+  <button type="button" id="dbgReset">Reset constants</button>
+  <button type="button" id="dbgGhost">Run ghost check</button>
+  <pre id="dbgGhostOut"></pre>
+  <h3>Pour log</h3>
+  <div id="dbgLogCount"></div>
+  <button type="button" id="dbgDownload">Download JSON</button>
+  <button type="button" id="dbgCopy">Copy JSON</button>
+  <button type="button" id="dbgClear">Clear log</button>
+</aside>
+
+<!-- The simulation. Pure: no DOM, no clock, no randomness, so a ghost replay or
+     a headless test gets bit-for-bit the same pour every time. test/sim.test.js
+     lifts this exact block out of the page and runs it under Node, which is why
+     it publishes onto globalThis instead of touching anything else. -->
+<script id="sim">
+(function (root) {
+  'use strict';
+
+  const HZ = 60;
+  const STEP = 1 / HZ;
+
+  // ---- Three kinds of number live here, and they are kept apart on purpose:
+  //   PHYSICAL  - geometry of the glass. Follows from the shape, not opinion.
+  //   SOURCED   - service guidance found in beer-service sources (see
+  //               docs/pour-procedure.md). Still marked unverified until
+  //               someone reads the sources directly.
+  //   GAME      - tolerances and rates picked for feel. Placeholders.
+  const PILSNER = {
+    verified: false,
+    // GAME: flow and foam model, tuned so the ghost lands mid-band.
+    flowRate: 0.12,          // glass volumes per second at full flow
+    k: 0.4,                  // foam conversion at full turbulence
+    d: 0.08, r: 0.3,         // head settle rate (only while pouring), share returned to liquid
+    turbAngle: 45,           // deg at which turbulence bottoms out
+    // SOURCED (approx.): "about 45°", "a head of about an inch", "straighten
+    // at half to two-thirds full". GAME: the exact bands around them.
+    fillLine: 0.95, fillTol: 0.04,          // level, as a share of glass height
+    headBand: [0.08, 0.16],                 // head height, share of glass height (~1 inch on a pint-size pilsner)
+    wasteTol: 0.02,
+    tiltThreshold: 35,                      // deg; at or above counts as "tilted"
+    straightenThreshold: 15,                // deg; at or below counts as "upright"
+    straightenWindow: [0.5, 0.67],          // level at which straightening should begin
+    // GAME: procedure rule. "Finish upright" means the tap closed upright
+    // after at least this much upright pouring, so a flick at the end does
+    // not count.
+    minUprightPour: 0.5,                    // s
+    // GAME: coaching zone shape (never scored on its own).
+    zoneTiltMin: 30,                        // deg, lower edge before straightening is due
+    zoneUprightBy: 0.72,                    // level by which the lower edge reaches upright
+    zoneSpillMargin: 0.02                   // volume kept between the beer and the lip
+  };
+
+  // PHYSICAL: the glass, as a trapezoid section of height 1 (bottom and top
+  // half-widths). Volume is the 2D section's area -- a deliberate
+  // simplification, used identically by the sim and the renderer so what you
+  // see is what is scored.
+  const GLASS = { hw0: 0.107, hw1: 0.177 };
+
+  // GAME: feel of the controls.
+  const CONTROL = {
+    flowRamp: 0.15,   // s for the tap to go fully open or closed
+    assistRate: 18,   // deg/s; staged straightening, fixed and not fill-aware (~2.5 s from 45°)
+    dragTau: 0.05,    // s; continuous pad, glass easing toward the thumb
+    sliderTau: 0.033, // s; v1 slider fallback
+    toggleRate: 150,  // deg/s; v1 switch fallback
+    tiltAngle: 45,    // what "Tilt" means
+    maxAngle: 60
+  };
+
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const rad = d => d * Math.PI / 180;
+
+  // ---- Geometry (PHYSICAL) ------------------------------------------------
+  // Frame: y up, origin at the inside bottom centre; tilting rotates the top
+  // toward +x. The renderer uses the same functions, so the drawn level and
+  // the scored level cannot disagree.
+  const AREA = GLASS.hw0 + GLASS.hw1;
+  const POLY = [[-GLASS.hw1, 1], [-GLASS.hw0, 0], [GLASS.hw0, 0], [GLASS.hw1, 1]];
+  const rot = (p, a) => {
+    const c = Math.cos(a), s = Math.sin(a);
+    return [p[0] * c + p[1] * s, -p[0] * s + p[1] * c];
+  };
+
+  // Area of the rotated glass section below the horizontal line y = h.
+  function areaBelow(pts, h) {
+    const out = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], q = pts[(i + 1) % pts.length];
+      const pin = p[1] <= h, qin = q[1] <= h;
+      if (pin) out.push(p);
+      if (pin !== qin) {
+        const t = (h - p[1]) / (q[1] - p[1]);
+        out.push([p[0] + t * (q[0] - p[0]), h]);
+      }
+    }
+    let a = 0;
+    for (let i = 0; i < out.length; i++) {
+      const p = out[i], q = out[(i + 1) % out.length];
+      a += p[0] * q[1] - q[0] * p[1];
+    }
+    return Math.abs(a) / 2;
+  }
+
+  // Share of the glass that holds liquid at this tilt before it reaches the
+  // lower lip. 1 upright; less as the glass tips.
+  function capacity(angleDeg) {
+    const a = rad(angleDeg);
+    const pts = POLY.map(p => rot(p, a));
+    const lip = Math.min(pts[0][1], pts[3][1]);
+    return areaBelow(pts, lip) / AREA;
+  }
+
+  // Height of the horizontal surface (in the frame above) that encloses this
+  // share of the glass at this tilt. The renderer draws with it.
+  function surfaceAt(volume, angleDeg) {
+    const a = rad(angleDeg);
+    const pts = POLY.map(p => rot(p, a));
+    let lo = Math.min(...pts.map(p => p[1])), hi = Math.max(...pts.map(p => p[1]));
+    const want = clamp(volume, 0, 1) * AREA;
+    for (let i = 0; i < 30; i++) {
+      const mid = (lo + hi) / 2;
+      if (areaBelow(pts, mid) < want) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  // Upright: the height a given share of the glass fills to, and back.
+  function heightOf(volume) {
+    const { hw0, hw1 } = GLASS, v = clamp(volume, 0, 1) * AREA, k = hw1 - hw0;
+    return k === 0 ? v / (2 * hw0) : (-2 * hw0 + Math.sqrt(4 * hw0 * hw0 + 4 * k * v)) / (2 * k);
+  }
+  function volumeOf(height) {
+    const { hw0, hw1 } = GLASS, h = clamp(height, 0, 1);
+    return (2 * hw0 * h + (hw1 - hw0) * h * h) / AREA;
+  }
+
+  // The steepest tilt that still holds this much beer (plus a margin).
+  function spillLimit(volume, margin = 0, maxAngle = CONTROL.maxAngle) {
+    if (capacity(maxAngle) >= volume + margin) return maxAngle;
+    if (capacity(0) < volume + margin) return 0;
+    let lo = 0, hi = maxAngle;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (capacity(mid) >= volume + margin) lo = mid; else hi = mid;
+    }
+    return lo;
+  }
+
+  const total = s => s.fill + s.foam;
+  const levelOf = s => heightOf(total(s));
+  const headOf = s => heightOf(total(s)) - heightOf(s.fill);
+
+  // ---- Coaching zone ----------------------------------------------------------
+  // v2 drew this as a moving band; v2.1 does not show it at all (playtest: a
+  // drifting target confused more than it helped). It survives only as the
+  // logged zoneShare metric, for comparing pours. Never scored. Upper edge is
+  // PHYSICAL (tip further and it spills). Lower edge follows the SOURCED
+  // advice (stay tilted until about half full, then come up gradually) with
+  // GAME numbers. Where the two cross, physics wins.
+  function zoneAt(s, cfg = PILSNER, ctl = CONTROL) {
+    const level = levelOf(s);
+    const hi = spillLimit(total(s), cfg.zoneSpillMargin, ctl.maxAngle);
+    const [w0] = cfg.straightenWindow;
+    let lo = level < w0 ? cfg.zoneTiltMin
+      : cfg.zoneTiltMin * (1 - clamp((level - w0) / (cfg.zoneUprightBy - w0), 0, 1));
+    lo = Math.min(lo, hi);
+    return { lo, hi };
+  }
+
+  // ---- Stage (what the gauge highlights) ---------------------------------------
+  // The beer decides the stage; the gauge only shows where the glass is
+  // against it. One trigger, and it is the SOURCED one: the level reaching the
+  // start of the half-to-two-thirds range. "Upright" is not a second fill
+  // number -- it lights when the glass itself is upright after that point.
+  function stageAt(s, cfg = PILSNER) {
+    if (levelOf(s) < cfg.straightenWindow[0]) return 'tilted';
+    if (s.opened && s.angle <= cfg.straightenThreshold) return 'upright';
+    return 'bringUp';
+  }
+
+  function initState() {
+    return {
+      tick: 0, elapsed: 0,
+      angle: 0, target: 0, assist: false,
+      flow: 0, fill: 0, foam: 0, waste: 0, tiltWaste: 0,
+      turb: 1, spill: 0, capacity: 1,
+      opened: false, pouring: false, pourTime: 0, uprightPour: 0,
+      startAngle: null,
+      straightenBegan: null,    // level when the glass first came below "tilted" while pouring
+      straightenFill: null,     // level when it first reached "upright" while pouring
+      closeAngle: null,         // angle when the tap last closed
+      zoneTicks: 0, flowTicks: 0
+    };
+  }
+
+  // input: { pour, target, variant, straighten }
+  //   variant 'staged'     - straighten (edge) starts a fixed-rate move to upright
+  //   variant 'continuous' - the glass eases toward target (the thumb)
+  //   variant 'slider' / 'toggle' - v1 controls, kept as fallbacks
+  function step(s, input, dt = STEP, cfg = PILSNER, ctl = CONTROL) {
+    const n = Object.assign({}, s);
+
+    if (input.pour && !n.opened) { n.opened = true; n.startAngle = s.angle; }
+    if (!input.pour && s.pouring) n.closeAngle = s.angle;
+    n.pouring = !!input.pour;
+
+    const ramp = dt / ctl.flowRamp;
+    n.flow = input.pour ? Math.min(1, n.flow + ramp) : Math.max(0, n.flow - ramp);
+
+    // The glass. Staged: once straightening starts it runs at a fixed rate
+    // to upright; when to start is the learner's call, and the rate does not
+    // adapt to the fill, so starting early or late still shows.
+    const target = clamp(input.target, 0, ctl.maxAngle);
+    n.target = target;
+    if (input.variant === 'staged') {
+      if (input.straighten && !n.assist && n.opened) n.assist = true;
+      if (n.assist) n.angle = Math.max(0, n.angle - ctl.assistRate * dt);
+      else n.angle += (target - n.angle) * (1 - Math.exp(-dt / ctl.dragTau));
+    } else if (input.variant === 'toggle') {
+      const diff = target - n.angle, max = ctl.toggleRate * dt;
+      n.angle = Math.abs(diff) <= max ? target : n.angle + Math.sign(diff) * max;
+    } else {
+      const tau = input.variant === 'slider' ? ctl.sliderTau : ctl.dragTau;
+      n.angle += (target - n.angle) * (1 - Math.exp(-dt / tau));
+    }
+    if (Math.abs(n.angle - (n.assist ? 0 : target)) < 0.05) n.angle = n.assist ? 0 : target;
+
+    const inflow = n.flow * cfg.flowRate * dt;
+    const turb = clamp(0.15 + 0.85 * (1 - n.angle / cfg.turbAngle), 0.15, 1);
+    const foamShare = turb * cfg.k;
+    n.fill += inflow * (1 - foamShare);
+    n.foam += inflow * foamShare;
+    // The head settles while beer is going in and holds once the tap is shut,
+    // so how long the player takes to press Serve cannot change the verdict.
+    if (n.flow > 0) {
+      const settle = n.foam * cfg.d * dt;
+      n.foam -= settle;
+      n.fill += settle * cfg.r;
+    }
+
+    // Spill: anything above what this tilt can hold runs over the lip, head
+    // first. Tilted spills are tracked apart from overpouring an upright glass.
+    n.capacity = capacity(n.angle);
+    n.spill = 0;
+    const excess = n.fill + n.foam - n.capacity;
+    if (excess > 0) {
+      const fromFoam = Math.min(n.foam, excess);
+      n.foam -= fromFoam;
+      n.fill -= excess - fromFoam;
+      n.waste += excess;
+      if (n.angle > cfg.straightenThreshold) n.tiltWaste += excess;
+      n.spill = excess;
+    }
+
+    if (input.pour) n.pourTime += dt;
+    if (n.flow > 0) {
+      n.flowTicks++;
+      const z = zoneAt(n, cfg, ctl);
+      if (n.angle >= z.lo - 2 && n.angle <= z.hi + 2) n.zoneTicks++;
+      if (n.angle <= cfg.straightenThreshold) n.uprightPour += dt;
+      // Straightening "began" once the glass has come up a few degrees from
+      // where the pour opened -- the moment of the decision, not the moment
+      // it crossed a threshold half a second later.
+      if (n.straightenBegan === null && n.startAngle !== null && n.startAngle >= cfg.tiltThreshold &&
+          n.angle < Math.max(cfg.tiltThreshold, n.startAngle - 5)) n.straightenBegan = levelOf(n);
+      if (n.straightenFill === null && n.angle <= cfg.straightenThreshold) n.straightenFill = levelOf(n);
+    }
+
+    n.turb = turb;
+    n.tick = s.tick + 1;
+    n.elapsed = n.tick * dt;
+    return n;
+  }
+
+  const canServe = s => s.opened && s.flow === 0;
+
+  // ---- Evaluation: procedure + outcome -------------------------------------
+  // Procedure is the two steps a learner can plainly get wrong: tilt before
+  // opening, finish upright. Straightening *timing* is not a pass/fail rule;
+  // it shows up through the head it produces, and the feedback names it.
+  function evaluate(s, cfg = PILSNER) {
+    const level = levelOf(s), head = headOf(s);
+    const [b0, b1] = cfg.headBand;
+    const [w0, w1] = cfg.straightenWindow;
+    const EPS = 1e-9;
+    const procedure = {
+      tilted: s.startAngle !== null && s.startAngle >= cfg.tiltThreshold,
+      upright: s.closeAngle !== null && s.closeAngle <= cfg.straightenThreshold &&
+        s.uprightPour >= cfg.minUprightPour - EPS
+    };
+    const checks = {
+      head: head >= b0 - EPS && head <= b1 + EPS,
+      total: level >= cfg.fillLine - cfg.fillTol - EPS && level <= cfg.fillLine + EPS,
+      waste: s.waste <= cfg.wasteTol + EPS
+    };
+    const techniqueOk = procedure.tilted && procedure.upright;
+    const pourOk = checks.head && checks.total && checks.waste;
+    const pass = techniqueOk && pourOk;
+    const began = s.straightenBegan;
+    const causes = [];
+    if (!pass) {
+      if (!procedure.tilted) causes.push('upright');
+      if (!procedure.upright) causes.push('notUpright');
+      if (!checks.waste) causes.push(s.tiltWaste >= s.waste / 2 ? 'tiltSpill' : 'overflow');
+      if (head > b1 && began !== null && began < w0) causes.push('early');
+      if (head < b0 && (began === null || began > w1)) causes.push('stayedTilted');
+      if (level < cfg.fillLine - cfg.fillTol) causes.push('short');
+      if (checks.waste && level > cfg.fillLine + EPS) causes.push('overLine');
+      if (head > b1 && !causes.includes('early')) causes.push('headHigh');
+      if (head < b0 && !causes.includes('stayedTilted')) causes.push('headLow');
+    }
+    return {
+      pass, procedure, checks, techniqueOk, pourOk, causes,
+      primary: pass ? 'pass' : (causes[0] || 'headHigh'),
+      secondary: pass ? null : (causes[1] || null),
+      metrics: {
+        startAngle: s.startAngle, straightenBegan: began, straightenFill: s.straightenFill,
+        closeAngle: s.closeAngle, uprightPour: s.uprightPour,
+        finalLevel: level, finalHead: head,
+        finalFill: s.fill, finalFoam: s.foam, waste: s.waste, tiltWaste: s.tiltWaste,
+        pourDuration: s.pourTime,
+        zoneShare: s.flowTicks ? s.zoneTicks / s.flowTicks : null
+      }
+    };
+  }
+
+  // ---- Feedback copy ------------------------------------------------------
+  // Sentences that state beer behaviour as fact are marked CLAIM. They match
+  // the sim and the sources in docs/pour-procedure.md, which still need
+  // reading first-hand before anything ships.
+  const pct = v => Math.round(v * 100);
+  const COPY = {
+    upright: (m, cfg) => (m.startAngle <= cfg.straightenThreshold
+        ? `You opened the tap with the glass upright (${Math.round(m.startAngle)}°).`
+        : `You opened the tap before the glass was tilted (${Math.round(m.startAngle)}°).`) +
+      // CLAIM: an upright stream turns mostly to foam.
+      ' The stream dropped straight onto the beer and turned mostly to foam. Tilt first.',
+    notUpright: (m, cfg) => (m.closeAngle !== null && m.closeAngle > cfg.straightenThreshold
+        ? `You finished with the glass still tilted (${Math.round(m.closeAngle)}°).`
+        : 'You only came upright at the last moment.') +
+      // CLAIM: the head is built by finishing upright, into the middle.
+      ' Bring the glass upright and finish the pour into the middle to build the head.',
+    // CLAIM: a tilted glass spills sooner.
+    tiltSpill: m => `Beer ran over the lip while the glass was still tilted (${pct(m.waste)}% spilled). As it fills, bring it upright sooner.`,
+    // CLAIM: on overflow, the head spills before the beer.
+    overflow: m => `You kept pouring past the line and the glass overflowed (${pct(m.waste)}% spilled). The head spills first.`,
+    // CLAIM: pouring upright builds foam.
+    early: m => `You started straightening early, at about ${pct(m.straightenBegan)}% full. More of the pour landed upright, which builds foam, so the head came out too big (${pct(m.finalHead)}%).`,
+    stayedTilted: m => (m.straightenBegan === null
+        ? 'You stayed tilted almost to the end,'
+        : `You started straightening late, at about ${pct(m.straightenBegan)}% full,`) +
+      ` so there wasn't enough upright pouring to build a head (${pct(m.finalHead)}%). Start bringing it up around half to two-thirds full.`,
+    short: (m, cfg) => `You stopped short of the line (${pct(m.finalLevel)}% full; the line is at ${pct(cfg.fillLine)}%).`,
+    overLine: (m, cfg) => `You stopped above the line (${pct(m.finalLevel)}% full; the line is at ${pct(cfg.fillLine)}%). Let go a little sooner.`,
+    headHigh: (m, cfg) => `The head came out too big (${pct(m.finalHead)}%; aim for ${pct(cfg.headBand[0])}-${pct(cfg.headBand[1])}%). Start straightening a little later, or stop a little sooner.`,
+    headLow: (m, cfg) => `The head came out too small (${pct(m.finalHead)}%; aim for ${pct(cfg.headBand[0])}-${pct(cfg.headBand[1])}%). Start straightening a little sooner.`,
+    pass: m => m.straightenBegan === null
+      ? 'Clean pour.'
+      : `Clean pour. You tilted first, started straightening at about ${pct(m.straightenBegan)}% full and finished upright.`
+  };
+
+  function feedback(result, cfg = PILSNER) {
+    const m = result.metrics;
+    return {
+      primary: COPY[result.primary](m, cfg),
+      secondary: result.secondary ? COPY[result.secondary](m, cfg) : null
+    };
+  }
+
+  // ---- Guided hints ---------------------------------------------------------
+  // Advisory only; the caller keeps the at-most-once set.
+  const HINTS = {
+    tiltFirst: 'Tilt the glass before you open the tap.',
+    straighten: "The beer's past the mark. Start bringing it up.",
+    spillWarn: 'Nearly at the lip. Bring it up.',
+    nearLine: 'Close to the line.',
+    stop: 'Stop pouring.'
+  };
+  const NEAR_LINE_LEAD = 0.04;
+
+  function guidedHints(prev, s, fired, cfg = PILSNER) {
+    const due = [];
+    const level = levelOf(s);
+    const zone = cfg.fillLine - cfg.fillTol;
+    const tilted = s.angle > cfg.straightenThreshold;
+    const want = (id, cond) => { if (cond && !fired.has(id)) due.push(id); };
+    want('tiltFirst', s.opened && !prev.opened && s.startAngle < cfg.tiltThreshold);
+    want('straighten', s.flow > 0 && !s.assist && s.angle >= cfg.tiltThreshold &&
+      level >= (cfg.straightenWindow[0] + cfg.straightenWindow[1]) / 2);
+    want('spillWarn', s.flow > 0 && tilted && total(s) >= s.capacity - 0.03);
+    want('nearLine', s.flow > 0 && level >= zone - NEAR_LINE_LEAD);
+    want('stop', s.flow > 0 && headOf(s) >= cfg.headBand[0] && level >= zone);
+    return due;
+  }
+
+  // ---- Scripted timelines ---------------------------------------------------
+  // Keyframes { t, pour?, target?, ramp?, straighten?, caption?, serve? }.
+  // A target with ramp moves there linearly over that many seconds; the
+  // straighten flag is what the staged control reacts to. Both are set on the
+  // same keyframe, so one script drives either variant through the same pour.
+  const tickOf = t => Math.round(t * HZ);
+
+  function inputAt(timeline, tick) {
+    const out = { pour: false, target: 0, straighten: false, caption: null, stepIndex: -1, serve: false };
+    let from = 0;
+    for (const k of timeline) {
+      const k0 = tickOf(k.t);
+      if (k0 > tick) break;
+      if ('pour' in k) out.pour = k.pour;
+      if ('target' in k) {
+        if (k.ramp) {
+          const f = Math.min(1, (tick - k0) / (k.ramp * HZ));
+          out.target = from + (k.target - from) * f;
+        } else out.target = k.target;
+        from = k.target;
+      }
+      if (k.straighten) out.straighten = true;
+      if (k.caption) { out.caption = k.caption; out.stepIndex = k.stepIndex; }
+      if (k.serve) out.serve = true;
+    }
+    return out;
+  }
+
+  // The Watch demo. Rates follow CONTROL.assistRate so staged and continuous
+  // trace the same motion. CLAIM: captions state technique from the sources
+  // in docs/pour-procedure.md (45°, tap fully open, straighten at half to
+  // two-thirds, finish upright), not yet verified first-hand.
+  const GHOST_STRAIGHTEN = 5.4;
+  const GHOST_CLOSE = 9.4;
+  const GHOST = [
+    { t: 0, target: 0, caption: 'Tilt the glass to about 45°. The dial shows where the glass is.', stepIndex: 0 },
+    { t: 0.5, target: 45 },
+    { t: 1.6, pour: true, caption: 'Open the tap fully. Pour down the side.', stepIndex: 1 },
+    { t: GHOST_STRAIGHTEN, target: 0, ramp: 45 / CONTROL.assistRate, straighten: true,
+      caption: 'The beer reached the BRING UP mark: start bringing the glass upright.', stepIndex: 2 },
+    { t: GHOST_STRAIGHTEN + 45 / CONTROL.assistRate, caption: 'Finish upright to build the head.', stepIndex: 3 },
+    { t: GHOST_CLOSE, pour: false, caption: 'Stop at the line and serve.', stepIndex: 4 },
+    { t: GHOST_CLOSE + 1, serve: true }
+  ];
+  const GHOST_STEPS = GHOST.filter(k => k.caption).map(k => k.caption);
+
+  function runTimeline(timeline, variant = 'staged', cfg = PILSNER, ctl = CONTROL) {
+    let s = initState();
+    for (let tick = 0; tick < 30 * HZ; tick++) {
+      const inp = inputAt(timeline, tick);
+      if (inp.serve) break;
+      s = step(s, { pour: inp.pour, target: inp.target, straighten: inp.straighten, variant }, STEP, cfg, ctl);
+    }
+    const result = evaluate(s, cfg);
+    return { state: s, result, text: feedback(result, cfg) };
+  }
+
+  root.PourSim = {
+    HZ, STEP, PILSNER, CONTROL, GLASS,
+    capacity, surfaceAt, heightOf, volumeOf, spillLimit, zoneAt, stageAt, levelOf, headOf,
+    initState, step, total, canServe, evaluate, feedback, COPY,
+    HINTS, guidedHints, tickOf, inputAt, runTimeline, GHOST, GHOST_STEPS
+  };
+})(globalThis);
+</script>
+
+<!-- Everything below is presentation and input. It reads sim state and feeds
+     the sim input; it never changes fill, foam or waste itself. -->
+<script>
+(function () {
+  'use strict';
+  const { STEP, PILSNER, CONTROL, GLASS, initState, step, total, canServe, evaluate, feedback,
+    GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints, surfaceAt, zoneAt, stageAt, levelOf, headOf } = PourSim;
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const DEBUG = params.get('debug') === '1';
+  const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+  const cfg = PILSNER, ctl = CONTROL;
+  const VARIANTS = ['staged', 'continuous', 'slider', 'toggle'];
+  let variant = VARIANTS.includes(params.get('angle')) ? params.get('angle') : 'staged';
+
+  const setText = (el, v) => { if (el._t !== v) { el._t = v; el.textContent = v; } };
+  const setAttr = (el, k, v) => { v = String(v); if (el.getAttribute(k) !== v) el.setAttribute(k, v); };
+
+  // ==== Renderer ===========================================================
+  // render(state, view) draws one sim state and holds no sim logic. It draws
+  // the true angle: the beer surface comes from the sim's own geometry
+  // (surfaceAt), so the level you see is the level that is scored, at any
+  // tilt. (v1 drew the glass at 3/4 of the angle to hide that mismatch.)
+  const Renderer = (() => {
+    const SVGNS = 'http://www.w3.org/2000/svg';
+    const H = 215, base = 12, wall = 4;
+    const in0 = GLASS.hw0 * H, in1 = GLASS.hw1 * H;
+    const G = { tapX: 210, nozzleY: 72, rimY: 112 };
+    const RIM = -(base + H);
+    const INNER = [[-in1, RIM], [-in0, -base], [in0, -base], [in1, RIM]];
+    const WALLS = [[INNER[0], INNER[1]], [INNER[3], INNER[2]]];
+    const halfAt = h => in0 + (in1 - in0) * h;
+    const yAt = h => -base - h * H;
+    const GAUGE = { top: 38, bottom: 178, max: 0.25 };
+    const gaugeY = h => GAUGE.bottom - Math.min(h, GAUGE.max) / GAUGE.max * (GAUGE.bottom - GAUGE.top);
+    const DIAL = { x: 272, y: 384, r: 54 };
+    // Highlighted part of the dial for each stage (degrees). Display only.
+    const DIAL_HI = { tilted: [35, 55], bringUp: [0, 35], upright: [0, 15] };
+    const DIAL_TEXT = { tilted: 'KEEP IT TILTED', bringUp: 'BRING IT UP', upright: 'UPRIGHT' };
+
+    const E = {};
+    ['clipPoly', 'foamFill', 'foamTex', 'beerFill', 'bubbles', 'stream', 'splash', 'spill', 'glass',
+     'glassBody', 'glassInner', 'zoneBand', 'fillLine', 'fillLabel', 'handle', 'gaugeBar', 'gaugeBarTex',
+     'gaugeBand', 'gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText',
+     'dialTrack', 'dialHi', 'dialHiEdge', 'dialTicks', 'dialNeedle', 'dialHub', 'dialUp', 'dialTilt',
+     'dialLabel', 'dialStage', 'bringMark', 'bringBand', 'bringLabel']
+      .forEach(id => { E[id] = $(id); });
+
+    E.glassBody.setAttribute('d',
+      `M${-in1 - wall},${RIM - 2} L${-in0 - wall},-10 Q${-in0 - wall - 1},-4 -34,-2 L-34,0 L34,0 L34,-2 ` +
+      `Q${in0 + wall + 1},-4 ${in0 + wall},-10 L${in1 + wall},${RIM - 2} L${in1},${RIM} ` +
+      `L${in0},${-base} L${-in0},${-base} L${-in1},${RIM} Z`);
+    E.glassInner.setAttribute('d', `M${-in1},${RIM} L${in1},${RIM}`);
+
+    const bubbles = [];
+    for (let i = 0; i < 14; i++) {
+      const c = document.createElementNS(SVGNS, 'circle');
+      E.bubbles.appendChild(c);
+      bubbles.push({ el: c, x: -18 + ((i * 37) % 37), speed: 0.3 + ((i * 7) % 10) / 22, phase: (i * 0.137) % 1, r: 0.9 + (i % 3) * 0.45 });
+    }
+    const splash = [];
+    for (let i = 0; i < 5; i++) {
+      const c = document.createElementNS(SVGNS, 'circle');
+      E.splash.appendChild(c);
+      splash.push(c);
+    }
+
+    function geom(angle) {
+      const a = angle * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+      // The rim drifts toward the tap as the glass tilts, the way a hand keeps
+      // the opening under the spout so the stream lands on the lower wall.
+      const u = angle / 45;
+      const ax = G.tapX + 24 * u, ay = G.rimY + 10 * u;
+      const px = ax + RIM * s, py = ay - RIM * c;
+      const w = (x, y) => [px + x * c - y * s, py + x * s + y * c];
+      const origin = w(0, -base);
+      return { px, py, w, surfaceY: v => origin[1] - surfaceAt(v, angle) * H };
+    }
+
+    function surface(y, amp, phase, freq) {
+      let d = '';
+      for (let x = 0; x <= 340; x += 17) {
+        d += (x ? 'L' : 'M') + x + ',' + (y + amp * Math.sin(x * freq + phase)).toFixed(2);
+      }
+      return d + 'L340,400L0,400Z';
+    }
+
+    const dialPt = (deg, r) => {
+      const a = deg * Math.PI / 180;
+      return [DIAL.x + r * Math.sin(a), DIAL.y - r * Math.cos(a)];
+    };
+    const dialArc = (d0, d1, r) => {
+      const [x0, y0] = dialPt(d0, r), [x1, y1] = dialPt(d1, r);
+      return `M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
+    };
+    // The dial's fixed parts are drawn once.
+    E.dialTrack.setAttribute('d', dialArc(0, 60, DIAL.r));
+    {
+      const tk = deg => { const [x0, y0] = dialPt(deg, DIAL.r - 8), [x1, y1] = dialPt(deg, DIAL.r + 8);
+        return `M${x0.toFixed(1)},${y0.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)}`; };
+      E.dialTicks.setAttribute('d', tk(0) + tk(45));
+      const [ux, uy] = dialPt(0, DIAL.r + 16), [tx, ty] = dialPt(45, DIAL.r + 14);
+      E.dialUp.setAttribute('x', ux); E.dialUp.setAttribute('y', uy + 2);
+      E.dialTilt.setAttribute('x', tx); E.dialTilt.setAttribute('y', ty);
+      E.dialHub.setAttribute('cx', DIAL.x); E.dialHub.setAttribute('cy', DIAL.y);
+      E.dialLabel.setAttribute('x', DIAL.x - 10); E.dialLabel.setAttribute('y', DIAL.y + 2);
+      E.dialStage.setAttribute('x', DIAL.x - 10); E.dialStage.setAttribute('y', DIAL.y - 12);
+    }
+
+    function render(s, view) {
+      const calm = view.reducedMotion;
+      const t = s.elapsed;
+      const g = geom(s.angle);
+      const tot = s.fill + s.foam;
+
+      setAttr(E.clipPoly, 'points', INNER.map(p => g.w(p[0], p[1]).map(v => v.toFixed(2)).join(',')).join(' '));
+      setAttr(E.glass, 'transform', `translate(${g.px.toFixed(2)} ${g.py.toFixed(2)}) rotate(${s.angle.toFixed(2)})`);
+
+      const yBeer = g.surfaceY(s.fill), yTop = g.surfaceY(tot);
+      const wobble = calm ? 0 : 0.4 + 1.6 * s.flow * s.turb;
+      E.beerFill.setAttribute('d', s.fill > 0.002 ? surface(yBeer, wobble, t * 7, 0.07) : '');
+      const foamD = s.foam > 0.002 ? surface(yTop, 1.3, calm ? 0 : t * 1.2, 0.45) : '';
+      E.foamFill.setAttribute('d', foamD);
+      E.foamTex.setAttribute('d', foamD);
+
+      const bubblesOn = !calm && s.fill > 0.05;
+      for (const b of bubbles) {
+        if (!bubblesOn) { setAttr(b.el, 'r', 0); continue; }
+        const [bx, by] = g.w(b.x, -base - 3);
+        const travel = by - yBeer - 3;
+        if (travel < 8) { setAttr(b.el, 'r', 0); continue; }
+        const k = (t * b.speed + b.phase) % 1;
+        b.el.setAttribute('cx', (bx + Math.sin(t * 3 + b.phase * 9) * 0.8).toFixed(2));
+        b.el.setAttribute('cy', (by - k * travel).toFixed(2));
+        setAttr(b.el, 'r', b.r);
+      }
+
+      // Stream: straight down; if it meets a wall above the surface it runs
+      // down that wall -- the visible difference between tilted and upright.
+      let impact = null;
+      if (s.flow > 0.01) {
+        const nx = G.tapX, ny = G.nozzleY;
+        const L = g.w(-in1, RIM), R = g.w(in1, RIM);
+        const rimYAt = L[0] === R[0] ? L[1] : L[1] + (nx - L[0]) / (R[0] - L[0]) * (R[1] - L[1]);
+        let hit = null, seg = null;
+        for (const [a, b] of WALLS) {
+          const A = g.w(a[0], a[1]), B = g.w(b[0], b[1]);
+          if ((nx - A[0]) * (nx - B[0]) > 0 || A[0] === B[0]) continue;
+          const y = A[1] + (nx - A[0]) / (B[0] - A[0]) * (B[1] - A[1]);
+          if (y > rimYAt + 1 && (hit === null || y < hit)) { hit = y; seg = [A, B]; }
+        }
+        let d;
+        if (hit !== null && hit < yTop) {
+          const [A, B] = seg;
+          const k = Math.min(1, Math.max(0, (yTop - A[1]) / (B[1] - A[1])));
+          const ex = A[0] + k * (B[0] - A[0]), ey = A[1] + k * (B[1] - A[1]);
+          d = `M${nx},${ny} L${nx},${hit.toFixed(2)} L${ex.toFixed(2)},${ey.toFixed(2)}`;
+          impact = { x: ex, y: ey, direct: false };
+        } else {
+          d = `M${nx},${ny} L${nx},${yTop.toFixed(2)}`;
+          impact = { x: nx, y: yTop, direct: true };
+        }
+        E.stream.setAttribute('d', d);
+        setAttr(E.stream, 'stroke-width', (1.5 + 4 * s.flow).toFixed(2));
+      } else {
+        setAttr(E.stream, 'd', '');
+      }
+
+      const agit = impact && s.fill > 0.01 ? s.flow * s.turb * (impact.direct ? 1 : 0.5) : 0;
+      splash.forEach((c, i) => {
+        if (agit < 0.05) { setAttr(c, 'r', 0); return; }
+        const jx = calm ? 0 : Math.sin(t * 17 + i * 2.1) * 2;
+        c.setAttribute('cx', (impact.x + (i - 2) * 4 + jx).toFixed(2));
+        c.setAttribute('cy', (impact.y - 1 - (i % 2) * 2).toFixed(2));
+        c.setAttribute('r', (1.2 + 2.6 * agit * (1 - Math.abs(i - 2) / 3)).toFixed(2));
+      });
+
+      // Spill runs down the outside from whichever lip is lower.
+      if (s.spill > 0) {
+        const L = g.w(-in1 - wall, RIM - 2), R = g.w(in1 + wall, RIM - 2);
+        const lip = R[1] >= L[1] ? R : L, dir = lip === R ? 1 : -1;
+        E.spill.setAttribute('d', `M${lip[0].toFixed(1)},${lip[1].toFixed(1)} q${3 * dir},4 ${2 * dir},40`);
+      } else setAttr(E.spill, 'd', '');
+
+      // Fill line, printed on the glass so it tilts with it. Heights here are
+      // the same upright heights evaluate() scores against.
+      const zl = cfg.fillLine, z0 = cfg.fillLine - cfg.fillTol;
+      setAttr(E.zoneBand, 'points',
+        `${-halfAt(z0)},${yAt(z0)} ${halfAt(z0)},${yAt(z0)} ${halfAt(zl)},${yAt(zl)} ${-halfAt(zl)},${yAt(zl)}`);
+      setAttr(E.fillLine, 'x1', -halfAt(zl)); setAttr(E.fillLine, 'x2', halfAt(zl));
+      setAttr(E.fillLine, 'y1', yAt(zl)); setAttr(E.fillLine, 'y2', yAt(zl));
+      setAttr(E.fillLabel, 'x', -halfAt(zl) - wall - 4); setAttr(E.fillLabel, 'y', yAt(zl) + 4);
+
+      setAttr(E.handle, 'transform', `rotate(${(-30 * s.flow).toFixed(1)} 210 28)`);
+
+      // BRING UP training mark: the sourced half-to-two-thirds range, printed
+      // on the glass. Watch and Guided only.
+      E.bringMark.style.display = view.showMark ? '' : 'none';
+      if (view.showMark) {
+        const [m0, m1] = cfg.straightenWindow;
+        setAttr(E.bringBand, 'points',
+          `${-halfAt(m0)},${yAt(m0)} ${halfAt(m0)},${yAt(m0)} ${halfAt(m1)},${yAt(m1)} ${-halfAt(m1)},${yAt(m1)}`);
+        setAttr(E.bringLabel, 'x', (halfAt(m1) + wall + 4).toFixed(1));
+        setAttr(E.bringLabel, 'y', ((yAt(m0) + yAt(m1)) / 2 + 3).toFixed(1));
+      }
+
+      // Dial: needle = glass angle, always. Highlight + stage words only when
+      // coaching is on (Watch/Guided).
+      const [nx2, ny2] = dialPt(s.angle, DIAL.r + 6);
+      setAttr(E.dialNeedle, 'x1', DIAL.x); setAttr(E.dialNeedle, 'y1', DIAL.y);
+      setAttr(E.dialNeedle, 'x2', nx2.toFixed(1)); setAttr(E.dialNeedle, 'y2', ny2.toFixed(1));
+      if (view.stage) {
+        const [h0, h1] = DIAL_HI[view.stage];
+        setAttr(E.dialHi, 'd', dialArc(h0, h1, DIAL.r));
+        setAttr(E.dialHiEdge, 'd', dialArc(h0, h1, DIAL.r + 7));
+        setText(E.dialStage, DIAL_TEXT[view.stage]);
+      } else {
+        setAttr(E.dialHi, 'd', ''); setAttr(E.dialHiEdge, 'd', '');
+        setText(E.dialStage, '');
+      }
+
+      // Head gauge, in the same upright head height that is scored.
+      const head = headOf(s);
+      const [b0, b1] = cfg.headBand;
+      const gy = gaugeY(head);
+      setAttr(E.gaugeBar, 'y', gy.toFixed(2)); setAttr(E.gaugeBar, 'height', (GAUGE.bottom - gy).toFixed(2));
+      setAttr(E.gaugeBarTex, 'y', gy.toFixed(2)); setAttr(E.gaugeBarTex, 'height', (GAUGE.bottom - gy).toFixed(2));
+      setAttr(E.gaugeBand, 'y', gaugeY(b1)); setAttr(E.gaugeBand, 'height', gaugeY(b0) - gaugeY(b1));
+      setAttr(E.gaugeHi, 'y', gaugeY(b1) + 3); setText(E.gaugeHi, Math.round(b1 * 100) + '%');
+      setAttr(E.gaugeLo, 'y', gaugeY(b0) + 3); setText(E.gaugeLo, Math.round(b0 * 100) + '%');
+      setText(E.gaugeVal, Math.round(head * 100) + '%');
+      setText(E.gaugeState, head < b0 ? 'below band' : head > b1 ? 'above band' : 'in band');
+      setText(E.levelText, `Level ${Math.round(levelOf(s) * 100)}%`);
+    }
+
+    return { render };
+  })();
+
+  // ==== Input ==============================================================
+  // Pour flags stay separate (pointer, key, latch) so releasing one never
+  // cancels another mid-pour. `straighten` is the staged request; the sim
+  // ignores it until the tap has opened.
+  const input = { pointer: false, key: false, latch: false, target: 0, straighten: false };
+  let straightenVia = null;           // logged: which input started straightening
+  let activePointer = null, drag = null;
+  let tapMode = false;
+  let sim = initState();
+  let served = null;
+  let mode = 'watch';
+  const ghost = { pour: false, stepIndex: -1 };
+  let hintsFired = new Set();
+  let milestones = new Set();
+  let soloFailStreak = 0;
+
+  const pourBtn = $('pour'), slider = $('angleSlider'), toggle = $('angleToggle');
+  const locked = () => served !== null || mode === 'watch';
+  const pourWanted = () => served === null &&
+    (mode === 'watch' ? ghost.pour : (input.pointer || input.key || input.latch));
+  const usesPad = () => variant === 'staged' || variant === 'continuous';
+
+  function stopPour() {
+    input.pointer = input.key = input.latch = false;
+    drag = null;
+    if (activePointer !== null) {
+      try { pourBtn.releasePointerCapture(activePointer); } catch (_) { /* already gone */ }
+      activePointer = null;
+    }
+  }
+
+  function setTarget(v) {
+    input.target = Math.max(0, Math.min(ctl.maxAngle, Math.round(v * 10) / 10));
+  }
+  function requestStraighten(via) {
+    if (locked() || !sim.opened || sim.assist || input.straighten) return;
+    input.straighten = true;
+    straightenVia = via;
+  }
+
+  // Pad gestures. Thumb movement is measured from where it landed, with a
+  // dead zone, so resting a thumb does not nudge the glass.
+  const DEAD = 8, SWIPE = 28, DEG_PER_PX = 45 / 110;
+  pourBtn.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    if (locked()) return;
+    activePointer = e.pointerId;
+    try { pourBtn.setPointerCapture(e.pointerId); } catch (_) { /* pointer already released */ }
+    drag = { y0: e.clientY, angle0: input.target, moved: false };
+    if (!tapMode) input.pointer = true;
+  });
+  pourBtn.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== activePointer || locked()) return;
+    const dy = drag.y0 - e.clientY;                      // up is positive
+    if (Math.abs(dy) > DEAD) drag.moved = true;
+    if (variant === 'staged') {
+      if (dy > SWIPE) requestStraighten('swipe');
+    } else if (variant === 'continuous' && drag.moved) {
+      const eff = dy - Math.sign(dy) * DEAD;
+      setTarget(drag.angle0 - eff * DEG_PER_PX);
+      if (sim.opened && !straightenVia && input.target < cfg.tiltThreshold) straightenVia = 'slide';
+    }
+  });
+  const endPointer = e => {
+    if (e.pointerId !== activePointer) return;
+    if (tapMode && drag && !drag.moved && e.type === 'pointerup' && !locked()) input.latch = !input.latch;
+    input.pointer = false;
+    activePointer = null;
+    drag = null;
+  };
+  pourBtn.addEventListener('pointerup', endPointer);
+  pourBtn.addEventListener('pointercancel', endPointer);
+  pourBtn.addEventListener('lostpointercapture', endPointer);
+  pourBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+  // A click with no pointer press just before it came from assistive tech;
+  // those cannot hold, so it toggles. Pointerup counts as pointer activity
+  // too, or the click ending a long hold would latch the tap open.
+  let lastPointerAt = -Infinity;
+  const notePointer = () => { lastPointerAt = performance.now(); };
+  document.addEventListener('pointerdown', notePointer, true);
+  document.addEventListener('pointerup', notePointer, true);
+  const fromPointer = () => performance.now() - lastPointerAt < 1000;
+  pourBtn.addEventListener('click', () => { if (!fromPointer() && !locked()) input.latch = !input.latch; });
+
+  $('tapMode').addEventListener('change', e => { tapMode = e.target.checked; stopPour(); });
+
+  slider.addEventListener('input', () => { if (!locked()) setTarget(+slider.value); });
+
+  // The glass switch. Before the pour it tilts or levels the glass. During a
+  // staged pour it is the button version of the swipe; during a continuous
+  // pour it snaps the glass (the v1 behaviour, kept as a fallback).
+  toggle.addEventListener('click', () => {
+    if (locked()) return;
+    if (variant === 'staged' && sim.opened) { requestStraighten('button'); return; }
+    setTarget(input.target >= ctl.tiltAngle / 2 ? 0 : ctl.tiltAngle);
+    if (sim.opened && !straightenVia && input.target === 0) straightenVia = 'button';
+  });
+
+  function setVariant(v) {
+    variant = VARIANTS.includes(v) ? v : 'staged';
+    $('sliderWrap').hidden = variant !== 'slider';
+    $('toggleWrap').hidden = variant === 'slider';
+    // The thumb track only earns its place where the thumb sets the angle.
+    $('padTrack').hidden = variant !== 'continuous';
+    if (variant === 'toggle') setTarget(input.target >= ctl.tiltAngle / 2 ? ctl.tiltAngle : 0);
+    if (DEBUG) $('dbgVariant').value = variant;
+  }
+
+  const isTyping = el => el && (el.tagName === 'SELECT' || el.tagName === 'TEXTAREA' || el.isContentEditable ||
+    (el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox'));
+  const isOtherControl = el => el && el !== pourBtn &&
+    (el.tagName === 'BUTTON' || el.tagName === 'A' || el.tagName === 'SUMMARY' || (el.tagName === 'INPUT' && el.type === 'checkbox'));
+
+  window.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = document.activeElement;
+    if (isTyping(el)) return;
+    const k = e.key;
+    const arrow = k === 'ArrowLeft' || k === 'ArrowDown' || k === 'ArrowRight' || k === 'ArrowUp';
+    if (k === ' ' || k === 'Enter') {
+      if (isOtherControl(el)) return;
+      e.preventDefault();
+      if (e.repeat || locked()) return;
+      if (tapMode) input.latch = !input.latch; else input.key = true;
+    } else if (arrow && (variant === 'slider' || variant === 'continuous')) {
+      // Up straightens, matching the pad's slide-up.
+      e.preventDefault();
+      if (locked()) return;
+      // Continuous: Up/Left straighten, matching the pad's slide-up.
+      // v1 slider: Left/Down lower the value, as any range input does.
+      const lower = variant === 'continuous' ? (k === 'ArrowUp' || k === 'ArrowLeft') : (k === 'ArrowDown' || k === 'ArrowLeft');
+      setTarget(input.target + (lower ? -5 : 5));
+      if (sim.opened && !straightenVia && input.target < cfg.tiltThreshold) straightenVia = 'key';
+    } else if (arrow && variant === 'staged' && k === 'ArrowUp') {
+      e.preventDefault();
+      requestStraighten('key');
+    } else if (k === 't' || k === 'T') {
+      if (variant === 'slider') return;
+      e.preventDefault();
+      if (!locked()) toggle.click();
+    } else if ((k === 's' || k === 'S') && mode !== 'watch') {
+      e.preventDefault(); serve();
+    } else if (k === 'r' || k === 'R') {
+      e.preventDefault(); restart();
+    }
+  });
+
+  // Pointer clicks drop focus, so Space pours rather than re-pressing the
+  // button just clicked; keyboard activation keeps focus where it was.
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button');
+    if (b && b !== pourBtn && fromPointer() && !b.closest('#debug')) setTimeout(() => {
+      if (document.activeElement === b) b.blur();
+    }, 0);
+  });
+
+  window.addEventListener('keyup', e => {
+    if ((e.key === ' ' || e.key === 'Enter') && input.key) { input.key = false; e.preventDefault(); }
+  });
+
+  // Never leave the tap open behind the player's back.
+  window.addEventListener('blur', stopPour);
+  window.addEventListener('pagehide', stopPour);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopPour(); });
+
+  // ==== Speech and captions ================================================
+  const live = $('live');
+  let pending = [], flushTimer = null;
+  function announce(msg) {
+    pending.push(msg);
+    if (flushTimer) return;
+    live.textContent = '';
+    flushTimer = setTimeout(() => {
+      live.textContent = pending.join(' ');
+      pending = []; flushTimer = null;
+    }, 80);
+  }
+  function setCaption(text, kind) {
+    setText($('caption'), text || '');
+    $('caption').classList.toggle('hint', kind === 'hint');
+  }
+
+  // ==== Modes ==============================================================
+  const MODE_LABEL = { watch: 'Watch', guided: 'Guided', solo: 'Solo' };
+  const transcript = $('transcript');
+  GHOST_STEPS.forEach(text => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    transcript.appendChild(li);
+  });
+
+  function setMode(m) {
+    if (mode !== 'watch' && sim.opened && !served) Log.record(sim, null, false);
+    sim = initState();
+    mode = m;
+    document.querySelectorAll('#modes button').forEach(b => {
+      if (b.dataset.mode === m) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    });
+    const watching = m === 'watch';
+    $('actions').hidden = watching;
+    $('ghostActions').hidden = !watching;
+    $('transcriptBox').hidden = !watching;
+    $('controls').classList.toggle('demo', watching);
+    restart();
+    announce(`${MODE_LABEL[m]} mode.` + (watching ? ' A demo pour is playing.' : ''));
+  }
+  document.querySelectorAll('#modes button').forEach(b =>
+    b.addEventListener('click', () => setMode(b.dataset.mode)));
+  $('replay').addEventListener('click', () => { restart(); $('replay').focus(); });
+  $('skip').addEventListener('click', () => setMode('guided'));
+
+  const OPENING = {
+    watch: '',
+    guided: 'Guided: tilt the glass, then hold the pad to pour. Hints show up here.',
+    solo: 'Solo: no hints. Serve when it looks right.'
+  };
+
+  function restart() {
+    stopPour();
+    if (mode !== 'watch' && sim.opened && !served) Log.record(sim, null, false);
+    sim = initState();
+    served = null;
+    ghost.pour = false;
+    ghost.stepIndex = -1;
+    hintsFired = new Set();
+    milestones = new Set();
+    input.straighten = false;
+    straightenVia = null;
+    setTarget(0);
+    setCaption(OPENING[mode]);
+    $('angleCtl').classList.remove('pulse');
+    pourBtn.classList.remove('cue');
+    const focusWasInSheet = $('result').contains(document.activeElement);
+    $('result').hidden = true;
+    if (focusWasInSheet) (mode === 'watch' ? $('replay') : pourBtn).focus({ preventScroll: true });
+    [...transcript.children].forEach(li => li.removeAttribute('aria-current'));
+  }
+
+  function serve(fromGhost) {
+    if (served || !canServe(sim) || (mode === 'watch' && !fromGhost)) return;
+    stopPour();
+    $('angleCtl').classList.remove('pulse');
+    pourBtn.classList.remove('cue');
+    const r = evaluate(sim, cfg);
+    served = { result: r, text: feedback(r, cfg) };
+    if (mode === 'solo') soloFailStreak = r.pass ? 0 : soloFailStreak + 1;
+    if (mode !== 'watch') Log.record(sim, r, true);
+    showResult(r, served.text);
+  }
+  $('serve').addEventListener('click', () => serve(false));
+  $('restart').addEventListener('click', restart);
+
+  // ---- Result sheet ----
+  const pctOf = v => Math.round(v * 100);
+  function chip(ul, ok, big, line1, line2) {
+    const li = document.createElement('li');
+    li.className = ok ? 'ok' : 'miss';
+    const b = document.createElement('b');
+    b.textContent = `${ok ? '✓' : '✗'} ${big}`;
+    li.append(b, line1);
+    if (line2) li.append(document.createElement('br'), line2);
+    ul.appendChild(li);
+  }
+  function showResult(r, text) {
+    const m = r.metrics;
+    const [b0, b1] = cfg.headBand;
+    const demo = mode === 'watch';
+    // Technique is named first: it is what the training is for. Right
+    // technique with a slightly-off pour is a near miss, not a plain fail.
+    const title = r.pass ? (demo ? 'Demo pour: clean' : 'Clean pour')
+      : r.techniqueOk ? 'Good technique. Adjust the pour.' : 'Technique to fix';
+    setText($('resultTitle'), title);
+    setCaption(title);
+
+    const tech = $('checksTech'), ul = $('checks');
+    tech.textContent = ''; ul.textContent = '';
+    chip(tech, r.procedure.tilted, 'Tilted first',
+      m.startAngle === null ? 'never opened' : `opened at ${Math.round(m.startAngle)}°`);
+    chip(tech, r.procedure.upright, 'Finished upright',
+      m.closeAngle === null ? 'tap never closed' : `closed at ${Math.round(m.closeAngle)}°`);
+    chip(ul, r.checks.head, `${pctOf(m.finalHead)}%`, `Head: ${r.checks.head ? 'in range' : m.finalHead > b1 ? 'too big' : 'too small'}`,
+      `aim ${pctOf(b0)}–${pctOf(b1)}%`);
+    chip(ul, r.checks.total, `${pctOf(m.finalLevel)}%`,
+      `Level: ${r.checks.total ? 'in range' : m.finalLevel > cfg.fillLine ? 'too high' : 'too low'}`,
+      `aim ${pctOf(cfg.fillLine - cfg.fillTol)}–${pctOf(cfg.fillLine)}%`);
+    chip(ul, r.checks.waste, `${pctOf(m.waste)}%`, `Spill: ${r.checks.waste ? 'in range' : 'too much'}`, `max ${pctOf(cfg.wasteTol)}%`);
+
+    setText($('fbPrimary'), text.primary);
+    $('fbSecondary').hidden = !text.secondary;
+    setText($('fbSecondary'), text.secondary ? 'Also: ' + text.secondary : '');
+    const suggest = mode === 'solo' && !r.pass && soloFailStreak >= 3;
+    $('suggest').hidden = !suggest;
+    setText($('suggest'), suggest ? `${soloFailStreak} misses in a row. Guided mode shows hints and the angle zone, if you want them.` : '');
+
+    const again = () => { restart(); pourBtn.focus(); };
+    let actions;
+    if (demo) actions = [['Try it guided', () => setMode('guided')], ['Watch again', () => setMode('watch')]];
+    else if (mode === 'guided') actions = r.pass
+      ? [['Try solo', () => setMode('solo')], ['Pour again', again]]
+      : [['Try again', again], ['Watch again', () => setMode('watch')]];
+    else actions = r.pass
+      ? [['Pour again', again], ['Watch again', () => setMode('watch')]]
+      : [['Try again', again], ['Watch again', () => setMode('watch')], ['Guided again', () => setMode('guided')]];
+    const primaryIndex = suggest ? 2 : 0;
+    const host = $('resultActions');
+    host.textContent = '';
+    actions.forEach(([label, fn], i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (i === primaryIndex) b.className = 'primary';
+      b.addEventListener('click', fn);
+      host.appendChild(b);
+    });
+
+    $('result').hidden = false;
+    announce(`${title}. ${text.primary}${text.secondary ? ' Also: ' + text.secondary : ''}`);
+    host.children[primaryIndex].focus({ preventScroll: true });
+  }
+
+  // ---- Ghost ----
+  // The demo drives the same inputs a player would, including the
+  // straighten request, so each variant's controls visibly do the work.
+  function ghostTick() {
+    const inp = inputAt(GHOST, sim.tick);
+    if (inp.serve) { serve(true); return false; }
+    ghost.pour = inp.pour;
+    if (variant === 'toggle') setTarget(inp.straighten ? 0 : inp.target >= ctl.tiltAngle / 2 ? ctl.tiltAngle : 0);
+    else setTarget(inp.target);
+    input.straighten = inp.straighten;
+    if (inp.stepIndex !== ghost.stepIndex) {
+      ghost.stepIndex = inp.stepIndex;
+      setCaption(inp.caption);
+      announce(inp.caption);
+      [...transcript.children].forEach((li, i) => {
+        if (i === inp.stepIndex) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+      });
+    }
+    return true;
+  }
+
+  function tick() {
+    if (served) return;
+    if (mode === 'watch' && !ghostTick()) return;
+    const prev = sim;
+    sim = step(sim, { pour: pourWanted(), target: input.target, straighten: input.straighten, variant }, STEP, cfg, ctl);
+    // Keep the control's target in step with an assisted move, so a later
+    // drag or switch press starts from where the glass really is.
+    if (sim.assist) input.target = Math.round(sim.angle * 10) / 10;
+    if (mode === 'guided') guidedTick(prev);
+    milestoneTick();
+  }
+
+  function guidedTick(prev) {
+    for (const id of guidedHints(prev, sim, hintsFired, cfg)) {
+      hintsFired.add(id);
+      setCaption(HINTS[id], 'hint');
+      announce(HINTS[id]);
+      if (id === 'straighten' || id === 'spillWarn') {
+        (usesPad() ? pourBtn : $('angleCtl')).classList.add(usesPad() ? 'cue' : 'pulse');
+      }
+    }
+    if (sim.angle < cfg.tiltThreshold || sim.flow === 0) {
+      $('angleCtl').classList.remove('pulse');
+      pourBtn.classList.remove('cue');
+    }
+  }
+
+  function milestoneTick() {
+    const level = levelOf(sim);
+    for (const q of [0.25, 0.5, 0.75]) {
+      if (level >= q && !milestones.has(q)) { milestones.add(q); announce(`Level ${q * 100}%.`); }
+    }
+    const head = headOf(sim), [b0, b1] = cfg.headBand;
+    if (!milestones.has('head') && level > 0.5 && head >= b0 && head <= b1) {
+      milestones.add('head');
+      announce(`Head in band, ${pctOf(head)}%.`);
+    }
+  }
+
+  // ==== UI sync ============================================================
+  function valueText(deg) {
+    const d = Math.round(deg);
+    if (d >= cfg.tiltThreshold) return `${d} degrees, tilted`;
+    if (d <= cfg.straightenThreshold) return `${d} degrees, upright`;
+    return `${d} degrees, partly tilted`;
+  }
+
+  const SUB = {
+    staged: 'Swipe up to straighten',
+    continuous: 'Slide up to straighten, down to tilt',
+    slider: 'or hold Space / Enter',
+    toggle: 'or hold Space / Enter'
+  };
+
+  function syncUI() {
+    const pouring = pourWanted();
+    setAttr(pourBtn, 'aria-pressed', pouring);
+    setAttr(pourBtn, 'aria-disabled', locked());
+    setText($('pourText'), mode === 'watch' && !served ? (pouring ? 'Demo: pouring…' : 'Demo') :
+      locked() ? 'Locked' : pouring ? (tapMode || input.latch ? 'Tap to stop' : 'Pouring…') :
+      (tapMode ? 'Tap to pour' : 'Hold to pour'));
+    setText($('pourSub'), mode === 'watch' ? (variant === 'staged' && sim.assist ? 'Straightening…' : 'watch the controls')
+      : variant === 'staged' && sim.assist ? 'Straightening…' : SUB[variant]);
+    $('serve').disabled = locked() || !canServe(sim);
+    slider.disabled = locked();
+
+    // Pad track: top is upright, bottom is the steepest tilt.
+    $('padThumb').style.top = (100 * Math.min(1, sim.angle / ctl.maxAngle)).toFixed(1) + '%';
+
+    if (+slider.value !== Math.round(input.target)) slider.value = Math.round(input.target);
+    setAttr(slider, 'aria-valuetext', valueText(input.target));
+    setText($('angleOut'), Math.round(input.target) + '°');
+    const tiltedNow = variant === 'staged' && sim.assist ? false : input.target >= ctl.tiltAngle / 2;
+    setAttr(toggle, 'aria-checked', tiltedNow);
+    const toggleDead = locked() || (variant === 'staged' && sim.assist);
+    setAttr(toggle, 'aria-disabled', toggleDead);
+    setAttr(toggle, 'aria-label', variant === 'staged' && sim.opened && !sim.assist
+      ? 'Straighten the glass' : 'Tilt the glass to about 45 degrees');
+  }
+
+  // ==== Metrics log ========================================================
+  // One entry per pour, served or abandoned. v2 has its own key so its data
+  // never mixes with the v1 baseline's.
+  const Log = (() => {
+    const KEY = 'perfectPour.log.v2.1', CAP = 2000;
+    const session = Math.random().toString(36).slice(2, 8);
+    let attempt = 0;
+    const r4 = v => v === null || v === undefined ? null : Math.round(v * 1e4) / 1e4;
+    function read() {
+      try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (_) { return []; }
+    }
+    function write(list) {
+      try { localStorage.setItem(KEY, JSON.stringify(list.slice(-CAP))); return true; } catch (_) { return false; }
+    }
+    function record(state, result, wasServed) {
+      attempt++;
+      const m = evaluate(state, cfg).metrics;
+      const entry = {
+        v: 2.1, session, attempt, at: new Date().toISOString(),
+        mode, variant, tapMode, straightenVia,
+        orientation: innerWidth > innerHeight ? 'landscape' : 'portrait',
+        served: wasServed,
+        pass: result ? result.pass : null,
+        techniqueOk: result ? result.techniqueOk : null,
+        pourOk: result ? result.pourOk : null,
+        primary: result ? result.primary : null,
+        secondary: result ? result.secondary : null,
+        procedure: result ? Object.assign({}, result.procedure) : null,
+        checks: result ? Object.assign({}, result.checks) : null,
+        startAngle: r4(m.startAngle), straightenBegan: r4(m.straightenBegan), straightenFill: r4(m.straightenFill),
+        closeAngle: r4(m.closeAngle), uprightPour: r4(m.uprightPour),
+        finalLevel: r4(m.finalLevel), finalHead: r4(m.finalHead),
+        finalFill: r4(m.finalFill), finalFoam: r4(m.finalFoam), waste: r4(m.waste), tiltWaste: r4(m.tiltWaste),
+        pourDuration: r4(m.pourDuration), zoneShare: r4(m.zoneShare),
+        hints: mode === 'guided' ? [...hintsFired] : null,
+        config: Object.assign(JSON.parse(JSON.stringify(cfg)), { control: Object.assign({}, ctl) })
+      };
+      const list = read();
+      list.push(entry);
+      write(list);
+    }
+    return { read, record, clear: () => write([]), key: KEY };
+  })();
+
+  // ==== Debug panel (?debug=1) =============================================
+  const Debug = (() => {
+    if (!DEBUG) return { update() {} };
+    const panel = $('debug'), btn = $('debugToggle');
+    btn.hidden = false;
+    btn.addEventListener('click', () => {
+      panel.hidden = !panel.hidden;
+      btn.setAttribute('aria-expanded', String(!panel.hidden));
+    });
+    $('dbgVariant').addEventListener('change', e => { setVariant(e.target.value); restart(); });
+
+    const DEFAULTS = JSON.parse(JSON.stringify({ cfg, ctl }));
+    function fields(obj, host) {
+      host.textContent = '';
+      for (const key of Object.keys(obj)) {
+        const v = obj[key];
+        const parts = Array.isArray(v) ? v.map((_, i) => [key + '[' + i + ']', i]) : typeof v === 'number' ? [[key, null]] : [];
+        for (const [label, i] of parts) {
+          const lab = document.createElement('label');
+          lab.textContent = label;
+          const inp = document.createElement('input');
+          inp.type = 'number'; inp.step = 'any';
+          inp.value = i === null ? v : v[i];
+          inp.addEventListener('input', () => {
+            const n = parseFloat(inp.value);
+            if (!Number.isFinite(n)) return;
+            if (i === null) obj[key] = n; else obj[key][i] = n;
+          });
+          lab.htmlFor = inp.id = 'dbg-' + host.id + '-' + label.replace(/\W/g, '_');
+          host.append(lab, inp);
+        }
+      }
+    }
+    const build = () => { fields(cfg, $('dbgCfg')); fields(ctl, $('dbgCtl')); };
+    build();
+    $('dbgReset').addEventListener('click', () => {
+      for (const [k, v] of Object.entries(DEFAULTS.cfg)) cfg[k] = Array.isArray(v) ? v.slice() : v;
+      Object.assign(ctl, DEFAULTS.ctl);
+      build();
+    });
+    $('dbgDownload').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(Log.read(), null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `perfect-pour-v2-log-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    $('dbgCopy').addEventListener('click', async () => {
+      const json = JSON.stringify(Log.read(), null, 2);
+      try { await navigator.clipboard.writeText(json); setText($('dbgGhostOut'), 'Log copied.'); }
+      catch (_) { setText($('dbgGhostOut'), json); }
+    });
+    $('dbgClear').addEventListener('click', () => {
+      if (confirm('Delete every logged pour on this device?')) Log.clear();
+    });
+    $('dbgGhost').addEventListener('click', () => {
+      const out = ['staged', 'continuous'].map(v => {
+        const r = PourSim.runTimeline(GHOST, v, cfg, ctl);
+        return `${v}: ${r.result.pass ? 'PASS' : 'FAIL ' + r.result.primary}  head ${headOf(r.state).toFixed(3)}  ` +
+          `level ${levelOf(r.state).toFixed(3)}  began ${r.state.straightenBegan === null ? '-' : r.state.straightenBegan.toFixed(2)}`;
+      });
+      setText($('dbgGhostOut'), out.join('\n'));
+    });
+
+    const f = v => v === null ? 'null' : typeof v === 'number' ? v.toFixed(3) : String(v);
+    let lastCount = -1, countAt = 0;
+    function update() {
+      if (panel.hidden) return;
+      if (performance.now() - countAt > 500) {
+        countAt = performance.now();
+        const n = Log.read().length;
+        if (n !== lastCount) { lastCount = n; setText($('dbgLogCount'), `${n} pours logged (${Log.key})`); }
+      }
+      const z = zoneAt(sim, cfg, ctl);
+      setText($('dbgState'),
+        `mode ${mode}  variant ${variant}  tapMode ${tapMode}\n` +
+        `angle ${f(sim.angle)}  target ${input.target}  assist ${sim.assist}\n` +
+        `zone ${z.lo.toFixed(1)}-${z.hi.toFixed(1)}  capacity ${f(sim.capacity)}\n` +
+        `flow ${f(sim.flow)}  turb ${f(sim.turb)}\n` +
+        `level ${f(levelOf(sim))}  head ${f(headOf(sim))}\nwaste ${f(sim.waste)}  tilted ${f(sim.tiltWaste)}\n` +
+        `pourTime ${sim.pourTime.toFixed(2)}  upright ${sim.uprightPour.toFixed(2)}\n` +
+        `startAngle ${f(sim.startAngle)}  closeAngle ${f(sim.closeAngle)}\n` +
+        `began ${f(sim.straightenBegan)}  via ${straightenVia}\n` +
+        `canServe ${canServe(sim)}  served ${served ? served.result.primary : '-'}`);
+    }
+    return { update };
+  })();
+
+  // ==== Loop ===============================================================
+  let acc = 0, last = performance.now();
+  function frame(now) {
+    acc += Math.min(0.25, Math.max(0, (now - last) / 1000));
+    last = now;
+    while (acc >= STEP) { tick(); acc -= STEP; }
+    // Coaching (the BRING UP mark, the dial's stage highlight) shows in Watch
+    // and Guided and fades out in Solo, leaving the needle and the beer.
+    const coach = mode !== 'solo';
+    Renderer.render(sim, { reducedMotion: motionQuery.matches, showMark: coach, stage: coach ? stageAt(sim, cfg) : null });
+    syncUI();
+    Debug.update();
+    requestAnimationFrame(frame);
+  }
+
+  setVariant(variant);
+  setMode('watch');
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

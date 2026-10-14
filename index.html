@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Perfect Pour (prototype v2.1)</title>
+<title>Perfect Pour (prototype v2.2)</title>
 <style>
   :root {
     --bg: #1b1510; --panel: #2a2119; --panel-2: #33281e; --ink: #f6eedf; --muted: #c9b89c;
@@ -170,6 +170,12 @@
   .checks li.ok { border-color: var(--good); }
   .checks li.miss { border-color: var(--bad); border-style: dashed; }
   #fbPrimary { margin: 0 0 6px; font-size: 1.02rem; }
+  /* Debrief: a little training glass with the two bands and where you acted. */
+  #debrief { display: flex; gap: 12px; align-items: center; margin: 2px 0 8px; }
+  #debriefGlass { width: 84px; height: 105px; flex: none; }
+  #debriefText { margin: 0; font-size: 0.9rem; color: var(--muted); min-width: 0; }
+  #debriefText b { color: var(--ink); }
+  #caption.verdict { color: var(--good); }
   #fbSecondary { margin: 0 0 6px; color: var(--muted); font-size: 0.92rem; }
   #suggest { margin: 0 0 6px; color: var(--accent); font-weight: 600; }
   #resultActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -216,7 +222,7 @@
 <body>
 <div id="app">
   <header>
-    <div class="brand">Perfect Pour<small>Pilsner · v2.1</small></div>
+    <div class="brand">Perfect Pour<small>Pilsner · v2.2</small></div>
     <button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" aria-label="Debug panel" hidden>⚙</button>
     <nav id="modes" aria-label="Mode">
       <button type="button" data-mode="watch">Watch</button>
@@ -277,31 +283,26 @@
         <polygon id="zoneBand" fill="url(#hatch)" fill-opacity="0.45" stroke="#f6eedf" stroke-width="0.8" stroke-dasharray="2 2"/>
         <line id="fillLine" stroke="#f6eedf" stroke-width="1.6" stroke-dasharray="5 3"/>
         <text id="fillLabel" font-size="10" font-weight="700" text-anchor="end">LINE</text>
+        <text id="stopLabel" font-size="9" font-weight="700" style="fill:#f6eedf">STOP</text>
         <!-- Training mark only: real glassware has no such line. Shown in Watch
              and Guided so the learner links "about half to two-thirds" to what
              they see; gone in Solo, where they judge it by eye. -->
         <g id="bringMark">
-          <polygon id="bringBand" fill="rgba(159,220,138,0.16)" stroke="#9fdc8a" stroke-width="1" stroke-dasharray="1 2"/>
-          <text id="bringLabel" font-size="9" font-weight="700" style="fill:#9fdc8a">BRING UP</text>
+          <polygon id="bringBand" fill="rgba(159,220,138,0.18)" stroke="#9fdc8a" stroke-width="1.4" stroke-dasharray="1 2.5"/>
+          <text id="bringLabel" font-size="9" font-weight="700" style="fill:#9fdc8a">▲ BRING UP</text>
         </g>
-      </g>
-
-      <!-- Glass dial. Fixed in the corner the glass never reaches, so it is
-           an instrument you learn once rather than a moving target. The needle
-           is the glass angle. The highlight is the stage the BEER is in (see
-           stageAt); it changes only when the level crosses the BRING UP mark,
-           never drifts. Solo shows the needle alone. -->
-      <g id="dial" aria-hidden="true">
-        <path id="dialTrack" fill="none" stroke="rgba(246,238,223,0.18)" stroke-width="9" stroke-linecap="round"/>
-        <path id="dialHi" fill="none" stroke="#9fdc8a" stroke-opacity="0.85" stroke-width="9"/>
-        <path id="dialHiEdge" fill="none" stroke="#f6eedf" stroke-width="1.2" stroke-dasharray="3 2"/>
-        <path id="dialTicks" fill="none" stroke="rgba(246,238,223,0.6)" stroke-width="1.5"/>
-        <line id="dialNeedle" stroke="#f6eedf" stroke-width="3" stroke-linecap="round"/>
-        <circle id="dialHub" r="4" fill="#f6eedf"/>
-        <text id="dialUp" font-size="8" font-weight="700" text-anchor="middle">UP</text>
-        <text id="dialTilt" font-size="8" font-weight="700">45°</text>
-        <text id="dialLabel" font-size="9" text-anchor="end">GLASS</text>
-        <text id="dialStage" font-size="10" font-weight="700" text-anchor="end" style="fill:#f6eedf"></text>
+        <!-- Where the player acted, drawn at the level they acted at. Watch and
+             Guided only; Solo sees the same marks in the debrief instead. -->
+        <g id="actMarks">
+          <g id="markStraighten" style="display:none">
+            <line id="markStraightenLine" stroke="#9fdc8a" stroke-width="3" stroke-linecap="round"/>
+            <text id="markStraightenText" font-size="8.5" font-weight="700" style="fill:#9fdc8a"></text>
+          </g>
+          <g id="markStop" style="display:none">
+            <line id="markStopLine" stroke="#f6eedf" stroke-width="3" stroke-linecap="round"/>
+            <text id="markStopText" font-size="8.5" font-weight="700" style="fill:#f6eedf"></text>
+          </g>
+        </g>
       </g>
 
       <!-- Head gauge: the head band is a thickness, not a place on the glass,
@@ -358,7 +359,7 @@
     <div id="transcriptBox" hidden>
       <span id="transcriptTitle">Steps in this demo</span>
       <ol id="transcript" aria-labelledby="transcriptTitle"></ol>
-      <p class="fineprint">BRING UP is a training mark; real glasses don't have one. On the job, judge it by eye: about half to two-thirds full.</p>
+      <p class="fineprint">Two bands on the training glass: <b>BRING UP</b> (start bringing the glass upright when the beer gets there) and <b>LINE</b> (stop). BRING UP is a training mark that real glasses don't have; on the job, judge it by eye: about half to two-thirds full.</p>
     </div>
   </section>
 </div>
@@ -369,6 +370,10 @@
   <ul id="checksTech" class="checks two"></ul>
   <h3 class="chk-head">The pour</h3>
   <ul id="checks" class="checks"></ul>
+  <div id="debrief">
+    <svg id="debriefGlass" viewBox="0 0 120 150" aria-hidden="true"></svg>
+    <p id="debriefText"></p>
+  </div>
   <p id="fbPrimary"></p>
   <p id="fbSecondary" hidden></p>
   <p id="suggest" hidden></p>
@@ -562,16 +567,44 @@
     return { lo, hi };
   }
 
-  // ---- Stage (what the gauge highlights) ---------------------------------------
-  // The beer decides the stage; the gauge only shows where the glass is
-  // against it. One trigger, and it is the SOURCED one: the level reaching the
-  // start of the half-to-two-thirds range. "Upright" is not a second fill
-  // number -- it lights when the glass itself is upright after that point.
-  function stageAt(s, cfg = PILSNER) {
-    if (levelOf(s) < cfg.straightenWindow[0]) return 'tilted';
-    if (s.opened && s.angle <= cfg.straightenThreshold) return 'upright';
-    return 'bringUp';
+  // ---- Action verdicts (v2.2) -------------------------------------------------
+  // The glass is the meter and the beer is the indicator: each of the
+  // player's two timing actions is judged against a window on the glass, at
+  // the moment it happens. Verdicts describe that one action only, never the
+  // whole pour (the debrief does that), and their bands are chosen so a
+  // verdict cannot contradict the final result:
+  //   'inRange'     - inside the SOURCED half-to-two-thirds window
+  //   'littleEarly' / 'littleLate' - just outside it; the pour can still pass
+  //   'early' / 'late' - far enough out that the head will miss
+  // (test/sim.test.js sweeps straightening points to hold that promise.)
+  const EARLY_GRACE = 0.13, LATE_GRACE = 0.04;   // measured: straightening from ~38% to ~69% full can pass
+  function straightenVerdict(level, cfg = PILSNER) {
+    const [w0, w1] = cfg.straightenWindow;
+    if (level < w0 - EARLY_GRACE) return 'early';
+    if (level < w0) return 'littleEarly';
+    if (level <= w1) return 'inRange';
+    if (level <= w1 + LATE_GRACE) return 'littleLate';
+    return 'late';
   }
+  function stopVerdict(level, cfg = PILSNER) {
+    if (level < cfg.fillLine - cfg.fillTol) return 'short';
+    if (level > cfg.fillLine + 1e-9) return 'over';
+    return 'inZone';
+  }
+  const VERDICT_TEXT = {
+    straighten: {
+      inRange: 'Started straightening in range.',
+      littleEarly: 'Started straightening a little early.',
+      early: 'Started straightening early.',
+      littleLate: 'Started straightening a little late.',
+      late: 'Started straightening late.'
+    },
+    stop: {
+      inZone: 'Stopped in the fill zone.',
+      short: 'Stopped short of the line.',
+      over: 'Stopped above the line.'
+    }
+  };
 
   function initState() {
     return {
@@ -584,7 +617,11 @@
       straightenBegan: null,    // level when the glass first came below "tilted" while pouring
       straightenFill: null,     // level when it first reached "upright" while pouring
       closeAngle: null,         // angle when the tap last closed
-      zoneTicks: 0, flowTicks: 0
+      zoneTicks: 0, flowTicks: 0,
+      // Player actions as they happened: { type: 'straighten' | 'stop', tick,
+      // level, verdict }. Appended, never edited, so the app and the tests can
+      // read exactly when each decision was made.
+      events: []
     };
   }
 
@@ -657,8 +694,21 @@
       // where the pour opened -- the moment of the decision, not the moment
       // it crossed a threshold half a second later.
       if (n.straightenBegan === null && n.startAngle !== null && n.startAngle >= cfg.tiltThreshold &&
-          n.angle < Math.max(cfg.tiltThreshold, n.startAngle - 5)) n.straightenBegan = levelOf(n);
+          n.angle < Math.max(cfg.tiltThreshold, n.startAngle - 5)) {
+        n.straightenBegan = levelOf(n);
+        n.events = s.events.concat({ type: 'straighten', tick: s.tick + 1, level: n.straightenBegan,
+          verdict: straightenVerdict(n.straightenBegan, cfg) });
+      }
       if (n.straightenFill === null && n.angle <= cfg.straightenThreshold) n.straightenFill = levelOf(n);
+    }
+
+    // "Stop" is judged when the tap has fully shut, not when the finger
+    // lifts: the 150 ms close still adds beer, and judging earlier could call
+    // a pour "in the zone" that then finishes above the line. Every full close
+    // is an event, so a stop-and-restart pour gets a verdict per stop.
+    if (s.flow > 0 && n.flow === 0) {
+      const level = levelOf(n);
+      n.events = n.events.concat({ type: 'stop', tick: s.tick + 1, level, verdict: stopVerdict(level, cfg) });
     }
 
     n.turb = turb;
@@ -766,7 +816,7 @@
   // Advisory only; the caller keeps the at-most-once set.
   const HINTS = {
     tiltFirst: 'Tilt the glass before you open the tap.',
-    straighten: "The beer's past the mark. Start bringing it up.",
+    straighten: "The beer's past the BRING UP band. Bring the glass up now.",
     spillWarn: 'Nearly at the lip. Bring it up.',
     nearLine: 'Close to the line.',
     stop: 'Stop pouring.'
@@ -780,8 +830,10 @@
     const tilted = s.angle > cfg.straightenThreshold;
     const want = (id, cond) => { if (cond && !fired.has(id)) due.push(id); };
     want('tiltFirst', s.opened && !prev.opened && s.startAngle < cfg.tiltThreshold);
-    want('straighten', s.flow > 0 && !s.assist && s.angle >= cfg.tiltThreshold &&
-      level >= (cfg.straightenWindow[0] + cfg.straightenWindow[1]) / 2);
+    // A backup, not the cue: it fires only once the beer has passed the
+    // BRING UP window without the player acting. The window is the cue.
+    want('straighten', s.flow > 0 && !s.assist && s.straightenBegan === null &&
+      s.angle >= cfg.tiltThreshold && level > cfg.straightenWindow[1]);
     want('spillWarn', s.flow > 0 && tilted && total(s) >= s.capacity - 0.03);
     want('nearLine', s.flow > 0 && level >= zone - NEAR_LINE_LEAD);
     want('stop', s.flow > 0 && headOf(s) >= cfg.headBand[0] && level >= zone);
@@ -823,13 +875,13 @@
   const GHOST_STRAIGHTEN = 5.4;
   const GHOST_CLOSE = 9.4;
   const GHOST = [
-    { t: 0, target: 0, caption: 'Tilt the glass to about 45°. The dial shows where the glass is.', stepIndex: 0 },
+    { t: 0, target: 0, caption: 'Tilt the glass to about 45°. Watch the two bands on the glass.', stepIndex: 0 },
     { t: 0.5, target: 45 },
     { t: 1.6, pour: true, caption: 'Open the tap fully. Pour down the side.', stepIndex: 1 },
     { t: GHOST_STRAIGHTEN, target: 0, ramp: 45 / CONTROL.assistRate, straighten: true,
-      caption: 'The beer reached the BRING UP mark: start bringing the glass upright.', stepIndex: 2 },
+      caption: 'The beer reached the BRING UP band: start bringing the glass upright.', stepIndex: 2 },
     { t: GHOST_STRAIGHTEN + 45 / CONTROL.assistRate, caption: 'Finish upright to build the head.', stepIndex: 3 },
-    { t: GHOST_CLOSE, pour: false, caption: 'Stop at the line and serve.', stepIndex: 4 },
+    { t: GHOST_CLOSE, pour: false, caption: 'The beer reached the LINE band: stop, then serve.', stepIndex: 4 },
     { t: GHOST_CLOSE + 1, serve: true }
   ];
   const GHOST_STEPS = GHOST.filter(k => k.caption).map(k => k.caption);
@@ -847,7 +899,8 @@
 
   root.PourSim = {
     HZ, STEP, PILSNER, CONTROL, GLASS,
-    capacity, surfaceAt, heightOf, volumeOf, spillLimit, zoneAt, stageAt, levelOf, headOf,
+    capacity, surfaceAt, heightOf, volumeOf, spillLimit, zoneAt, levelOf, headOf,
+    straightenVerdict, stopVerdict, VERDICT_TEXT,
     initState, step, total, canServe, evaluate, feedback, COPY,
     HINTS, guidedHints, tickOf, inputAt, runTimeline, GHOST, GHOST_STEPS
   };
@@ -860,7 +913,7 @@
 (function () {
   'use strict';
   const { STEP, PILSNER, CONTROL, GLASS, initState, step, total, canServe, evaluate, feedback,
-    GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints, surfaceAt, zoneAt, stageAt, levelOf, headOf } = PourSim;
+    GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints, surfaceAt, zoneAt, levelOf, headOf, VERDICT_TEXT } = PourSim;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const DEBUG = params.get('debug') === '1';
@@ -889,17 +942,18 @@
     const yAt = h => -base - h * H;
     const GAUGE = { top: 38, bottom: 178, max: 0.25 };
     const gaugeY = h => GAUGE.bottom - Math.min(h, GAUGE.max) / GAUGE.max * (GAUGE.bottom - GAUGE.top);
-    const DIAL = { x: 272, y: 384, r: 54 };
-    // Highlighted part of the dial for each stage (degrees). Display only.
-    const DIAL_HI = { tilted: [35, 55], bringUp: [0, 35], upright: [0, 15] };
-    const DIAL_TEXT = { tilted: 'KEEP IT TILTED', bringUp: 'BRING IT UP', upright: 'UPRIGHT' };
+    // Short on-glass words for each verdict (the caption carries the full sentence).
+    const MARK_WORD = {
+      straighten: { inRange: 'in range', littleEarly: 'a little early', early: 'early', littleLate: 'a little late', late: 'late' },
+      stop: { inZone: 'in zone', short: 'short', over: 'over' }
+    };
 
     const E = {};
     ['clipPoly', 'foamFill', 'foamTex', 'beerFill', 'bubbles', 'stream', 'splash', 'spill', 'glass',
      'glassBody', 'glassInner', 'zoneBand', 'fillLine', 'fillLabel', 'handle', 'gaugeBar', 'gaugeBarTex',
      'gaugeBand', 'gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText',
-     'dialTrack', 'dialHi', 'dialHiEdge', 'dialTicks', 'dialNeedle', 'dialHub', 'dialUp', 'dialTilt',
-     'dialLabel', 'dialStage', 'bringMark', 'bringBand', 'bringLabel']
+     'stopLabel', 'bringMark', 'bringBand', 'bringLabel',
+     'markStraighten', 'markStraightenLine', 'markStraightenText', 'markStop', 'markStopLine', 'markStopText']
       .forEach(id => { E[id] = $(id); });
 
     E.glassBody.setAttribute('d',
@@ -939,28 +993,6 @@
         d += (x ? 'L' : 'M') + x + ',' + (y + amp * Math.sin(x * freq + phase)).toFixed(2);
       }
       return d + 'L340,400L0,400Z';
-    }
-
-    const dialPt = (deg, r) => {
-      const a = deg * Math.PI / 180;
-      return [DIAL.x + r * Math.sin(a), DIAL.y - r * Math.cos(a)];
-    };
-    const dialArc = (d0, d1, r) => {
-      const [x0, y0] = dialPt(d0, r), [x1, y1] = dialPt(d1, r);
-      return `M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
-    };
-    // The dial's fixed parts are drawn once.
-    E.dialTrack.setAttribute('d', dialArc(0, 60, DIAL.r));
-    {
-      const tk = deg => { const [x0, y0] = dialPt(deg, DIAL.r - 8), [x1, y1] = dialPt(deg, DIAL.r + 8);
-        return `M${x0.toFixed(1)},${y0.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)}`; };
-      E.dialTicks.setAttribute('d', tk(0) + tk(45));
-      const [ux, uy] = dialPt(0, DIAL.r + 16), [tx, ty] = dialPt(45, DIAL.r + 14);
-      E.dialUp.setAttribute('x', ux); E.dialUp.setAttribute('y', uy + 2);
-      E.dialTilt.setAttribute('x', tx); E.dialTilt.setAttribute('y', ty);
-      E.dialHub.setAttribute('cx', DIAL.x); E.dialHub.setAttribute('cy', DIAL.y);
-      E.dialLabel.setAttribute('x', DIAL.x - 10); E.dialLabel.setAttribute('y', DIAL.y + 2);
-      E.dialStage.setAttribute('x', DIAL.x - 10); E.dialStage.setAttribute('y', DIAL.y - 12);
     }
 
     function render(s, view) {
@@ -1060,20 +1092,24 @@
         setAttr(E.bringLabel, 'y', ((yAt(m0) + yAt(m1)) / 2 + 3).toFixed(1));
       }
 
-      // Dial: needle = glass angle, always. Highlight + stage words only when
-      // coaching is on (Watch/Guided).
-      const [nx2, ny2] = dialPt(s.angle, DIAL.r + 6);
-      setAttr(E.dialNeedle, 'x1', DIAL.x); setAttr(E.dialNeedle, 'y1', DIAL.y);
-      setAttr(E.dialNeedle, 'x2', nx2.toFixed(1)); setAttr(E.dialNeedle, 'y2', ny2.toFixed(1));
-      if (view.stage) {
-        const [h0, h1] = DIAL_HI[view.stage];
-        setAttr(E.dialHi, 'd', dialArc(h0, h1, DIAL.r));
-        setAttr(E.dialHiEdge, 'd', dialArc(h0, h1, DIAL.r + 7));
-        setText(E.dialStage, DIAL_TEXT[view.stage]);
-      } else {
-        setAttr(E.dialHi, 'd', ''); setAttr(E.dialHiEdge, 'd', '');
-        setText(E.dialStage, '');
-      }
+      // Action marks: a tick on the glass wall at the level where the player
+      // started straightening, and where the tap fully closed (latest stop).
+      const mark = (g2, line, text, ev, word) => {
+        if (!ev) { g2.style.display = 'none'; return; }
+        g2.style.display = '';
+        const y = yAt(ev.level), x = halfAt(ev.level) + wall;
+        setAttr(line, 'x1', x - 2); setAttr(line, 'x2', x + 8); setAttr(line, 'y1', y.toFixed(1)); setAttr(line, 'y2', y.toFixed(1));
+        setAttr(text, 'x', (x + 11).toFixed(1)); setAttr(text, 'y', (y + 3).toFixed(1));
+        setText(text, word);
+      };
+      const evs = view.marks || [];
+      const st = evs.find(e => e.type === 'straighten'), sp = evs.filter(e => e.type === 'stop').at(-1);
+      mark(E.markStraighten, E.markStraightenLine, E.markStraightenText, st, st && MARK_WORD.straighten[st.verdict]);
+      mark(E.markStop, E.markStopLine, E.markStopText, sp, sp && MARK_WORD.stop[sp.verdict]);
+      // Keep the band labels clear of the marks once a mark is drawn.
+      E.bringLabel.style.display = st ? 'none' : '';
+      E.stopLabel.style.display = view.showMark && !sp ? '' : 'none';
+      setAttr(E.stopLabel, 'x', (halfAt(zl) + wall + 4).toFixed(1)); setAttr(E.stopLabel, 'y', (yAt(zl - cfg.fillTol / 2) + 3).toFixed(1));
 
       // Head gauge, in the same upright head height that is scored.
       const head = headOf(s);
@@ -1274,6 +1310,7 @@
   function setCaption(text, kind) {
     setText($('caption'), text || '');
     $('caption').classList.toggle('hint', kind === 'hint');
+    $('caption').classList.toggle('verdict', kind === 'verdict');
   }
 
   // ==== Modes ==============================================================
@@ -1381,6 +1418,7 @@
       `aim ${pctOf(cfg.fillLine - cfg.fillTol)}–${pctOf(cfg.fillLine)}%`);
     chip(ul, r.checks.waste, `${pctOf(m.waste)}%`, `Spill: ${r.checks.waste ? 'in range' : 'too much'}`, `max ${pctOf(cfg.wasteTol)}%`);
 
+    drawDebrief(sim);
     setText($('fbPrimary'), text.primary);
     $('fbSecondary').hidden = !text.secondary;
     setText($('fbSecondary'), text.secondary ? 'Also: ' + text.secondary : '');
@@ -1414,6 +1452,34 @@
     host.children[primaryIndex].focus({ preventScroll: true });
   }
 
+  // The debrief: the training glass again, with both bands and where this
+  // pour acted. This is how Solo gets its timing feedback -- after the pour.
+  function drawDebrief(st) {
+    const svg = $('debriefGlass');
+    const [w0, w1] = cfg.straightenWindow, z0 = cfg.fillLine - cfg.fillTol, zl = cfg.fillLine;
+    const top = 10, bot = 140, hgt = bot - top, cx = 50, hb = 14, ht = 24;
+    const y = h => bot - h * hgt, hw = h => hb + (ht - hb) * h;
+    const band = (h0, h1, fill, stroke, dash) =>
+      `<polygon points="${cx - hw(h0)},${y(h0)} ${cx + hw(h0)},${y(h0)} ${cx + hw(h1)},${y(h1)} ${cx - hw(h1)},${y(h1)}" fill="${fill}" stroke="${stroke}" stroke-width="1" stroke-dasharray="${dash}"/>`;
+    const evs = st.events, sEv = evs.find(e => e.type === 'straighten'), pEv = evs.filter(e => e.type === 'stop').at(-1);
+    const tick = (ev, color) => ev ? `<line x1="${cx + hw(ev.level) + 2}" x2="${cx + hw(ev.level) + 12}" y1="${y(ev.level)}" y2="${y(ev.level)}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>` : '';
+    svg.innerHTML =
+      `<polygon points="${cx - ht},${top} ${cx - hb},${bot} ${cx + hb},${bot} ${cx + ht},${top}" fill="rgba(210,228,255,0.06)" stroke="rgba(230,240,255,0.8)" stroke-width="2"/>` +
+      band(w0, w1, 'rgba(159,220,138,0.25)', '#9fdc8a', '1 2') +
+      band(z0, zl, 'rgba(246,238,223,0.18)', '#f6eedf', '3 2') +
+      tick(sEv, '#9fdc8a') + tick(pEv, '#f6eedf');
+    const parts = [];
+    parts.push(sEv
+      ? `You started bringing it up at <b>${pctOf(sEv.level)}%</b> (BRING UP band ${pctOf(w0)}–${pctOf(w1)}%): ${MARK_PLAIN.straighten[sEv.verdict]}.`
+      : 'You never started bringing the glass up while pouring.');
+    if (pEv) parts.push(`You stopped at <b>${pctOf(pEv.level)}%</b> (LINE ${pctOf(z0)}–${pctOf(zl)}%): ${MARK_PLAIN.stop[pEv.verdict]}.`);
+    $('debriefText').innerHTML = parts.join(' ');
+  }
+  const MARK_PLAIN = {
+    straighten: { inRange: 'in range', littleEarly: 'a little early', early: 'early', littleLate: 'a little late', late: 'late' },
+    stop: { inZone: 'in the zone', short: 'short', over: 'over the line' }
+  };
+
   // ---- Ghost ----
   // The demo drives the same inputs a player would, including the
   // straighten request, so each variant's controls visibly do the work.
@@ -1444,6 +1510,7 @@
     // drag or switch press starts from where the glass really is.
     if (sim.assist) input.target = Math.round(sim.angle * 10) / 10;
     if (mode === 'guided') guidedTick(prev);
+    if (sim.events.length > prev.events.length) actionTick(sim.events.slice(prev.events.length));
     milestoneTick();
   }
 
@@ -1459,6 +1526,18 @@
     if (sim.angle < cfg.tiltThreshold || sim.flow === 0) {
       $('angleCtl').classList.remove('pulse');
       pourBtn.classList.remove('cue');
+    }
+  }
+
+  // Feedback on the action just taken, in Guided only. It names that action
+  // ("Started straightening in range"), never the whole pour.
+  function actionTick(newEvents) {
+    if (mode !== 'guided') return;
+    for (const e of newEvents) {
+      const text = VERDICT_TEXT[e.type][e.verdict];
+      const good = e.verdict === 'inRange' || e.verdict === 'inZone';
+      setCaption(text, good ? 'verdict' : 'hint');
+      announce(text);
     }
   }
 
@@ -1519,7 +1598,7 @@
   // One entry per pour, served or abandoned. v2 has its own key so its data
   // never mixes with the v1 baseline's.
   const Log = (() => {
-    const KEY = 'perfectPour.log.v2.1', CAP = 2000;
+    const KEY = 'perfectPour.log.v2.2', CAP = 2000;
     const session = Math.random().toString(36).slice(2, 8);
     let attempt = 0;
     const r4 = v => v === null || v === undefined ? null : Math.round(v * 1e4) / 1e4;
@@ -1533,7 +1612,7 @@
       attempt++;
       const m = evaluate(state, cfg).metrics;
       const entry = {
-        v: 2.1, session, attempt, at: new Date().toISOString(),
+        v: 2.2, session, attempt, at: new Date().toISOString(),
         mode, variant, tapMode, straightenVia,
         orientation: innerWidth > innerHeight ? 'landscape' : 'portrait',
         served: wasServed,
@@ -1550,6 +1629,7 @@
         finalFill: r4(m.finalFill), finalFoam: r4(m.finalFoam), waste: r4(m.waste), tiltWaste: r4(m.tiltWaste),
         pourDuration: r4(m.pourDuration), zoneShare: r4(m.zoneShare),
         hints: mode === 'guided' ? [...hintsFired] : null,
+        events: state.events.map(e => ({ type: e.type, level: r4(e.level), verdict: e.verdict, t: r4(e.tick / 60) })),
         config: Object.assign(JSON.parse(JSON.stringify(cfg)), { control: Object.assign({}, ctl) })
       };
       const list = read();
@@ -1654,10 +1734,10 @@
     acc += Math.min(0.25, Math.max(0, (now - last) / 1000));
     last = now;
     while (acc >= STEP) { tick(); acc -= STEP; }
-    // Coaching (the BRING UP mark, the dial's stage highlight) shows in Watch
-    // and Guided and fades out in Solo, leaving the needle and the beer.
+    // Coaching (the BRING UP band, the STOP label, the action marks) shows in Watch
+    // and Guided and fades out in Solo, leaving the beer, the glass and the fill line.
     const coach = mode !== 'solo';
-    Renderer.render(sim, { reducedMotion: motionQuery.matches, showMark: coach, stage: coach ? stageAt(sim, cfg) : null });
+    Renderer.render(sim, { reducedMotion: motionQuery.matches, showMark: coach, marks: coach ? sim.events : null });
     syncUI();
     Debug.update();
     requestAnimationFrame(frame);

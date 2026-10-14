@@ -216,28 +216,111 @@ test('zone is coaching only: leaving it briefly does not fail an otherwise good 
   assert.equal(r.result.pass, true, fmt(r));
 });
 
-// ---- Stage shown on the dial (v2.1) --------------------------------------------
+// ---- Action events and verdicts (v2.2) -------------------------------------------
+// The live feedback is read from state.events, so these pin exactly when each
+// decision is captured, including the awkward cases.
 
-test('stage: tilted until the beer reaches the BRING UP mark, then bring up, then upright once the glass is', () => {
-  const [m0] = S.PILSNER.straightenWindow;
-  const at = (level, angle) => S.stageAt(Object.assign(S.initState(), { opened: true, angle, fill: S.volumeOf(level) }));
-  assert.equal(at(m0 - 0.05, 45), 'tilted');
-  assert.equal(at(m0 - 0.05, 0), 'tilted');          // straightened early: dial still says tilted
-  assert.equal(at(m0 + 0.01, 45), 'bringUp');
-  assert.equal(at(m0 + 0.2, 30), 'bringUp');
-  assert.equal(at(m0 + 0.2, 5), 'upright');           // lit by the glass, not by a fill number
+// Runs a scripted list of inputs; each entry is [seconds, input-partial].
+function script(steps, variant = 'continuous', total = 14) {
+  let s = S.initState();
+  const at = t => { let inp = { pour: false, target: 0, straighten: false }; for (const [t0, p] of steps) if (t >= t0) inp = { ...inp, ...p }; return inp; };
+  for (let i = 0; i < total * S.HZ; i++) s = S.step(s, { ...at(i / S.HZ), variant });
+  return s;
+}
+const ofType = (s, type) => s.events.filter(e => e.type === type);
+
+test('verdict bands: straighten', () => {
+  const [w0, w1] = S.PILSNER.straightenWindow;
+  assert.equal(S.straightenVerdict(w0 - 0.14), 'early');
+  assert.equal(S.straightenVerdict(w0 - 0.05), 'littleEarly');
+  assert.equal(S.straightenVerdict(w0), 'inRange');
+  assert.equal(S.straightenVerdict(w1), 'inRange');
+  assert.equal(S.straightenVerdict(w1 + 0.01), 'littleLate');
+  assert.equal(S.straightenVerdict(w1 + 0.05), 'late');
 });
 
-test('stage: the ghost starts straightening after the mark is reached', () => {
-  let s = S.initState(), firstBringUp = null;
-  for (let tick = 0; tick < 12 * S.HZ; tick++) {
-    const inp = S.inputAt(S.GHOST, tick);
-    if (inp.serve) break;
-    s = S.step(s, { pour: inp.pour, target: inp.target, straighten: inp.straighten, variant: 'staged' });
-    if (firstBringUp === null && S.stageAt(s) === 'bringUp') firstBringUp = tick;
-  }
-  assert.ok(firstBringUp !== null && firstBringUp <= S.tickOf(5.4), `bringUp at tick ${firstBringUp}`);
+test('verdict bands: stop', () => {
+  const z0 = S.PILSNER.fillLine - S.PILSNER.fillTol;
+  assert.equal(S.stopVerdict(z0 - 0.01), 'short');
+  assert.equal(S.stopVerdict(z0), 'inZone');
+  assert.equal(S.stopVerdict(S.PILSNER.fillLine), 'inZone');
+  assert.equal(S.stopVerdict(S.PILSNER.fillLine + 0.01), 'over');
 });
+
+test('event: straightening is captured once, at the moment the glass starts coming up', () => {
+  const r = S.runTimeline(S.GHOST, 'staged');
+  const ev = ofType(r.state, 'straighten');
+  assert.equal(ev.length, 1);
+  assert.equal(ev[0].level, r.state.straightenBegan);
+  // Staged assist at 18°/s needs ~0.28 s to drop 5° from 45°.
+  const t = ev[0].tick / S.HZ;
+  assert.ok(t > 5.4 && t < 5.4 + 0.4, `captured at ${t.toFixed(2)} s`);
+});
+
+test('event: stop is captured when the tap has fully closed, and includes the closing ramp', () => {
+  const r = S.runTimeline(S.GHOST, 'staged');
+  const ev = ofType(r.state, 'stop');
+  assert.equal(ev.length, 1);
+  const releaseTick = S.tickOf(9.4);
+  assert.ok(ev[0].tick > releaseTick && ev[0].tick <= releaseTick + 10, `tick ${ev[0].tick}`);
+  // Nothing changes after a full close, so the stop verdict matches what is scored.
+  assert.equal(ev[0].level, S.levelOf(r.state));
+});
+
+test('event: stop-and-restart gives a verdict per stop, and the last one is what gets scored', () => {
+  const s = script([[0, { target: 45 }], [1, { pour: true }], [5.5, { target: 0 }],
+    [8.0, { pour: false }], [9.0, { pour: true }], [9.9, { pour: false }]]);
+  const stops = ofType(s, 'stop');
+  assert.equal(stops.length, 2, JSON.stringify(stops));
+  assert.equal(stops[0].verdict, 'short');
+  assert.equal(stops[1].level, S.levelOf(s));
+  assert.equal(stops[1].verdict === 'inZone', S.evaluate(s).checks.total);
+});
+
+test('event: a quick re-press during the closing ramp is not a stop', () => {
+  // Release for 2 ticks (< the 9-tick ramp), then pour on.
+  const s = script([[0, { target: 45 }], [1, { pour: true }], [3, { pour: false }], [3 + 2 / S.HZ, { pour: true }], [4, { pour: false }]], 'continuous', 6);
+  assert.equal(ofType(s, 'stop').length, 1);
+});
+
+test('event: adjusting the glass before the tap opens records nothing', () => {
+  const s = script([[0, { target: 45 }], [0.5, { target: 0 }], [1, { target: 45 }]], 'continuous', 2);
+  assert.equal(s.events.length, 0);
+});
+
+test('event: opening upright never records a straighten', () => {
+  const s = script([[0.2, { pour: true }], [3, { pour: false }]], 'continuous', 4);
+  assert.equal(ofType(s, 'straighten').length, 0);
+});
+
+test('event: a small wobble while tilted is not straightening', () => {
+  const s = script([[0, { target: 45 }], [1, { pour: true }], [2, { target: 42 }], [2.5, { target: 45 }], [3, { pour: false }]], 'continuous', 4);
+  assert.equal(ofType(s, 'straighten').length, 0);
+});
+
+test('event: straightening during a pause is captured when pouring resumes, at that level', () => {
+  const s = script([[0, { target: 45 }], [1, { pour: true }], [5, { pour: false }], [5.5, { target: 0 }], [6.5, { pour: true }], [8, { pour: false }]], 'continuous', 9);
+  const st = ofType(s, 'straighten'), stops = ofType(s, 'stop');
+  assert.equal(st.length, 1);
+  assert.ok(st[0].tick > stops[0].tick, 'after the first stop');
+  assert.ok(Math.abs(st[0].level - stops[0].level) < 0.01, 'at the level where the pour paused');
+});
+
+for (const v of VARIANTS) {
+  test(`verdicts never contradict the result (${v})`, () => {
+    for (const at of [0.3, 0.34, 0.38, 0.42, 0.47, 0.5, 0.55, 0.6, 0.65, 0.67, 0.69, 0.7, 0.72, 0.75, 0.8]) {
+      const r = pour({ variant: v, at });
+      const st = ofType(r.state, 'straighten')[0], stop = ofType(r.state, 'stop').at(-1);
+      const msg = `at ${at}: ${st.verdict}/${stop.verdict} -> ${fmt(r)}`;
+      assert.equal(stop.verdict === 'inZone', r.result.checks.total, msg);
+      // "in range" with a good stop must pass. ("A little early/late" makes no
+      // promise either way: near the edges it can go both ways.)
+      if (stop.verdict === 'inZone' && st.verdict === 'inRange') assert.equal(r.result.pass, true, msg);
+      // "early" or "late" must not come with a pass.
+      if (st.verdict === 'early' || st.verdict === 'late') assert.equal(r.result.pass, false, msg);
+    }
+  });
+}
 
 // ---- Guided hints ----------------------------------------------------------------
 
