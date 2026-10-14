@@ -496,7 +496,7 @@
 
   // Information only, never scored: did the glass come up gradually or all
   // at once? Measured from the start of straightening to reaching upright.
-  const GRADUAL_MIN = 0.8;   // s; GAME
+  const GRADUAL_MIN = 0.5;   // s; GAME, provisional (playtest: 0.75 s read as deliberate, 0.07 s as a flick)
   const bringUpStyle = sec => sec === null ? null : sec >= GRADUAL_MIN ? 'gradual' : 'allAtOnce';
   const rad = d => d * Math.PI / 180;
 

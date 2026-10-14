@@ -72,7 +72,7 @@ These follow from the glass shape, not from any service guide.
 | Finish upright | Tap last closed at ≤ 15°, after ≥ 0.5 s of upright pouring | So a flick upright at the last instant does not count. |
 | Straightening window (feedback) | 50-67% full | The sourced half-to-two-thirds range. Used to say *early* or *late*, not to fail on its own. |
 | Head holds after the tap closes | | So the time taken to press Serve can't change the verdict. |
-| Bring-up style (v2.3) | "Gradual" if reaching upright takes ≥ 0.8 s after straightening starts | Information only, shown in the debrief. Reflects the sourced "gradually"; never scored. |
+| Bring-up style (v2.3) | "Gradual" if reaching upright takes ≥ 0.5 s after straightening starts (provisional; was 0.8 s) | Information only, shown in the debrief. Reflects the sourced "gradually"; never scored. |
 | Pad travel (v2.3) | 70 px of thumb slide per 45°, 8 px dead zone | Comfortable on a phone without being twitchy. |
 | Staged straighten rate | 18°/s (about 2.5 s from 45°) | Fixed and predictable; it does not adapt to the fill, so starting early or late still shows. |
 | BRING UP mark (v2.1) | 50-67% of glass height | The sourced range, drawn on the glass as a training mark in Watch and Guided. Not on real glassware. |

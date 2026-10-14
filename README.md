@@ -160,6 +160,18 @@ coaching-only, and the guided hints.
 | Overpour by 1.5 s | fail: overflow |
 | Stop at 86% | fail: short |
 
+## Pour log fields (the ones easy to mix up)
+
+All levels are shares of the glass height, upright.
+
+| Field | Meaning |
+|---|---|
+| `straightenBegan` | Level when the glass **started** coming up (first 5° below the angle the tap opened at). This is the decision moment, and what the feedback and the "in range / early / late" verdict use. |
+| `straightenFill` | Level when the glass **reached upright** (≤ 15°) while pouring. Not a decision; the end of the movement. |
+| `bringUpSeconds` / `bringUpStyle` | Time between those two moments, and "gradual" (≥ 0.5 s) or "allAtOnce". Information only. |
+| `events` | Each action as it happened: `straighten` (= `straightenBegan`) and every full tap close (`stop`), with the verdict shown. |
+| `finalLevel` / `finalHead` | What was scored. |
+
 ## Architecture
 
 - **Sim** (`<script id="sim">`): pure `step(state, input, dt)` at a fixed
