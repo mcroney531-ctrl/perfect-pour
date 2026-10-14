@@ -73,7 +73,9 @@ These follow from the glass shape, not from any service guide.
 | Straightening window (feedback) | 50-67% full | The sourced half-to-two-thirds range. Used to say *early* or *late*, not to fail on its own. |
 | Head holds after the tap closes | | So the time taken to press Serve can't change the verdict. |
 | Staged straighten rate | 18°/s (about 2.5 s from 45°) | Fixed and predictable; it does not adapt to the fill, so starting early or late still shows. |
-| Coaching zone | Lower edge 30° until half full, then down to upright by 72%; upper edge is the spill limit minus 2% | Shown in Watch and Guided only. Never scored. |
+| BRING UP mark (v2.1) | 50-67% of glass height | The sourced range, drawn on the glass as a training mark in Watch and Guided. Not on real glassware. |
+| Dial stages (v2.1) | Tilted until the level reaches 50%; then bring up; "upright" once the glass is ≤ 15° | One sourced trigger. No second fill number. |
+| Coaching zone | Lower edge 30° until half full, then down to upright by 72%; upper edge is the spill limit minus 2% | v2 only. In v2.1 it is no longer shown; it remains only as the logged `zoneShare`. Never scored. |
 | Foam model | `k` 0.4, `d` 0.08, `r` 0.3, flow 0.12/s | Tuned so the demo lands mid-band. Not measured from real beer. |
 
 ## 4. How the game assesses

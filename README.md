@@ -1,4 +1,4 @@
-# Perfect Pour: prototype v2 (one glass, one pilsner)
+# Perfect Pour: prototype v2.1 (one glass, one pilsner)
 
 A prototype for E-Learning Heroes challenge #570: gamified onboarding for a new
 bartender at a fictional brewery. The goal is **procedural memory first,
@@ -17,6 +17,7 @@ input differs.
 | `/?angle=staged` (default) | **A: staged.** Hold the pad to pour; swipe up once to start straightening. The glass comes upright at a fixed rate. |
 | `/?angle=continuous` | **B: continuous.** Hold the pad to pour; slide up to bring the glass upright (down to tilt more). |
 | `/?debug=1` | Adds ⚙: live state, tuning, variant switch, ghost check, pour log download |
+| `/v2/` | v2 as first playtested (moving arc), frozen for comparison |
 | `/v1/` | The v1 prototype, frozen as a comparison baseline |
 
 `?angle=slider` and `?angle=toggle` still give the v1 controls, kept as
@@ -34,6 +35,28 @@ accessible fallbacks.
   drag on the pad still moves the glass without toggling the tap.
 - `S` serves, `R` restarts.
 
+## What v2.1 changed (instructional clarity only)
+
+Playtest finding: v2's arc was confusing. It moved with the glass, its band
+drifted continuously, and the glass angle was shown three times. v2.1 splits
+the two questions: **the beer says when to act; the dial shows where the
+glass is.**
+
+- **BRING UP training mark on the glass** at the sourced half-to-two-thirds
+  height. Shown in Watch and Guided, gone in Solo. The Watch transcript says
+  it is a training mark, not something real glasses have.
+- **Fixed glass dial** in the bottom-right corner. Needle = glass angle. In
+  Watch and Guided one region lights up for the stage the beer is in:
+  *keep it tilted* until the beer reaches the mark, then *bring it up*, then
+  *upright* once the glass itself is upright. It changes only at those points
+  and never drifts. There is no second fill-percentage rule. Solo shows the
+  needle only. Whether the dial earns its place at all is an open question.
+- **Watch narration** introduces the dial and the mark; the Guided hint points
+  at the glass ("The beer's past the mark. Start bringing it up.") and fires
+  a little after the mark, so the learner has the chance to act first.
+- The pad's angle track now appears only in continuous mode.
+- No changes to the controls, the sim, or scoring. Log key: `perfectPour.log.v2.1`.
+
 ## What v2 changed
 
 - **Procedure + outcome assessment.** Pass needs *tilted first* and *finished
@@ -47,9 +70,7 @@ accessible fallbacks.
   less (79% at 45°), and tipping too far for the fill spills over the lip. The
   renderer draws the true angle using the sim's own geometry, replacing v1's
   "draw at 75%" workaround.
-- **Angle arc.** A Madden-kick-style arc around the glass; the glass is the
-  needle. Its band is a coaching zone (Watch and Guided only, hidden in Solo,
-  never scored).
+- **Angle arc** around the glass with a moving coaching band (replaced in v2.1).
 - **Gradual straightening** in the demo and the coaching, per the sources.
 - Sources and rule categories: [`docs/pour-procedure.md`](docs/pour-procedure.md).
 

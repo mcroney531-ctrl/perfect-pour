@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Perfect Pour (prototype v2)</title>
+<title>Perfect Pour (prototype v2.1)</title>
 <style>
   :root {
     --bg: #1b1510; --panel: #2a2119; --panel-2: #33281e; --ink: #f6eedf; --muted: #c9b89c;
@@ -128,6 +128,7 @@
      glass report the same thing. */
   #pour { position: relative; min-height: 112px; display: flex; align-items: center; justify-content: center; padding: 0 56px 0 16px; }
   #pour.cue { box-shadow: 0 0 0 4px var(--ink); }
+  #pour:has(#padTrack[hidden]) { padding: 0 16px; }
   #padTrack { position: absolute; right: 16px; top: 14px; bottom: 14px; width: 8px; border-radius: 4px; background: rgba(27, 21, 16, 0.25); }
   #padThumb { position: absolute; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--accent-ink); border: 3px solid #fff6dc; }
   #padTrack::before { content: "▲"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); font-size: 9px; opacity: 0.6; }
@@ -215,7 +216,7 @@
 <body>
 <div id="app">
   <header>
-    <div class="brand">Perfect Pour<small>Pilsner · prototype v2</small></div>
+    <div class="brand">Perfect Pour<small>Pilsner · v2.1</small></div>
     <button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" aria-label="Debug panel" hidden>⚙</button>
     <nav id="modes" aria-label="Mode">
       <button type="button" data-mode="watch">Watch</button>
@@ -276,19 +277,31 @@
         <polygon id="zoneBand" fill="url(#hatch)" fill-opacity="0.45" stroke="#f6eedf" stroke-width="0.8" stroke-dasharray="2 2"/>
         <line id="fillLine" stroke="#f6eedf" stroke-width="1.6" stroke-dasharray="5 3"/>
         <text id="fillLabel" font-size="10" font-weight="700" text-anchor="end">LINE</text>
+        <!-- Training mark only: real glassware has no such line. Shown in Watch
+             and Guided so the learner links "about half to two-thirds" to what
+             they see; gone in Solo, where they judge it by eye. -->
+        <g id="bringMark">
+          <polygon id="bringBand" fill="rgba(159,220,138,0.16)" stroke="#9fdc8a" stroke-width="1" stroke-dasharray="1 2"/>
+          <text id="bringLabel" font-size="9" font-weight="700" style="fill:#9fdc8a">BRING UP</text>
+        </g>
       </g>
 
-      <!-- Angle arc, Madden-kick style: centred on the glass foot, so the glass
-           itself is the needle. The band is coaching (Watch/Guided only); its
-           top edge is where this much beer would reach the lip. Drawn in front
-           of the glass so the band stays readable over the beer. -->
-      <g id="arc" aria-hidden="true">
-        <path id="arcTrack" fill="none" stroke="rgba(246,238,223,0.18)" stroke-width="10" stroke-linecap="round"/>
-        <path id="arcZone" fill="none" stroke="#9fdc8a" stroke-opacity="0.75" stroke-width="10"/>
-        <path id="arcZoneEdge" fill="none" stroke="#f6eedf" stroke-width="1.2" stroke-dasharray="3 2"/>
-        <path id="arcTicks" fill="none" stroke="rgba(246,238,223,0.6)" stroke-width="1.5"/>
-        <polygon id="arcMarker" fill="#f6eedf" stroke="#1b1510" stroke-width="1"/>
-        <text id="arcTilt" font-size="9" font-weight="700">45°</text>
+      <!-- Glass dial. Fixed in the corner the glass never reaches, so it is
+           an instrument you learn once rather than a moving target. The needle
+           is the glass angle. The highlight is the stage the BEER is in (see
+           stageAt); it changes only when the level crosses the BRING UP mark,
+           never drifts. Solo shows the needle alone. -->
+      <g id="dial" aria-hidden="true">
+        <path id="dialTrack" fill="none" stroke="rgba(246,238,223,0.18)" stroke-width="9" stroke-linecap="round"/>
+        <path id="dialHi" fill="none" stroke="#9fdc8a" stroke-opacity="0.85" stroke-width="9"/>
+        <path id="dialHiEdge" fill="none" stroke="#f6eedf" stroke-width="1.2" stroke-dasharray="3 2"/>
+        <path id="dialTicks" fill="none" stroke="rgba(246,238,223,0.6)" stroke-width="1.5"/>
+        <line id="dialNeedle" stroke="#f6eedf" stroke-width="3" stroke-linecap="round"/>
+        <circle id="dialHub" r="4" fill="#f6eedf"/>
+        <text id="dialUp" font-size="8" font-weight="700" text-anchor="middle">UP</text>
+        <text id="dialTilt" font-size="8" font-weight="700">45°</text>
+        <text id="dialLabel" font-size="9" text-anchor="end">GLASS</text>
+        <text id="dialStage" font-size="10" font-weight="700" text-anchor="end" style="fill:#f6eedf"></text>
       </g>
 
       <!-- Head gauge: the head band is a thickness, not a place on the glass,
@@ -345,6 +358,7 @@
     <div id="transcriptBox" hidden>
       <span id="transcriptTitle">Steps in this demo</span>
       <ol id="transcript" aria-labelledby="transcriptTitle"></ol>
+      <p class="fineprint">BRING UP is a training mark; real glasses don't have one. On the job, judge it by eye: about half to two-thirds full.</p>
     </div>
   </section>
 </div>
@@ -532,7 +546,9 @@
   const headOf = s => heightOf(total(s)) - heightOf(s.fill);
 
   // ---- Coaching zone ----------------------------------------------------------
-  // Shown in Guided, hidden in Solo, never scored by itself. Upper edge is
+  // v2 drew this as a moving band; v2.1 does not show it at all (playtest: a
+  // drifting target confused more than it helped). It survives only as the
+  // logged zoneShare metric, for comparing pours. Never scored. Upper edge is
   // PHYSICAL (tip further and it spills). Lower edge follows the SOURCED
   // advice (stay tilted until about half full, then come up gradually) with
   // GAME numbers. Where the two cross, physics wins.
@@ -544,6 +560,17 @@
       : cfg.zoneTiltMin * (1 - clamp((level - w0) / (cfg.zoneUprightBy - w0), 0, 1));
     lo = Math.min(lo, hi);
     return { lo, hi };
+  }
+
+  // ---- Stage (what the gauge highlights) ---------------------------------------
+  // The beer decides the stage; the gauge only shows where the glass is
+  // against it. One trigger, and it is the SOURCED one: the level reaching the
+  // start of the half-to-two-thirds range. "Upright" is not a second fill
+  // number -- it lights when the glass itself is upright after that point.
+  function stageAt(s, cfg = PILSNER) {
+    if (levelOf(s) < cfg.straightenWindow[0]) return 'tilted';
+    if (s.opened && s.angle <= cfg.straightenThreshold) return 'upright';
+    return 'bringUp';
   }
 
   function initState() {
@@ -739,7 +766,7 @@
   // Advisory only; the caller keeps the at-most-once set.
   const HINTS = {
     tiltFirst: 'Tilt the glass before you open the tap.',
-    straighten: 'Start bringing the glass upright.',
+    straighten: "The beer's past the mark. Start bringing it up.",
     spillWarn: 'Nearly at the lip. Bring it up.',
     nearLine: 'Close to the line.',
     stop: 'Stop pouring.'
@@ -796,12 +823,12 @@
   const GHOST_STRAIGHTEN = 5.4;
   const GHOST_CLOSE = 9.4;
   const GHOST = [
-    { t: 0, target: 0, caption: 'Tilt the glass to about 45°.', stepIndex: 0 },
+    { t: 0, target: 0, caption: 'Tilt the glass to about 45°. The dial shows where the glass is.', stepIndex: 0 },
     { t: 0.5, target: 45 },
     { t: 1.6, pour: true, caption: 'Open the tap fully. Pour down the side.', stepIndex: 1 },
     { t: GHOST_STRAIGHTEN, target: 0, ramp: 45 / CONTROL.assistRate, straighten: true,
-      caption: 'Past half full: start bringing it upright.', stepIndex: 2 },
-    { t: GHOST_STRAIGHTEN + 45 / CONTROL.assistRate, caption: 'Finish upright, into the middle, to build the head.', stepIndex: 3 },
+      caption: 'The beer reached the BRING UP mark: start bringing the glass upright.', stepIndex: 2 },
+    { t: GHOST_STRAIGHTEN + 45 / CONTROL.assistRate, caption: 'Finish upright to build the head.', stepIndex: 3 },
     { t: GHOST_CLOSE, pour: false, caption: 'Stop at the line and serve.', stepIndex: 4 },
     { t: GHOST_CLOSE + 1, serve: true }
   ];
@@ -820,7 +847,7 @@
 
   root.PourSim = {
     HZ, STEP, PILSNER, CONTROL, GLASS,
-    capacity, surfaceAt, heightOf, volumeOf, spillLimit, zoneAt, levelOf, headOf,
+    capacity, surfaceAt, heightOf, volumeOf, spillLimit, zoneAt, stageAt, levelOf, headOf,
     initState, step, total, canServe, evaluate, feedback, COPY,
     HINTS, guidedHints, tickOf, inputAt, runTimeline, GHOST, GHOST_STEPS
   };
@@ -833,7 +860,7 @@
 (function () {
   'use strict';
   const { STEP, PILSNER, CONTROL, GLASS, initState, step, total, canServe, evaluate, feedback,
-    GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints, surfaceAt, zoneAt, levelOf, headOf } = PourSim;
+    GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints, surfaceAt, zoneAt, stageAt, levelOf, headOf } = PourSim;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const DEBUG = params.get('debug') === '1';
@@ -862,13 +889,17 @@
     const yAt = h => -base - h * H;
     const GAUGE = { top: 38, bottom: 178, max: 0.25 };
     const gaugeY = h => GAUGE.bottom - Math.min(h, GAUGE.max) / GAUGE.max * (GAUGE.bottom - GAUGE.top);
-    const ARC_R = 118;
+    const DIAL = { x: 272, y: 384, r: 54 };
+    // Highlighted part of the dial for each stage (degrees). Display only.
+    const DIAL_HI = { tilted: [35, 55], bringUp: [0, 35], upright: [0, 15] };
+    const DIAL_TEXT = { tilted: 'KEEP IT TILTED', bringUp: 'BRING IT UP', upright: 'UPRIGHT' };
 
     const E = {};
     ['clipPoly', 'foamFill', 'foamTex', 'beerFill', 'bubbles', 'stream', 'splash', 'spill', 'glass',
      'glassBody', 'glassInner', 'zoneBand', 'fillLine', 'fillLabel', 'handle', 'gaugeBar', 'gaugeBarTex',
      'gaugeBand', 'gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText',
-     'arc', 'arcTrack', 'arcZone', 'arcZoneEdge', 'arcTicks', 'arcMarker', 'arcTilt']
+     'dialTrack', 'dialHi', 'dialHiEdge', 'dialTicks', 'dialNeedle', 'dialHub', 'dialUp', 'dialTilt',
+     'dialLabel', 'dialStage', 'bringMark', 'bringBand', 'bringLabel']
       .forEach(id => { E[id] = $(id); });
 
     E.glassBody.setAttribute('d',
@@ -910,14 +941,27 @@
       return d + 'L340,400L0,400Z';
     }
 
-    const arcPt = (g, deg, r) => {
+    const dialPt = (deg, r) => {
       const a = deg * Math.PI / 180;
-      return [g.px + r * Math.sin(a), g.py - r * Math.cos(a)];
+      return [DIAL.x + r * Math.sin(a), DIAL.y - r * Math.cos(a)];
     };
-    const arcPath = (g, d0, d1, r) => {
-      const [x0, y0] = arcPt(g, d0, r), [x1, y1] = arcPt(g, d1, r);
+    const dialArc = (d0, d1, r) => {
+      const [x0, y0] = dialPt(d0, r), [x1, y1] = dialPt(d1, r);
       return `M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
     };
+    // The dial's fixed parts are drawn once.
+    E.dialTrack.setAttribute('d', dialArc(0, 60, DIAL.r));
+    {
+      const tk = deg => { const [x0, y0] = dialPt(deg, DIAL.r - 8), [x1, y1] = dialPt(deg, DIAL.r + 8);
+        return `M${x0.toFixed(1)},${y0.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)}`; };
+      E.dialTicks.setAttribute('d', tk(0) + tk(45));
+      const [ux, uy] = dialPt(0, DIAL.r + 16), [tx, ty] = dialPt(45, DIAL.r + 14);
+      E.dialUp.setAttribute('x', ux); E.dialUp.setAttribute('y', uy + 2);
+      E.dialTilt.setAttribute('x', tx); E.dialTilt.setAttribute('y', ty);
+      E.dialHub.setAttribute('cx', DIAL.x); E.dialHub.setAttribute('cy', DIAL.y);
+      E.dialLabel.setAttribute('x', DIAL.x - 10); E.dialLabel.setAttribute('y', DIAL.y + 2);
+      E.dialStage.setAttribute('x', DIAL.x - 10); E.dialStage.setAttribute('y', DIAL.y - 12);
+    }
 
     function render(s, view) {
       const calm = view.reducedMotion;
@@ -1005,21 +1049,31 @@
 
       setAttr(E.handle, 'transform', `rotate(${(-30 * s.flow).toFixed(1)} 210 28)`);
 
-      // Arc. The glass is the needle; the marker sits where its axis crosses.
-      setAttr(E.arcTrack, 'd', arcPath(g, 0, ctl.maxAngle, ARC_R));
-      if (view.zone) {
-        const lo = Math.max(0, view.zone.lo), hi = Math.max(lo + 0.5, view.zone.hi);
-        setAttr(E.arcZone, 'd', arcPath(g, lo, hi, ARC_R));
-        setAttr(E.arcZoneEdge, 'd', arcPath(g, lo, hi, ARC_R + 7));
-      } else { setAttr(E.arcZone, 'd', ''); setAttr(E.arcZoneEdge, 'd', ''); }
-      const tick = deg => { const [x0, y0] = arcPt(g, deg, ARC_R - 9), [x1, y1] = arcPt(g, deg, ARC_R + 9);
-        return `M${x0.toFixed(1)},${y0.toFixed(1)} L${x1.toFixed(1)},${y1.toFixed(1)}`; };
-      setAttr(E.arcTicks, 'd', tick(0) + tick(45));
-      const [mx, my] = arcPt(g, s.angle, ARC_R + 8), [lx, ly] = arcPt(g, s.angle - 4, ARC_R + 18),
-        [rx, ry] = arcPt(g, s.angle + 4, ARC_R + 18);
-      setAttr(E.arcMarker, 'points', `${mx.toFixed(1)},${my.toFixed(1)} ${lx.toFixed(1)},${ly.toFixed(1)} ${rx.toFixed(1)},${ry.toFixed(1)}`);
-      const [tx, ty] = arcPt(g, 45, ARC_R + 22);
-      setAttr(E.arcTilt, 'x', tx.toFixed(1)); setAttr(E.arcTilt, 'y', ty.toFixed(1));
+      // BRING UP training mark: the sourced half-to-two-thirds range, printed
+      // on the glass. Watch and Guided only.
+      E.bringMark.style.display = view.showMark ? '' : 'none';
+      if (view.showMark) {
+        const [m0, m1] = cfg.straightenWindow;
+        setAttr(E.bringBand, 'points',
+          `${-halfAt(m0)},${yAt(m0)} ${halfAt(m0)},${yAt(m0)} ${halfAt(m1)},${yAt(m1)} ${-halfAt(m1)},${yAt(m1)}`);
+        setAttr(E.bringLabel, 'x', (halfAt(m1) + wall + 4).toFixed(1));
+        setAttr(E.bringLabel, 'y', ((yAt(m0) + yAt(m1)) / 2 + 3).toFixed(1));
+      }
+
+      // Dial: needle = glass angle, always. Highlight + stage words only when
+      // coaching is on (Watch/Guided).
+      const [nx2, ny2] = dialPt(s.angle, DIAL.r + 6);
+      setAttr(E.dialNeedle, 'x1', DIAL.x); setAttr(E.dialNeedle, 'y1', DIAL.y);
+      setAttr(E.dialNeedle, 'x2', nx2.toFixed(1)); setAttr(E.dialNeedle, 'y2', ny2.toFixed(1));
+      if (view.stage) {
+        const [h0, h1] = DIAL_HI[view.stage];
+        setAttr(E.dialHi, 'd', dialArc(h0, h1, DIAL.r));
+        setAttr(E.dialHiEdge, 'd', dialArc(h0, h1, DIAL.r + 7));
+        setText(E.dialStage, DIAL_TEXT[view.stage]);
+      } else {
+        setAttr(E.dialHi, 'd', ''); setAttr(E.dialHiEdge, 'd', '');
+        setText(E.dialStage, '');
+      }
 
       // Head gauge, in the same upright head height that is scored.
       const head = headOf(s);
@@ -1142,7 +1196,8 @@
     variant = VARIANTS.includes(v) ? v : 'staged';
     $('sliderWrap').hidden = variant !== 'slider';
     $('toggleWrap').hidden = variant === 'slider';
-    $('padTrack').hidden = !usesPad();
+    // The thumb track only earns its place where the thumb sets the angle.
+    $('padTrack').hidden = variant !== 'continuous';
     if (variant === 'toggle') setTarget(input.target >= ctl.tiltAngle / 2 ? ctl.tiltAngle : 0);
     if (DEBUG) $('dbgVariant').value = variant;
   }
@@ -1464,7 +1519,7 @@
   // One entry per pour, served or abandoned. v2 has its own key so its data
   // never mixes with the v1 baseline's.
   const Log = (() => {
-    const KEY = 'perfectPour.log.v2', CAP = 2000;
+    const KEY = 'perfectPour.log.v2.1', CAP = 2000;
     const session = Math.random().toString(36).slice(2, 8);
     let attempt = 0;
     const r4 = v => v === null || v === undefined ? null : Math.round(v * 1e4) / 1e4;
@@ -1478,7 +1533,7 @@
       attempt++;
       const m = evaluate(state, cfg).metrics;
       const entry = {
-        v: 2, session, attempt, at: new Date().toISOString(),
+        v: 2.1, session, attempt, at: new Date().toISOString(),
         mode, variant, tapMode, straightenVia,
         orientation: innerWidth > innerHeight ? 'landscape' : 'portrait',
         served: wasServed,
@@ -1599,9 +1654,10 @@
     acc += Math.min(0.25, Math.max(0, (now - last) / 1000));
     last = now;
     while (acc >= STEP) { tick(); acc -= STEP; }
-    // The zone is coaching: drawn in Watch and Guided, gone in Solo.
-    const showZone = mode !== 'solo' && !served;
-    Renderer.render(sim, { reducedMotion: motionQuery.matches, zone: showZone ? zoneAt(sim, cfg, ctl) : null });
+    // Coaching (the BRING UP mark, the dial's stage highlight) shows in Watch
+    // and Guided and fades out in Solo, leaving the needle and the beer.
+    const coach = mode !== 'solo';
+    Renderer.render(sim, { reducedMotion: motionQuery.matches, showMark: coach, stage: coach ? stageAt(sim, cfg) : null });
     syncUI();
     Debug.update();
     requestAnimationFrame(frame);

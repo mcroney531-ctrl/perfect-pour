@@ -216,6 +216,29 @@ test('zone is coaching only: leaving it briefly does not fail an otherwise good 
   assert.equal(r.result.pass, true, fmt(r));
 });
 
+// ---- Stage shown on the dial (v2.1) --------------------------------------------
+
+test('stage: tilted until the beer reaches the BRING UP mark, then bring up, then upright once the glass is', () => {
+  const [m0] = S.PILSNER.straightenWindow;
+  const at = (level, angle) => S.stageAt(Object.assign(S.initState(), { opened: true, angle, fill: S.volumeOf(level) }));
+  assert.equal(at(m0 - 0.05, 45), 'tilted');
+  assert.equal(at(m0 - 0.05, 0), 'tilted');          // straightened early: dial still says tilted
+  assert.equal(at(m0 + 0.01, 45), 'bringUp');
+  assert.equal(at(m0 + 0.2, 30), 'bringUp');
+  assert.equal(at(m0 + 0.2, 5), 'upright');           // lit by the glass, not by a fill number
+});
+
+test('stage: the ghost starts straightening after the mark is reached', () => {
+  let s = S.initState(), firstBringUp = null;
+  for (let tick = 0; tick < 12 * S.HZ; tick++) {
+    const inp = S.inputAt(S.GHOST, tick);
+    if (inp.serve) break;
+    s = S.step(s, { pour: inp.pour, target: inp.target, straighten: inp.straighten, variant: 'staged' });
+    if (firstBringUp === null && S.stageAt(s) === 'bringUp') firstBringUp = tick;
+  }
+  assert.ok(firstBringUp !== null && firstBringUp <= S.tickOf(5.4), `bringUp at tick ${firstBringUp}`);
+});
+
 // ---- Guided hints ----------------------------------------------------------------
 
 function hintsFor(opts) {
