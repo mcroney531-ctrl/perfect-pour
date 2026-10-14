@@ -16,7 +16,9 @@ const fmt = r => {
 // In continuous mode the thumb brings the glass up at the same rate the
 // staged assist uses, so the two variants are compared like for like.
 // `extra` keeps the tap open that many seconds past `stop` (overpouring).
-function pour({ variant = 'staged', angle = 45, at = Infinity, stop = 0.93, extra = 0, upright = 0, serveWait = 1 } = {}) {
+// `stop` is the level at which the player lets go: just under the line, the
+// way a player aiming at it would (the closing ramp adds about 1%).
+function pour({ variant = 'staged', angle = 45, at = Infinity, stop = 0.94, extra = 0, upright = 0, serveWait = 1 } = {}) {
   let s = S.initState(), straightenT = null, reachedT = null, closedAt = null;
   for (let i = 0; i < 40 * S.HZ; i++) {
     const t = i / S.HZ;
@@ -102,17 +104,32 @@ for (const v of VARIANTS) {
     assert.equal(r.result.pass, true, `ghost/${v}: ${fmt(r)}`);
     assert.deepEqual({ ...r.result.procedure }, { tilted: true, upright: true });
   });
-
-  test(`ghost lands mid-band and starts straightening inside the sourced range (${v})`, () => {
-    const r = S.runTimeline(S.GHOST, v);
-    const [b0, b1] = S.PILSNER.headBand, [w0, w1] = S.PILSNER.straightenWindow;
-    const head = S.headOf(r.state);
-    assert.ok(Math.abs(head - (b0 + b1) / 2) <= (b1 - b0) / 8, `head ${head.toFixed(3)}`);
-    const level = S.levelOf(r.state), zoneMid = S.PILSNER.fillLine - S.PILSNER.fillTol / 2;
-    assert.ok(Math.abs(level - zoneMid) <= S.PILSNER.fillTol / 4, `level ${level.toFixed(3)}`);
-    assert.ok(r.state.straightenBegan >= w0 && r.state.straightenBegan <= w1, `began ${r.state.straightenBegan}`);
-  });
 }
+
+test('ghost (continuous, the default) lands mid-band, on the line, starting inside the sourced range', () => {
+  const r = S.runTimeline(S.GHOST);
+  const [b0, b1] = S.PILSNER.headBand, [w0, w1] = S.PILSNER.straightenWindow;
+  const head = S.headOf(r.state);
+  assert.ok(Math.abs(head - (b0 + b1) / 2) <= (b1 - b0) / 8, `head ${head.toFixed(3)}`);
+  const level = S.levelOf(r.state);
+  assert.ok(Math.abs(level - S.PILSNER.fillLine) <= S.PILSNER.fillTol / 4, `level ${level.toFixed(3)} vs line`);
+  assert.ok(r.state.straightenBegan >= w0 && r.state.straightenBegan <= w1, `began ${r.state.straightenBegan}`);
+});
+
+test('ghost brings the glass up gradually, pausing partway to show a still thumb holds the angle', () => {
+  const r = S.runTimeline(S.GHOST);
+  assert.equal(S.bringUpStyle(r.result.metrics.bringUpSeconds), 'gradual');
+  // During the hold the glass sits still while beer keeps flowing.
+  let s = S.initState(); const holdT = S.GHOST_STRAIGHTEN + S.GHOST_UP[0] + S.GHOST_UP[1] / 2;
+  const angles = [];
+  for (let tick = 0; tick < S.tickOf(holdT + 0.2); tick++) {
+    const inp = S.inputAt(S.GHOST, tick);
+    s = S.step(s, { pour: inp.pour, target: inp.target, straighten: inp.straighten, variant: 'continuous' });
+    if (tick >= S.tickOf(holdT - 0.1)) angles.push([s.angle, s.flow]);
+  }
+  assert.ok(Math.max(...angles.map(a => a[0])) - Math.min(...angles.map(a => a[0])) < 0.5, 'angle holds');
+  assert.ok(angles.every(a => a[1] === 1), 'beer keeps flowing');
+});
 
 for (const v of VARIANTS) {
   test(`the ghost stays inside its own coaching zone (${v})`, () => {
@@ -121,12 +138,53 @@ for (const v of VARIANTS) {
   });
 }
 
-test('ghost demo is 10-12 s, captions every step, and both variants trace the same pour', () => {
+test('ghost demo is 10-12 s with five captioned steps', () => {
   const end = S.GHOST[S.GHOST.length - 1].t;
   assert.ok(end >= 10 && end <= 12);
   assert.equal(S.GHOST_STEPS.length, 5);
-  const a = S.runTimeline(S.GHOST, 'staged').state, b = S.runTimeline(S.GHOST, 'continuous').state;
-  assert.ok(Math.abs(S.headOf(a) - S.headOf(b)) < 0.01);
+});
+
+// ---- v2.3: the fill zone is centred on the drawn line --------------------------
+
+test('fill zone is centred on the drawn line', () => {
+  const [z0, z1] = S.fillZone();
+  assert.ok(Math.abs((z0 + z1) / 2 - S.PILSNER.fillLine) < 1e-9);
+  assert.ok(Math.abs(z1 - z0 - S.PILSNER.fillTol) < 1e-9);
+});
+
+for (const [name, releaseAt, expectOk] of [['just before the line', 0.93, true], ['at the line', 0.95, true],
+  ['just after the line', 0.955, true], ['well past the line', 0.97, false], ['well short of it', 0.9, false]]) {
+  test(`releasing ${name} (${releaseAt}) is judged consistently`, () => {
+    const r = pour({ variant: 'continuous', at: 0.55, stop: releaseAt });
+    const stopEv = r.state.events.filter(e => e.type === 'stop').at(-1);
+    // What the stop verdict says, what is scored, and the level shown all agree.
+    assert.equal(stopEv.level, S.levelOf(r.state));
+    assert.equal(stopEv.verdict === 'inZone', r.result.checks.total, fmt(r));
+    assert.equal(r.result.checks.total, expectOk, `released at ${releaseAt}, finished at ${S.levelOf(r.state).toFixed(3)}`);
+  });
+}
+
+// ---- v2.3: thumb travel and bring-up style --------------------------------------
+
+test('pad: 45° of straightening takes a comfortable slide, small drift does nothing', () => {
+  const c = S.CONTROL;
+  assert.equal(S.padTarget(45, c.padDead), 45, 'inside the dead zone');
+  assert.equal(S.padTarget(45, -c.padDead), 45);
+  assert.ok(Math.abs(S.padTarget(45, c.padTravel + c.padDead)) < 1e-9, 'one travel length reaches upright');
+  assert.ok(c.padTravel >= 50 && c.padTravel <= 90, `travel ${c.padTravel}px`);
+  // Not twitchy: a 5 px slip beyond the dead zone moves the glass only a few degrees.
+  assert.ok(45 - S.padTarget(45, c.padDead + 5) < 4);
+  assert.equal(S.padTarget(10, 200), 0, 'clamped at upright');
+  assert.equal(S.padTarget(45, -500), c.maxAngle, 'clamped at max tilt');
+});
+
+test('bring-up style is information only: a snap and a slow rise can both pass', () => {
+  const snap = S.runTimeline([{ t: 0, target: 45 }, { t: 1.6, pour: true }, { t: 5.6, target: 0 }, { t: 9.6, pour: false }, { t: 10.6, serve: true }]);
+  const slow = S.runTimeline(S.GHOST);
+  assert.equal(S.bringUpStyle(snap.result.metrics.bringUpSeconds), 'allAtOnce');
+  assert.equal(S.bringUpStyle(slow.result.metrics.bringUpSeconds), 'gradual');
+  assert.equal(slow.result.pass, true);
+  assert.ok(!('bringUp' in snap.result.checks), 'not a scored check');
 });
 
 // ---- Procedure scoring: the exploits found in v1 ------------------------------
@@ -211,7 +269,7 @@ test('zone: tilted early, opens toward upright as the glass fills, never beyond 
 
 test('zone is coaching only: leaving it briefly does not fail an otherwise good pour', () => {
   const r = S.runTimeline([{ t: 0, target: 45 }, { t: 1.6, pour: true }, { t: 2.0, target: 10 }, { t: 2.5, target: 45 },
-    { t: 5.4, target: 0, ramp: 2.5 }, { t: 9.4, pour: false }, { t: 10.4, serve: true }], 'continuous');
+    { t: 5.4, target: 0, ramp: 2.5 }, { t: 9.6, pour: false }, { t: 10.6, serve: true }], 'continuous');
   assert.ok(r.result.metrics.zoneShare < 1);
   assert.equal(r.result.pass, true, fmt(r));
 });
@@ -240,11 +298,12 @@ test('verdict bands: straighten', () => {
 });
 
 test('verdict bands: stop', () => {
-  const z0 = S.PILSNER.fillLine - S.PILSNER.fillTol;
+  const [z0, z1] = S.fillZone();
   assert.equal(S.stopVerdict(z0 - 0.01), 'short');
   assert.equal(S.stopVerdict(z0), 'inZone');
   assert.equal(S.stopVerdict(S.PILSNER.fillLine), 'inZone');
-  assert.equal(S.stopVerdict(S.PILSNER.fillLine + 0.01), 'over');
+  assert.equal(S.stopVerdict(z1), 'inZone');
+  assert.equal(S.stopVerdict(z1 + 0.01), 'over');
 });
 
 test('event: straightening is captured once, at the moment the glass starts coming up', () => {
@@ -252,16 +311,16 @@ test('event: straightening is captured once, at the moment the glass starts comi
   const ev = ofType(r.state, 'straighten');
   assert.equal(ev.length, 1);
   assert.equal(ev[0].level, r.state.straightenBegan);
-  // Staged assist at 18°/s needs ~0.28 s to drop 5° from 45°.
+  // At 18°/s the glass needs ~0.28 s to drop 5° from 45°.
   const t = ev[0].tick / S.HZ;
-  assert.ok(t > 5.4 && t < 5.4 + 0.4, `captured at ${t.toFixed(2)} s`);
+  assert.ok(t > S.GHOST_STRAIGHTEN && t < S.GHOST_STRAIGHTEN + 0.4, `captured at ${t.toFixed(2)} s`);
 });
 
 test('event: stop is captured when the tap has fully closed, and includes the closing ramp', () => {
   const r = S.runTimeline(S.GHOST, 'staged');
   const ev = ofType(r.state, 'stop');
   assert.equal(ev.length, 1);
-  const releaseTick = S.tickOf(9.4);
+  const releaseTick = S.tickOf(S.GHOST_CLOSE);
   assert.ok(ev[0].tick > releaseTick && ev[0].tick <= releaseTick + 10, `tick ${ev[0].tick}`);
   // Nothing changes after a full close, so the stop verdict matches what is scored.
   assert.equal(ev[0].level, S.levelOf(r.state));

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Perfect Pour (prototype v2.2)</title>
+<title>Perfect Pour (prototype v2.3)</title>
 <style>
   :root {
     --bg: #1b1510; --panel: #2a2119; --panel-2: #33281e; --ink: #f6eedf; --muted: #c9b89c;
@@ -129,6 +129,13 @@
   #pour { position: relative; min-height: 112px; display: flex; align-items: center; justify-content: center; padding: 0 56px 0 16px; }
   #pour.cue { box-shadow: 0 0 0 4px var(--ink); }
   #pour:has(#padTrack[hidden]) { padding: 0 16px; }
+  /* The demo thumb (Watch only). Its travel matches CONTROL.padTravel. */
+  #padFinger {
+    position: absolute; left: 18%; width: 38px; height: 46px; margin: -23px 0 0 -19px;
+    border-radius: 50% 50% 45% 45%; background: rgba(27, 21, 16, 0.22);
+    border: 2px solid rgba(27, 21, 16, 0.55); pointer-events: none; z-index: 0;
+  }
+  #pour .padText { position: relative; z-index: 1; }
   #padTrack { position: absolute; right: 16px; top: 14px; bottom: 14px; width: 8px; border-radius: 4px; background: rgba(27, 21, 16, 0.25); }
   #padThumb { position: absolute; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--accent-ink); border: 3px solid #fff6dc; }
   #padTrack::before { content: "▲"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); font-size: 9px; opacity: 0.6; }
@@ -222,7 +229,7 @@
 <body>
 <div id="app">
   <header>
-    <div class="brand">Perfect Pour<small>Pilsner · v2.2</small></div>
+    <div class="brand">Perfect Pour<small>Pilsner · v2.3</small></div>
     <button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" aria-label="Debug panel" hidden>⚙</button>
     <nav id="modes" aria-label="Mode">
       <button type="button" data-mode="watch">Watch</button>
@@ -342,6 +349,7 @@
       <button type="button" id="pour" aria-pressed="false" aria-describedby="pourHelp">
         <span class="padText"><span id="pourText">Hold to pour</span><span class="sub" id="pourSub"></span></span>
         <span id="padTrack" aria-hidden="true"><span id="padThumb"></span></span>
+        <span id="padFinger" aria-hidden="true" hidden></span>
       </button>
       <label class="tapmode"><input type="checkbox" id="tapMode"><span>Tap to start/stop pouring</span></label>
     </div>
@@ -359,7 +367,7 @@
     <div id="transcriptBox" hidden>
       <span id="transcriptTitle">Steps in this demo</span>
       <ol id="transcript" aria-labelledby="transcriptTitle"></ol>
-      <p class="fineprint">Two bands on the training glass: <b>BRING UP</b> (start bringing the glass upright when the beer gets there) and <b>LINE</b> (stop). BRING UP is a training mark that real glasses don't have; on the job, judge it by eye: about half to two-thirds full.</p>
+      <p class="fineprint">Two bands on the training glass: <b>BRING UP</b> (start bringing the glass upright when the beer gets there) and <b>LINE</b> (stop). BRING UP is a training mark that real glasses don't have; on the job, judge it by eye: about half to two-thirds full. Keep holding the pad the whole time: slide up and the glass comes up; stop sliding and it holds its angle while the beer keeps flowing.</p>
     </div>
   </section>
 </div>
@@ -434,7 +442,10 @@
     turbAngle: 45,           // deg at which turbulence bottoms out
     // SOURCED (approx.): "about 45°", "a head of about an inch", "straighten
     // at half to two-thirds full". GAME: the exact bands around them.
-    fillLine: 0.95, fillTol: 0.04,          // level, as a share of glass height
+    // fillLine is the drawn LINE; the passing zone is centred on it
+    // (fillZone below). v2.2 put the line at the zone's top edge, so
+    // releasing at the line -- plus the tap's closing ramp -- failed.
+    fillLine: 0.95, fillTol: 0.04,          // level, as a share of glass height; zone width
     headBand: [0.08, 0.16],                 // head height, share of glass height (~1 inch on a pint-size pilsner)
     wasteTol: 0.02,
     tiltThreshold: 35,                      // deg; at or above counts as "tilted"
@@ -458,6 +469,8 @@
 
   // GAME: feel of the controls.
   const CONTROL = {
+    padTravel: 70,    // px of thumb slide for 45° (v2.2: 110, about the whole pad)
+    padDead: 8,       // px the thumb can drift before the glass moves
     flowRamp: 0.15,   // s for the tap to go fully open or closed
     assistRate: 18,   // deg/s; staged straightening, fixed and not fill-aware (~2.5 s from 45°)
     dragTau: 0.05,    // s; continuous pad, glass easing toward the thumb
@@ -468,6 +481,23 @@
   };
 
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  // The passing level range, centred on the drawn line.
+  const fillZone = (cfg = PILSNER) => [cfg.fillLine - cfg.fillTol / 2, cfg.fillLine + cfg.fillTol / 2];
+
+  // Continuous pad: glass target from where the thumb landed (angle0) and how
+  // far it has slid up since (dyUp, px; negative = down). Pure so it can be
+  // tested without a browser. Holding the thumb still holds the angle.
+  function padTarget(angle0, dyUp, ctl = CONTROL) {
+    if (Math.abs(dyUp) <= ctl.padDead) return angle0;
+    const eff = dyUp - Math.sign(dyUp) * ctl.padDead;
+    return clamp(angle0 - eff * 45 / ctl.padTravel, 0, ctl.maxAngle);
+  }
+
+  // Information only, never scored: did the glass come up gradually or all
+  // at once? Measured from the start of straightening to reaching upright.
+  const GRADUAL_MIN = 0.8;   // s; GAME
+  const bringUpStyle = sec => sec === null ? null : sec >= GRADUAL_MIN ? 'gradual' : 'allAtOnce';
   const rad = d => d * Math.PI / 180;
 
   // ---- Geometry (PHYSICAL) ------------------------------------------------
@@ -587,8 +617,9 @@
     return 'late';
   }
   function stopVerdict(level, cfg = PILSNER) {
-    if (level < cfg.fillLine - cfg.fillTol) return 'short';
-    if (level > cfg.fillLine + 1e-9) return 'over';
+    const [z0, z1] = fillZone(cfg);
+    if (level < z0 - 1e-9) return 'short';
+    if (level > z1 + 1e-9) return 'over';
     return 'inZone';
   }
   const VERDICT_TEXT = {
@@ -617,6 +648,7 @@
       straightenBegan: null,    // level when the glass first came below "tilted" while pouring
       straightenFill: null,     // level when it first reached "upright" while pouring
       closeAngle: null,         // angle when the tap last closed
+      straightenTick: null, uprightTick: null,   // for bring-up speed (information only)
       zoneTicks: 0, flowTicks: 0,
       // Player actions as they happened: { type: 'straighten' | 'stop', tick,
       // level, verdict }. Appended, never edited, so the app and the tests can
@@ -696,10 +728,14 @@
       if (n.straightenBegan === null && n.startAngle !== null && n.startAngle >= cfg.tiltThreshold &&
           n.angle < Math.max(cfg.tiltThreshold, n.startAngle - 5)) {
         n.straightenBegan = levelOf(n);
+        n.straightenTick = s.tick + 1;
         n.events = s.events.concat({ type: 'straighten', tick: s.tick + 1, level: n.straightenBegan,
           verdict: straightenVerdict(n.straightenBegan, cfg) });
       }
-      if (n.straightenFill === null && n.angle <= cfg.straightenThreshold) n.straightenFill = levelOf(n);
+      if (n.straightenFill === null && n.angle <= cfg.straightenThreshold) {
+        n.straightenFill = levelOf(n);
+        n.uprightTick = s.tick + 1;
+      }
     }
 
     // "Stop" is judged when the tap has fully shut, not when the finger
@@ -735,7 +771,7 @@
     };
     const checks = {
       head: head >= b0 - EPS && head <= b1 + EPS,
-      total: level >= cfg.fillLine - cfg.fillTol - EPS && level <= cfg.fillLine + EPS,
+      total: level >= fillZone(cfg)[0] - EPS && level <= fillZone(cfg)[1] + EPS,
       waste: s.waste <= cfg.wasteTol + EPS
     };
     const techniqueOk = procedure.tilted && procedure.upright;
@@ -749,8 +785,8 @@
       if (!checks.waste) causes.push(s.tiltWaste >= s.waste / 2 ? 'tiltSpill' : 'overflow');
       if (head > b1 && began !== null && began < w0) causes.push('early');
       if (head < b0 && (began === null || began > w1)) causes.push('stayedTilted');
-      if (level < cfg.fillLine - cfg.fillTol) causes.push('short');
-      if (checks.waste && level > cfg.fillLine + EPS) causes.push('overLine');
+      if (level < fillZone(cfg)[0] - EPS) causes.push('short');
+      if (checks.waste && level > fillZone(cfg)[1] + EPS) causes.push('overLine');
       if (head > b1 && !causes.includes('early')) causes.push('headHigh');
       if (head < b0 && !causes.includes('stayedTilted')) causes.push('headLow');
     }
@@ -764,7 +800,9 @@
         finalLevel: level, finalHead: head,
         finalFill: s.fill, finalFoam: s.foam, waste: s.waste, tiltWaste: s.tiltWaste,
         pourDuration: s.pourTime,
-        zoneShare: s.flowTicks ? s.zoneTicks / s.flowTicks : null
+        zoneShare: s.flowTicks ? s.zoneTicks / s.flowTicks : null,
+        bringUpSeconds: s.straightenTick !== null && s.uprightTick !== null && s.uprightTick >= s.straightenTick
+          ? (s.uprightTick - s.straightenTick) / HZ : null
       }
     };
   }
@@ -795,8 +833,8 @@
         ? 'You stayed tilted almost to the end,'
         : `You started straightening late, at about ${pct(m.straightenBegan)}% full,`) +
       ` so there wasn't enough upright pouring to build a head (${pct(m.finalHead)}%). Start bringing it up around half to two-thirds full.`,
-    short: (m, cfg) => `You stopped short of the line (${pct(m.finalLevel)}% full; the line is at ${pct(cfg.fillLine)}%).`,
-    overLine: (m, cfg) => `You stopped above the line (${pct(m.finalLevel)}% full; the line is at ${pct(cfg.fillLine)}%). Let go a little sooner.`,
+    short: (m, cfg) => `You stopped short of the line (${pct(m.finalLevel)}% full; aim for ${pct(fillZone(cfg)[0])}-${pct(fillZone(cfg)[1])}%, around the line).`,
+    overLine: (m, cfg) => `You stopped above the line (${pct(m.finalLevel)}% full; aim for ${pct(fillZone(cfg)[0])}-${pct(fillZone(cfg)[1])}%, around the line). Let go a little sooner.`,
     headHigh: (m, cfg) => `The head came out too big (${pct(m.finalHead)}%; aim for ${pct(cfg.headBand[0])}-${pct(cfg.headBand[1])}%). Start straightening a little later, or stop a little sooner.`,
     headLow: (m, cfg) => `The head came out too small (${pct(m.finalHead)}%; aim for ${pct(cfg.headBand[0])}-${pct(cfg.headBand[1])}%). Start straightening a little sooner.`,
     pass: m => m.straightenBegan === null
@@ -826,7 +864,7 @@
   function guidedHints(prev, s, fired, cfg = PILSNER) {
     const due = [];
     const level = levelOf(s);
-    const zone = cfg.fillLine - cfg.fillTol;
+    const zone = fillZone(cfg)[0];
     const tilted = s.angle > cfg.straightenThreshold;
     const want = (id, cond) => { if (cond && !fired.has(id)) due.push(id); };
     want('tiltFirst', s.opened && !prev.opened && s.startAngle < cfg.tiltThreshold);
@@ -872,21 +910,28 @@
   // trace the same motion. CLAIM: captions state technique from the sources
   // in docs/pour-procedure.md (45°, tap fully open, straighten at half to
   // two-thirds, finish upright), not yet verified first-hand.
+  // Continuous is the default, so the demo is a thumb sliding up steadily,
+  // with a short pause partway to show that a still thumb holds the angle
+  // while the beer keeps flowing. (The staged fallback reacts to the
+  // straighten flag on the same keyframe and runs its own fixed rate.)
   const GHOST_STRAIGHTEN = 5.4;
-  const GHOST_CLOSE = 9.4;
+  const GHOST_CLOSE = 9.6;
+  const GHOST_UP = [1.1, 0.5, 1.2];          // slide, hold, slide (s)
+  const GHOST_UPRIGHT = GHOST_STRAIGHTEN + GHOST_UP[0] + GHOST_UP[1] + GHOST_UP[2];
   const GHOST = [
     { t: 0, target: 0, caption: 'Tilt the glass to about 45°. Watch the two bands on the glass.', stepIndex: 0 },
     { t: 0.5, target: 45 },
     { t: 1.6, pour: true, caption: 'Open the tap fully. Pour down the side.', stepIndex: 1 },
-    { t: GHOST_STRAIGHTEN, target: 0, ramp: 45 / CONTROL.assistRate, straighten: true,
-      caption: 'The beer reached the BRING UP band: start bringing the glass upright.', stepIndex: 2 },
-    { t: GHOST_STRAIGHTEN + 45 / CONTROL.assistRate, caption: 'Finish upright to build the head.', stepIndex: 3 },
-    { t: GHOST_CLOSE, pour: false, caption: 'The beer reached the LINE band: stop, then serve.', stepIndex: 4 },
+    { t: GHOST_STRAIGHTEN, target: 25, ramp: GHOST_UP[0], straighten: true,
+      caption: 'At the BRING UP band, keep holding and slide your thumb up slowly.', stepIndex: 2 },
+    { t: GHOST_STRAIGHTEN + GHOST_UP[0] + GHOST_UP[1], target: 0, ramp: GHOST_UP[2] },
+    { t: GHOST_UPRIGHT, caption: 'Finish upright to build the head.', stepIndex: 3 },
+    { t: GHOST_CLOSE, pour: false, caption: 'The beer reached the LINE: let go, then serve.', stepIndex: 4 },
     { t: GHOST_CLOSE + 1, serve: true }
   ];
   const GHOST_STEPS = GHOST.filter(k => k.caption).map(k => k.caption);
 
-  function runTimeline(timeline, variant = 'staged', cfg = PILSNER, ctl = CONTROL) {
+  function runTimeline(timeline, variant = 'continuous', cfg = PILSNER, ctl = CONTROL) {
     let s = initState();
     for (let tick = 0; tick < 30 * HZ; tick++) {
       const inp = inputAt(timeline, tick);
@@ -900,9 +945,9 @@
   root.PourSim = {
     HZ, STEP, PILSNER, CONTROL, GLASS,
     capacity, surfaceAt, heightOf, volumeOf, spillLimit, zoneAt, levelOf, headOf,
-    straightenVerdict, stopVerdict, VERDICT_TEXT,
+    straightenVerdict, stopVerdict, VERDICT_TEXT, fillZone, padTarget, bringUpStyle, GRADUAL_MIN,
     initState, step, total, canServe, evaluate, feedback, COPY,
-    HINTS, guidedHints, tickOf, inputAt, runTimeline, GHOST, GHOST_STEPS
+    HINTS, guidedHints, tickOf, inputAt, runTimeline, GHOST, GHOST_STEPS, GHOST_STRAIGHTEN, GHOST_CLOSE, GHOST_UP
   };
 })(globalThis);
 </script>
@@ -913,14 +958,16 @@
 (function () {
   'use strict';
   const { STEP, PILSNER, CONTROL, GLASS, initState, step, total, canServe, evaluate, feedback,
-    GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints, surfaceAt, zoneAt, levelOf, headOf, VERDICT_TEXT } = PourSim;
+    GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints, surfaceAt, zoneAt, levelOf, headOf, VERDICT_TEXT,
+    fillZone, padTarget, bringUpStyle } = PourSim;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const DEBUG = params.get('debug') === '1';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const cfg = PILSNER, ctl = CONTROL;
   const VARIANTS = ['staged', 'continuous', 'slider', 'toggle'];
-  let variant = VARIANTS.includes(params.get('angle')) ? params.get('angle') : 'staged';
+  // Continuous (B) is the default since v2.3; ?angle=staged keeps A for comparison.
+  let variant = VARIANTS.includes(params.get('angle')) ? params.get('angle') : 'continuous';
 
   const setText = (el, v) => { if (el._t !== v) { el._t = v; el.textContent = v; } };
   const setAttr = (el, k, v) => { v = String(v); if (el.getAttribute(k) !== v) el.setAttribute(k, v); };
@@ -1072,9 +1119,10 @@
 
       // Fill line, printed on the glass so it tilts with it. Heights here are
       // the same upright heights evaluate() scores against.
-      const zl = cfg.fillLine, z0 = cfg.fillLine - cfg.fillTol;
+      // The LINE is drawn mid-band: the passing zone sits either side of it.
+      const zl = cfg.fillLine, [z0, z1] = fillZone(cfg);
       setAttr(E.zoneBand, 'points',
-        `${-halfAt(z0)},${yAt(z0)} ${halfAt(z0)},${yAt(z0)} ${halfAt(zl)},${yAt(zl)} ${-halfAt(zl)},${yAt(zl)}`);
+        `${-halfAt(z0)},${yAt(z0)} ${halfAt(z0)},${yAt(z0)} ${halfAt(z1)},${yAt(z1)} ${-halfAt(z1)},${yAt(z1)}`);
       setAttr(E.fillLine, 'x1', -halfAt(zl)); setAttr(E.fillLine, 'x2', halfAt(zl));
       setAttr(E.fillLine, 'y1', yAt(zl)); setAttr(E.fillLine, 'y2', yAt(zl));
       setAttr(E.fillLabel, 'x', -halfAt(zl) - wall - 4); setAttr(E.fillLabel, 'y', yAt(zl) + 4);
@@ -1109,7 +1157,7 @@
       // Keep the band labels clear of the marks once a mark is drawn.
       E.bringLabel.style.display = st ? 'none' : '';
       E.stopLabel.style.display = view.showMark && !sp ? '' : 'none';
-      setAttr(E.stopLabel, 'x', (halfAt(zl) + wall + 4).toFixed(1)); setAttr(E.stopLabel, 'y', (yAt(zl - cfg.fillTol / 2) + 3).toFixed(1));
+      setAttr(E.stopLabel, 'x', (halfAt(zl) + wall + 4).toFixed(1)); setAttr(E.stopLabel, 'y', (yAt(zl) + 3).toFixed(1));
 
       // Head gauge, in the same upright head height that is scored.
       const head = headOf(s);
@@ -1170,7 +1218,7 @@
 
   // Pad gestures. Thumb movement is measured from where it landed, with a
   // dead zone, so resting a thumb does not nudge the glass.
-  const DEAD = 8, SWIPE = 28, DEG_PER_PX = 45 / 110;
+  const SWIPE = 28;
   pourBtn.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.preventDefault();
@@ -1183,12 +1231,11 @@
   pourBtn.addEventListener('pointermove', e => {
     if (!drag || e.pointerId !== activePointer || locked()) return;
     const dy = drag.y0 - e.clientY;                      // up is positive
-    if (Math.abs(dy) > DEAD) drag.moved = true;
+    if (Math.abs(dy) > ctl.padDead) drag.moved = true;
     if (variant === 'staged') {
       if (dy > SWIPE) requestStraighten('swipe');
     } else if (variant === 'continuous' && drag.moved) {
-      const eff = dy - Math.sign(dy) * DEAD;
-      setTarget(drag.angle0 - eff * DEG_PER_PX);
+      setTarget(padTarget(drag.angle0, dy, ctl));
       if (sim.opened && !straightenVia && input.target < cfg.tiltThreshold) straightenVia = 'slide';
     }
   });
@@ -1229,7 +1276,7 @@
   });
 
   function setVariant(v) {
-    variant = VARIANTS.includes(v) ? v : 'staged';
+    variant = VARIANTS.includes(v) ? v : 'continuous';
     $('sliderWrap').hidden = variant !== 'slider';
     $('toggleWrap').hidden = variant === 'slider';
     // The thumb track only earns its place where the thumb sets the angle.
@@ -1414,8 +1461,8 @@
     chip(ul, r.checks.head, `${pctOf(m.finalHead)}%`, `Head: ${r.checks.head ? 'in range' : m.finalHead > b1 ? 'too big' : 'too small'}`,
       `aim ${pctOf(b0)}–${pctOf(b1)}%`);
     chip(ul, r.checks.total, `${pctOf(m.finalLevel)}%`,
-      `Level: ${r.checks.total ? 'in range' : m.finalLevel > cfg.fillLine ? 'too high' : 'too low'}`,
-      `aim ${pctOf(cfg.fillLine - cfg.fillTol)}–${pctOf(cfg.fillLine)}%`);
+      `Level: ${r.checks.total ? 'in range' : m.finalLevel > fillZone(cfg)[1] ? 'too high' : 'too low'}`,
+      `aim ${pctOf(fillZone(cfg)[0])}–${pctOf(fillZone(cfg)[1])}%`);
     chip(ul, r.checks.waste, `${pctOf(m.waste)}%`, `Spill: ${r.checks.waste ? 'in range' : 'too much'}`, `max ${pctOf(cfg.wasteTol)}%`);
 
     drawDebrief(sim);
@@ -1456,7 +1503,7 @@
   // pour acted. This is how Solo gets its timing feedback -- after the pour.
   function drawDebrief(st) {
     const svg = $('debriefGlass');
-    const [w0, w1] = cfg.straightenWindow, z0 = cfg.fillLine - cfg.fillTol, zl = cfg.fillLine;
+    const [w0, w1] = cfg.straightenWindow, [z0, zl] = fillZone(cfg);
     const top = 10, bot = 140, hgt = bot - top, cx = 50, hb = 14, ht = 24;
     const y = h => bot - h * hgt, hw = h => hb + (ht - hb) * h;
     const band = (h0, h1, fill, stroke, dash) =>
@@ -1472,7 +1519,12 @@
     parts.push(sEv
       ? `You started bringing it up at <b>${pctOf(sEv.level)}%</b> (BRING UP band ${pctOf(w0)}–${pctOf(w1)}%): ${MARK_PLAIN.straighten[sEv.verdict]}.`
       : 'You never started bringing the glass up while pouring.');
-    if (pEv) parts.push(`You stopped at <b>${pctOf(pEv.level)}%</b> (LINE ${pctOf(z0)}–${pctOf(zl)}%): ${MARK_PLAIN.stop[pEv.verdict]}.`);
+    // How the glass came up: information only, never scored.
+    const m = evaluate(st, cfg).metrics, style = bringUpStyle(m.bringUpSeconds);
+    if (style) parts.push(style === 'gradual'
+      ? `Brought up gradually (${m.bringUpSeconds.toFixed(1)} s).`
+      : `Brought up all at once (${m.bringUpSeconds.toFixed(1)} s); try sliding up more slowly.`);
+    if (pEv) parts.push(`You stopped at <b>${pctOf(pEv.level)}%</b> (around the LINE, ${pctOf(z0)}–${pctOf(zl)}%): ${MARK_PLAIN.stop[pEv.verdict]}.`);
     $('debriefText').innerHTML = parts.join(' ');
   }
   const MARK_PLAIN = {
@@ -1534,7 +1586,9 @@
   function actionTick(newEvents) {
     if (mode !== 'guided') return;
     for (const e of newEvents) {
-      const text = VERDICT_TEXT[e.type][e.verdict];
+      let text = VERDICT_TEXT[e.type][e.verdict];
+      // Continuous: the glass is still on its way up -- say how to finish the move.
+      if (e.type === 'straighten' && variant === 'continuous' && sim.angle > cfg.straightenThreshold) text += ' Keep it steady.';
       const good = e.verdict === 'inRange' || e.verdict === 'inZone';
       setCaption(text, good ? 'verdict' : 'hint');
       announce(text);
@@ -1563,7 +1617,7 @@
 
   const SUB = {
     staged: 'Swipe up to straighten',
-    continuous: 'Slide up to straighten, down to tilt',
+    continuous: 'then slide up slowly to straighten',
     slider: 'or hold Space / Enter',
     toggle: 'or hold Space / Enter'
   };
@@ -1575,8 +1629,17 @@
     setText($('pourText'), mode === 'watch' && !served ? (pouring ? 'Demo: pouring…' : 'Demo') :
       locked() ? 'Locked' : pouring ? (tapMode || input.latch ? 'Tap to stop' : 'Pouring…') :
       (tapMode ? 'Tap to pour' : 'Hold to pour'));
-    setText($('pourSub'), mode === 'watch' ? (variant === 'staged' && sim.assist ? 'Straightening…' : 'watch the controls')
-      : variant === 'staged' && sim.assist ? 'Straightening…' : SUB[variant]);
+    setText($('pourSub'), mode === 'watch' ? (variant === 'staged' && sim.assist ? 'Straightening…' : 'watch the thumb')
+      : variant === 'staged' && sim.assist ? 'Straightening…'
+      : variant === 'continuous' && pouring ? 'Keep holding. Slide up slowly to bring the glass upright.'
+      : SUB[variant]);
+    // Demo thumb: in Watch it rests on the pad while the tap is open and
+    // slides with the glass (low = tilted, high = upright), over the same
+    // distance a real thumb travels. Holding still holds the angle.
+    const finger = $('padFinger');
+    const showFinger = mode === 'watch' && !served && pouring && variant === 'continuous';
+    finger.hidden = !showFinger;
+    if (showFinger) finger.style.top = (22 + 56 * Math.min(1, sim.angle / ctl.tiltAngle)).toFixed(1) + '%';
     $('serve').disabled = locked() || !canServe(sim);
     slider.disabled = locked();
 
@@ -1598,7 +1661,7 @@
   // One entry per pour, served or abandoned. v2 has its own key so its data
   // never mixes with the v1 baseline's.
   const Log = (() => {
-    const KEY = 'perfectPour.log.v2.2', CAP = 2000;
+    const KEY = 'perfectPour.log.v2.3', CAP = 2000;
     const session = Math.random().toString(36).slice(2, 8);
     let attempt = 0;
     const r4 = v => v === null || v === undefined ? null : Math.round(v * 1e4) / 1e4;
@@ -1612,7 +1675,7 @@
       attempt++;
       const m = evaluate(state, cfg).metrics;
       const entry = {
-        v: 2.2, session, attempt, at: new Date().toISOString(),
+        v: 2.3, session, attempt, at: new Date().toISOString(),
         mode, variant, tapMode, straightenVia,
         orientation: innerWidth > innerHeight ? 'landscape' : 'portrait',
         served: wasServed,
@@ -1628,6 +1691,7 @@
         finalLevel: r4(m.finalLevel), finalHead: r4(m.finalHead),
         finalFill: r4(m.finalFill), finalFoam: r4(m.finalFoam), waste: r4(m.waste), tiltWaste: r4(m.tiltWaste),
         pourDuration: r4(m.pourDuration), zoneShare: r4(m.zoneShare),
+        bringUpSeconds: r4(m.bringUpSeconds), bringUpStyle: bringUpStyle(m.bringUpSeconds),
         hints: mode === 'guided' ? [...hintsFired] : null,
         events: state.events.map(e => ({ type: e.type, level: r4(e.level), verdict: e.verdict, t: r4(e.tick / 60) })),
         config: Object.assign(JSON.parse(JSON.stringify(cfg)), { control: Object.assign({}, ctl) })
@@ -1696,7 +1760,7 @@
       if (confirm('Delete every logged pour on this device?')) Log.clear();
     });
     $('dbgGhost').addEventListener('click', () => {
-      const out = ['staged', 'continuous'].map(v => {
+      const out = ['continuous', 'staged'].map(v => {
         const r = PourSim.runTimeline(GHOST, v, cfg, ctl);
         return `${v}: ${r.result.pass ? 'PASS' : 'FAIL ' + r.result.primary}  head ${headOf(r.state).toFixed(3)}  ` +
           `level ${levelOf(r.state).toFixed(3)}  began ${r.state.straightenBegan === null ? '-' : r.state.straightenBegan.toFixed(2)}`;

@@ -1,4 +1,4 @@
-# Perfect Pour: prototype v2.2 (one glass, one pilsner)
+# Perfect Pour: prototype v2.3 (one glass, one pilsner)
 
 A prototype for E-Learning Heroes challenge #570: gamified onboarding for a new
 bartender at a fictional brewery. The goal is **procedural memory first,
@@ -14,9 +14,10 @@ input differs.
 
 | Page | What it is |
 |---|---|
-| `/?angle=staged` (default) | **A: staged.** Hold the pad to pour; swipe up once to start straightening. The glass comes upright at a fixed rate. |
-| `/?angle=continuous` | **B: continuous.** Hold the pad to pour; slide up to bring the glass upright (down to tilt more). |
+| `/?angle=staged` | **A: staged.** Hold the pad to pour; swipe up once to start straightening. The glass comes upright at a fixed rate. |
+| `/` or `/?angle=continuous` (default) | **B: continuous.** Hold the pad to pour; slide up to bring the glass upright (down to tilt more). |
 | `/?debug=1` | Adds ⚙: live state, tuning, variant switch, ghost check, pour log download |
+| `/v2.2/` | v2.2 (glass is the meter, A/B), frozen for comparison |
 | `/v2.1/` | v2.1 (fixed dial), frozen for comparison |
 | `/v2/` | v2 as first playtested (moving arc), frozen for comparison |
 | `/v1/` | The v1 prototype, frozen as a comparison baseline |
@@ -35,6 +36,32 @@ accessible fallbacks.
 - "Tap to start/stop pouring" turns hold into tap-on/tap-off; in that mode a
   drag on the pad still moves the glass without toggling the tap.
 - `S` serves, `R` restarts.
+
+## What v2.3 changed: B is the default, and teaches itself
+
+Playtest of v2.2: technique was right on every served pour, and B
+(continuous) won. Its realistic gesture, keep holding and slide the glass up
+gradually, only appeared once the player was told about it, and every failed
+pour was a hair over the line.
+
+- **B (continuous) is the default.** `?angle=staged` keeps A.
+- **Fill zone centred on the drawn line** (93-97%, was 91-95% with the line at
+  the top edge). Releasing at the line, plus the 0.15 s closing ramp, used to
+  fail; now it passes. Still judged after the tap fully closes. Tests release
+  just before, at and just after the line and check that the verdict, the
+  score and the shown level agree.
+- **The gesture is taught:** the Watch demo shows a thumb sliding up the pad
+  in step with the glass, with a short pause to show a still thumb holds the
+  angle while the beer keeps flowing. Pad copy while pouring: "Keep holding.
+  Slide up slowly to bring the glass upright." Guided adds "Keep it steady."
+  after the straighten verdict while the glass is still rising.
+- **Shorter thumb travel:** 70 px for 45° (was 110, about the whole pad), with
+  an 8 px dead zone so a resting thumb does not move the glass. The mapping is
+  a pure, tested function (`padTarget`).
+- **Bring-up style, information only:** the debrief says "Brought up
+  gradually" or "Brought up all at once"; it is never scored. Logged as
+  `bringUpSeconds` / `bringUpStyle`.
+- Head gauge unchanged (decision pending). Log key `perfectPour.log.v2.3`.
 
 ## What v2.2 changed: the glass is the meter
 

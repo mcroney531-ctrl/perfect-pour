@@ -64,7 +64,7 @@ These follow from the glass shape, not from any service guide.
 
 | Rule | Value | Why it exists |
 |---|---|---|
-| Fill zone | 91-95% of glass height | Gives a target; real service is "near the top". |
+| Fill zone | 93-97% of glass height, centred on the drawn LINE at 95% (v2.2 and earlier: 91-95%) | Gives a target; real service is "near the top". Centred so releasing at the line passes. |
 | Head band | 8-16% of glass height | About 0.7-1.3 inches on a pint-size pilsner, around the sourced 1 inch. |
 | Spill allowed | ≤ 2% | Some drips are normal. |
 | "Tilted" | ≥ 35° at the moment the tap opens | A forgiving reading of "about 45°". |
@@ -72,6 +72,8 @@ These follow from the glass shape, not from any service guide.
 | Finish upright | Tap last closed at ≤ 15°, after ≥ 0.5 s of upright pouring | So a flick upright at the last instant does not count. |
 | Straightening window (feedback) | 50-67% full | The sourced half-to-two-thirds range. Used to say *early* or *late*, not to fail on its own. |
 | Head holds after the tap closes | | So the time taken to press Serve can't change the verdict. |
+| Bring-up style (v2.3) | "Gradual" if reaching upright takes ≥ 0.8 s after straightening starts | Information only, shown in the debrief. Reflects the sourced "gradually"; never scored. |
+| Pad travel (v2.3) | 70 px of thumb slide per 45°, 8 px dead zone | Comfortable on a phone without being twitchy. |
 | Staged straighten rate | 18°/s (about 2.5 s from 45°) | Fixed and predictable; it does not adapt to the fill, so starting early or late still shows. |
 | BRING UP mark (v2.1) | 50-67% of glass height | The sourced range, drawn on the glass as a training mark in Watch and Guided. Not on real glassware. |
 | Live action verdicts (v2.2) | Straighten: early < 37%, a little early 37-50%, in range 50-67%, a little late 67-71%, late > 71%. Stop: the fill zone. | Bands measured against the scoring so a verdict can't contradict the result. |
