@@ -258,33 +258,71 @@
         <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <line x1="0" y1="0" x2="0" y2="5" stroke="#f6eedf" stroke-width="1.4"/>
         </pattern>
+        <!-- Faucet materials: warm brushed metal, not cold chrome. -->
+        <linearGradient id="metalH" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f3ead9"/><stop offset="0.45" stop-color="#cdc2ae"/><stop offset="1" stop-color="#857b6c"/>
+        </linearGradient>
+        <linearGradient id="metalV" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#8a8072"/><stop offset="0.3" stop-color="#efe5d2"/><stop offset="0.62" stop-color="#cbbfab"/><stop offset="1" stop-color="#7d7466"/>
+        </linearGradient>
+        <linearGradient id="handleWood" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#2e1a0d"/><stop offset="0.38" stop-color="#6e4325"/><stop offset="0.7" stop-color="#57331b"/><stop offset="1" stop-color="#2a170b"/>
+        </linearGradient>
+        <radialGradient id="nozzleGlow">
+          <stop offset="0" stop-color="#ffd877" stop-opacity="0.85"/><stop offset="1" stop-color="#ffd877" stop-opacity="0"/>
+        </radialGradient>
+        <!-- Foam shading for the candidate glasses; y1/y2 follow the head each frame. -->
+        <linearGradient id="foamGrad" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="10">
+          <stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#ecdcb8"/>
+        </linearGradient>
       </defs>
 
-      <!-- Tap. The handle follows sim flow, so the 150 ms ramp is visible. -->
-      <g id="tap">
-        <rect x="220" y="30" width="130" height="14" rx="4" fill="#8d8a86"/>
-        <rect x="196" y="26" width="28" height="36" rx="7" fill="#b9b6b1"/>
-        <rect x="205" y="60" width="10" height="12" rx="2" fill="#9c9994"/>
+      <!-- Tap: illustrated brewery faucet in named parts (shank, nut, body,
+           spout, handle with a swappable badge). The handle follows sim
+           flow, so the 150 ms ramp is visible; the nozzle glows while the
+           tap is open. Stream starts at the nozzle, (210, 72). -->
+      <g id="tap" stroke="#24170d" stroke-width="1.6" stroke-linejoin="round">
+        <rect id="tapShank" x="224" y="28" width="130" height="17" rx="8.5" fill="url(#metalH)"/>
+        <path d="M232,32 L340,32" stroke="#fffaf0" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+        <rect id="tapNut" x="219" y="23" width="12" height="27" rx="3" fill="url(#metalV)"/>
+        <path id="tapBody" d="M195,31 Q195,22 204,22 L216,22 Q225,22 225,31 L225,49 Q225,57 218,59 L216,62 L204,62 L202,59 Q195,57 195,49 Z" fill="url(#metalV)"/>
+        <path d="M200,30 L200,50" stroke="#fffaf0" stroke-opacity="0.7" stroke-width="2.2" stroke-linecap="round"/>
+        <path id="tapSpout" d="M203.5,61 L216.5,61 L214.5,70 Q210,73.5 205.5,70 Z" fill="url(#metalV)"/>
+        <ellipse cx="210" cy="71" rx="3.4" ry="1.4" fill="#120b06" stroke="none"/>
+        <circle id="tapGlow" cx="210" cy="74" r="7" fill="url(#nozzleGlow)" stroke="none" opacity="0"/>
         <g id="handle">
-          <rect x="203" y="-14" width="14" height="42" rx="6" fill="#3b2a1c" stroke="#6b5139" stroke-width="2"/>
-          <text x="210" y="12" text-anchor="middle" font-size="7" font-weight="700" transform="rotate(-90 210 7)" style="fill:#e9c675">PILS</text>
+          <rect x="206" y="12" width="8" height="12" rx="2" fill="url(#metalV)"/>
+          <path id="tapHandle" d="M203.5,13 L201,-11 Q201,-20 210,-21 Q219,-20 219,-11 L216.5,13 Z" fill="url(#handleWood)"/>
+          <rect id="tapBadge" x="204" y="-12.5" width="12" height="20" rx="3" fill="#a5392b" stroke="#f2d9a6" stroke-width="1"/>
+          <text id="tapLabel" x="210" y="0" text-anchor="middle" font-size="6.5" font-weight="800" stroke="none"
+                transform="rotate(-90 210 -2.5)" style="fill:#f8e6c0; letter-spacing:0.04em">PILS</text>
+          <ellipse cx="210" cy="-20" rx="6.5" ry="2" fill="#8a5a33" stroke-width="1.2"/>
         </g>
       </g>
+
+      <!-- Glass art that sits behind the beer (back wall), same transform as #glass. -->
+      <g id="glassBack"><g id="glassBackArt"></g></g>
 
       <g clip-path="url(#glassClip)">
         <path id="foamFill" fill="#fbf4e2"/>
         <path id="foamTex" fill="url(#foamPat)"/>
         <path id="beerFill" fill="url(#beerGrad)"/>
+        <path id="beerShine" fill="none" stroke="#fff0bf" stroke-opacity="0.6" stroke-width="1.3"/>
         <g id="bubbles" fill="#fff6d2" fill-opacity="0.7"></g>
       </g>
-      <path id="stream" fill="none" stroke="#f0b53a" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="stream" fill="none" stroke="#eaa72c" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="streamCore" fill="none" stroke="#fde6a0" stroke-opacity="0.75" stroke-linecap="round" stroke-linejoin="round"/>
       <g id="splash" fill="#fbf4e2"></g>
       <path id="spill" fill="none" stroke="#fbf4e2" stroke-width="4" stroke-linecap="round"/>
 
       <g id="glass">
-        <path id="glassBody" fill="rgba(210,228,255,0.07)" stroke="rgba(230,240,255,0.8)" stroke-width="2.5" stroke-linejoin="round"/>
-        <path id="glassInner" fill="none" stroke="rgba(230,240,255,0.35)" stroke-width="1"/>
-        <path d="M-33,-205 L-21,-34" stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-linecap="round"/>
+        <!-- Glass artwork. Swapped by the glass treatment (?glass=a|b); the
+             training overlays below always draw on top of it. -->
+        <g id="glassArt">
+          <path id="glassBody" fill="rgba(210,228,255,0.07)" stroke="rgba(230,240,255,0.8)" stroke-width="2.5" stroke-linejoin="round"/>
+          <path id="glassInner" fill="none" stroke="rgba(230,240,255,0.35)" stroke-width="1"/>
+          <path d="M-33,-205 L-21,-34" stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-linecap="round"/>
+        </g>
         <!-- Target zone: hatched band plus a dashed line plus a label, so it
              does not rely on colour (spec §6). -->
         <polygon id="zoneBand" fill="url(#hatch)" fill-opacity="0.45" stroke="#f6eedf" stroke-width="0.8" stroke-dasharray="2 2"/>
@@ -968,6 +1006,9 @@
   const VARIANTS = ['staged', 'continuous', 'slider', 'toggle'];
   // Continuous (B) is the default since v2.3; ?angle=staged keeps A for comparison.
   let variant = VARIANTS.includes(params.get('angle')) ? params.get('angle') : 'continuous';
+  // Candidate glass treatments for review: ?glass=a (refined) or ?glass=b
+  // (warm craft). Without it, the current glass art is drawn.
+  const GLASS_SKIN = params.get('glass');
 
   const setText = (el, v) => { if (el._t !== v) { el._t = v; el.textContent = v; } };
   const setAttr = (el, k, v) => { v = String(v); if (el.getAttribute(k) !== v) el.setAttribute(k, v); };
@@ -996,7 +1037,8 @@
     };
 
     const E = {};
-    ['clipPoly', 'foamFill', 'foamTex', 'beerFill', 'bubbles', 'stream', 'splash', 'spill', 'glass',
+    ['clipPoly', 'foamFill', 'foamTex', 'beerFill', 'beerShine', 'bubbles', 'stream', 'streamCore', 'splash', 'spill', 'glass',
+     'glassBack', 'glassBackArt', 'glassArt', 'tapGlow', 'foamGrad',
      'glassBody', 'glassInner', 'zoneBand', 'fillLine', 'fillLabel', 'handle', 'gaugeBar', 'gaugeBarTex',
      'gaugeBand', 'gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText',
      'stopLabel', 'bringMark', 'bringBand', 'bringLabel',
@@ -1008,6 +1050,73 @@
       `Q${in0 + wall + 1},-4 ${in0 + wall},-10 L${in1 + wall},${RIM - 2} L${in1},${RIM} ` +
       `L${in0},${-base} L${-in0},${-base} L${-in1},${RIM} Z`);
     E.glassInner.setAttribute('d', `M${-in1},${RIM} L${in1},${RIM}`);
+
+    // ---- Glass treatments (art only) ---------------------------------------
+    // Every treatment draws around the SAME inner cavity the sim measures
+    // (INNER / GLASS), so beer, foam, bands and scoring are identical across
+    // them; only walls, rim, base and light change. A curvier, more classic
+    // pilsner silhouette would need the sim's glass shape changed too, so it
+    // is not attempted here.
+    const RING = E.glassBody.getAttribute('d');
+    const hpt = (h, side, inset) => `${(side * (halfAt(h) - inset)).toFixed(1)},${yAt(h).toFixed(1)}`;
+    // A highlight stripe hugging one wall between two heights.
+    const stripe = (side, h0, h1, i0, i1) =>
+      `${hpt(h0, side, i0)} ${hpt(h1, side, i0)} ${hpt(h1, side, i1)} ${hpt(h0, side, i1)}`;
+    const cavity = INNER.map(p => p.join(',')).join(' ');
+    const foot = `M${-in0 - wall},${-base + 1} L${in0 + wall},${-base + 1} L${in0 + wall + 2},-3 Q${in0 + wall + 3},0 ${in0 + wall - 1},0 ` +
+      `L${-in0 - wall + 1},0 Q${-in0 - wall - 3},0 ${-in0 - wall - 2},-3 Z`;
+    const SKINS = {
+      // A: refined. Clear, crisp, cool-neutral glass with restrained light.
+      a: {
+        back: `<polygon points="${cavity}" fill="rgba(214,230,255,0.045)"/>`,
+        front: `
+          <defs><linearGradient id="gA_base" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f4f9ff" stop-opacity="0.32"/><stop offset="1" stop-color="#f4f9ff" stop-opacity="0.62"/>
+          </linearGradient></defs>
+          <path d="${RING}" fill="rgba(226,238,255,0.13)" stroke="rgba(238,246,255,0.92)" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="${foot}" fill="url(#gA_base)" stroke="rgba(238,246,255,0.92)" stroke-width="1.4"/>
+          <ellipse cx="0" cy="${-base + 4}" rx="${(in0 - 5).toFixed(1)}" ry="1.8" fill="rgba(255,255,255,0.32)"/>
+          <line x1="${-in1 - wall}" y1="${RIM - 1}" x2="${in1 + wall}" y2="${RIM - 1}" stroke="rgba(255,255,255,0.8)" stroke-width="2.4" stroke-linecap="round"/>
+          <polygon points="${stripe(-1, 0.07, 0.93, 5, 9)}" fill="rgba(255,255,255,0.24)"/>
+          <polygon points="${stripe(1, 0.55, 0.86, 3, 5)}" fill="rgba(255,255,255,0.14)"/>`
+      },
+      // B: warm craft. Thicker, warmer glass with an illustrated outline,
+      // a beaded rim, a heavy amber base and a little condensation.
+      b: {
+        back: `<polygon points="${cavity}" fill="rgba(255,214,150,0.05)"/>`,
+        front: `
+          <defs>
+            <linearGradient id="gB_wall" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#ffe2aa" stop-opacity="0.42"/><stop offset="0.14" stop-color="#ffecc8" stop-opacity="0.07"/>
+              <stop offset="0.86" stop-color="#ffecc8" stop-opacity="0.07"/><stop offset="1" stop-color="#ffe2aa" stop-opacity="0.36"/>
+            </linearGradient>
+            <linearGradient id="gB_base" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffd690" stop-opacity="0.18"/><stop offset="1" stop-color="#f5bf6e" stop-opacity="0.6"/>
+            </linearGradient>
+            <linearGradient id="gB_glint" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#fff6dc" stop-opacity="0"/><stop offset="0.5" stop-color="#fff6dc" stop-opacity="0.45"/>
+              <stop offset="1" stop-color="#fff6dc" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="${RING}" fill="none" stroke="#21150c" stroke-width="3.6" stroke-linejoin="round"/>
+          <path d="${RING}" fill="url(#gB_wall)" stroke="#f5ddb0" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="${foot}" fill="url(#gB_base)" stroke="#f5ddb0" stroke-width="1.4"/>
+          <ellipse cx="0" cy="${-base + 4.5}" rx="${(in0 - 3).toFixed(1)}" ry="2.2" fill="rgba(255,240,205,0.42)"/>
+          <rect x="${-in1 - wall - 0.5}" y="${RIM - 3.5}" width="${2 * (in1 + wall + 0.5)}" height="4" rx="2"
+                fill="#fbeccb" fill-opacity="0.85" stroke="#21150c" stroke-width="1"/>
+          <polygon points="${stripe(-1, 0.08, 0.9, 4, 13)}" fill="url(#gB_glint)"/>
+          <path d="M${(halfAt(0.86) - 6).toFixed(1)},${yAt(0.86).toFixed(1)} L${(halfAt(0.94) - 6.5).toFixed(1)},${yAt(0.94).toFixed(1)}"
+                stroke="#fff6dc" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round"/>
+          ${[[-1, 0.18, 4], [-1, 0.27, 7], [-1, 0.41, 3.5], [-1, 0.52, 6], [1, 0.22, 5], [1, 0.33, 3.5], [1, 0.46, 6.5], [1, 0.58, 4]]
+            .map(([side, h, inset], i) => `<circle cx="${(side * (halfAt(h) - inset)).toFixed(1)}" cy="${yAt(h).toFixed(1)}" r="${(0.9 + (i % 3) * 0.35).toFixed(2)}" fill="rgba(255,250,235,0.3)"/>`).join('')}`
+      }
+    };
+    const skin = SKINS[GLASS_SKIN] || null;
+    if (skin) {
+      E.glassArt.innerHTML = skin.front;
+      E.glassBackArt.innerHTML = skin.back;
+      E.foamFill.setAttribute('fill', 'url(#foamGrad)');
+    }
 
     const bubbles = [];
     for (let i = 0; i < 14; i++) {
@@ -1049,7 +1158,9 @@
       const tot = s.fill + s.foam;
 
       setAttr(E.clipPoly, 'points', INNER.map(p => g.w(p[0], p[1]).map(v => v.toFixed(2)).join(',')).join(' '));
-      setAttr(E.glass, 'transform', `translate(${g.px.toFixed(2)} ${g.py.toFixed(2)}) rotate(${s.angle.toFixed(2)})`);
+      const glassT = `translate(${g.px.toFixed(2)} ${g.py.toFixed(2)}) rotate(${s.angle.toFixed(2)})`;
+      setAttr(E.glass, 'transform', glassT);
+      setAttr(E.glassBack, 'transform', glassT);
 
       const yBeer = g.surfaceY(s.fill), yTop = g.surfaceY(tot);
       const wobble = calm ? 0 : 0.4 + 1.6 * s.flow * s.turb;
@@ -1057,6 +1168,16 @@
       const foamD = s.foam > 0.002 ? surface(yTop, 1.3, calm ? 0 : t * 1.2, 0.45) : '';
       E.foamFill.setAttribute('d', foamD);
       E.foamTex.setAttribute('d', foamD);
+      if (skin) {
+        // Creamier head: light at the top, warmer where it meets the beer, and
+        // a bright line along the beer's surface so the two read apart.
+        setAttr(E.foamGrad, 'y1', yTop.toFixed(1)); setAttr(E.foamGrad, 'y2', Math.max(yTop + 4, yBeer).toFixed(1));
+        let line = '';
+        if (s.fill > 0.002) for (let x = 0; x <= 340; x += 17) {
+          line += (x ? 'L' : 'M') + x + ',' + (yBeer + wobble * Math.sin(x * 0.07 + t * 7)).toFixed(2);
+        }
+        setAttr(E.beerShine, 'd', line);
+      }
 
       const bubblesOn = !calm && s.fill > 0.05;
       for (const b of bubbles) {
@@ -1097,8 +1218,11 @@
         }
         E.stream.setAttribute('d', d);
         setAttr(E.stream, 'stroke-width', (1.5 + 4 * s.flow).toFixed(2));
+        E.streamCore.setAttribute('d', d);
+        setAttr(E.streamCore, 'stroke-width', (0.5 + 1.3 * s.flow).toFixed(2));
       } else {
         setAttr(E.stream, 'd', '');
+        setAttr(E.streamCore, 'd', '');
       }
 
       const agit = impact && s.fill > 0.01 ? s.flow * s.turb * (impact.direct ? 1 : 0.5) : 0;
@@ -1127,7 +1251,8 @@
       setAttr(E.fillLine, 'y1', yAt(zl)); setAttr(E.fillLine, 'y2', yAt(zl));
       setAttr(E.fillLabel, 'x', -halfAt(zl) - wall - 4); setAttr(E.fillLabel, 'y', yAt(zl) + 4);
 
-      setAttr(E.handle, 'transform', `rotate(${(-30 * s.flow).toFixed(1)} 210 28)`);
+      setAttr(E.handle, 'transform', `rotate(${(-30 * s.flow).toFixed(1)} 210 24)`);
+      setAttr(E.tapGlow, 'opacity', (0.8 * s.flow).toFixed(2));
 
       // BRING UP training mark: the sourced half-to-two-thirds range, printed
       // on the glass. Watch and Guided only.

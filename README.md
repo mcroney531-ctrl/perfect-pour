@@ -160,6 +160,19 @@ coaching-only, and the guided hints.
 | Overpour by 1.5 s | fail: overflow |
 | Stop at 86% | fail: short |
 
+## Visual pass (in progress)
+
+- **Faucet** redesigned as an illustrated brewery tap (live on the main link):
+  named SVG parts `#tapShank`, `#tapNut`, `#tapBody`, `#tapSpout`, `#handle`
+  (rotates with flow), `#tapBadge` + `#tapLabel` (swap the colour/text per
+  beer), `#tapGlow` (nozzle glow while pouring). The stream has a lighter core.
+- **Glass candidates** for review, same cavity as the sim so beer, foam, bands
+  and scoring are unchanged: `?glass=a` (refined) and `?glass=b` (warm craft).
+  Both add creamier foam shading and a bright line where beer meets foam.
+  Without the parameter the current glass is drawn. Art lives in `SKINS` in
+  the renderer: back-wall art behind the beer, wall/rim/base/highlights in
+  front, training overlays always on top.
+
 ## Pour log fields (the ones easy to mix up)
 
 All levels are shares of the glass height, upright.
