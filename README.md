@@ -166,10 +166,10 @@ coaching-only, and the guided hints.
   named SVG parts `#tapShank`, `#tapNut`, `#tapBody`, `#tapSpout`, `#handle`
   (rotates with flow), `#tapBadge` + `#tapLabel` (swap the colour/text per
   beer), `#tapGlow` (nozzle glow while pouring). The stream has a lighter core.
-- **Glass candidates** for review, same cavity as the sim so beer, foam, bands
-  and scoring are unchanged: `?glass=a` (refined) and `?glass=b` (warm craft).
-  Both add creamier foam shading and a bright line where beer meets foam.
-  Without the parameter the current glass is drawn. Art lives in `SKINS` in
+- **Glass: A (refined) chosen and now the default.** Same cavity as the sim,
+  so beer, foam, bands and scoring are unchanged. Creamier foam shading and a
+  bright line where beer meets foam. Alternatives kept for reference:
+  `?glass=b` (warm craft) and `?glass=old` (the prototype glass). Art lives in `SKINS` in
   the renderer: back-wall art behind the beer, wall/rim/base/highlights in
   front, training overlays always on top.
 

@@ -1008,9 +1008,9 @@
   const VARIANTS = ['staged', 'continuous', 'slider', 'toggle'];
   // Continuous (B) is the default since v2.3; ?angle=staged keeps A for comparison.
   let variant = VARIANTS.includes(params.get('angle')) ? params.get('angle') : 'continuous';
-  // Candidate glass treatments for review: ?glass=a (refined) or ?glass=b
-  // (warm craft). Without it, the current glass art is drawn.
-  const GLASS_SKIN = params.get('glass');
+  // Glass treatment: A (refined) is the default since it was chosen in review.
+  // ?glass=b shows the warm-craft candidate, ?glass=old the prototype glass.
+  const GLASS_SKIN = params.get('glass') || 'a';
 
   const setText = (el, v) => { if (el._t !== v) { el._t = v; el.textContent = v; } };
   const setAttr = (el, k, v) => { v = String(v); if (el.getAttribute(k) !== v) el.setAttribute(k, v); };
