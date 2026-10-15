@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="scene" viewBox="136.5 104.0 174.9 241.0" xmlns="http://www.w3.org/2000/svg" width="700" height="964">
+      
+      
+      <defs>
+        <clipPath id="glassClip" clipPathUnits="userSpaceOnUse"><polygon id="clipPoly" points="171.94,112.00 187.00,327.00 233.00,327.00 248.06,112.00"/></clipPath>
+        <linearGradient id="beerGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f7c948"/>
+          <stop offset="0.6" stop-color="#e7a526"/>
+          <stop offset="1" stop-color="#c9811a"/>
+        </linearGradient>
+        <pattern id="foamPat" width="9" height="8" patternUnits="userSpaceOnUse">
+          <circle cx="2.5" cy="2.5" r="1.7" fill="#e9dcbd"/>
+          <circle cx="7" cy="6" r="1.2" fill="#ece1c6"/>
+        </pattern>
+        <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#f6eedf" stroke-width="1.4"/>
+        </pattern>
+        <!-- Faucet materials: warm brushed metal, not cold chrome. -->
+        <linearGradient id="metalH" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f3ead9"/><stop offset="0.45" stop-color="#cdc2ae"/><stop offset="1" stop-color="#857b6c"/>
+        </linearGradient>
+        <linearGradient id="metalV" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#8a8072"/><stop offset="0.3" stop-color="#efe5d2"/><stop offset="0.62" stop-color="#cbbfab"/><stop offset="1" stop-color="#7d7466"/>
+        </linearGradient>
+        <linearGradient id="handleWood" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#2e1a0d"/><stop offset="0.38" stop-color="#6e4325"/><stop offset="0.7" stop-color="#57331b"/><stop offset="1" stop-color="#2a170b"/>
+        </linearGradient>
+        <radialGradient id="nozzleGlow">
+          <stop offset="0" stop-color="#ffd877" stop-opacity="0.85"/><stop offset="1" stop-color="#ffd877" stop-opacity="0"/>
+        </radialGradient>
+        <!-- Foam shading for the candidate glasses; y1/y2 follow the head each frame. -->
+        <linearGradient id="foamGrad" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="327.0" y2="331.0">
+          <stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#ecdcb8"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Tap: illustrated brewery faucet in named parts (shank, nut, body,
+           spout, handle with a swappable badge). The handle follows sim
+           flow, so the 150 ms ramp is visible; the nozzle glows while the
+           tap is open. Stream starts at the nozzle, (210, 72). -->
+      
+
+      <!-- Glass art that sits behind the beer (back wall), same transform as #glass. -->
+      <g id="glassBack" transform="translate(210.00 339.00) rotate(0.00)"><g id="glassBackArt"><polygon points="-38.055,-227 -23.005,-12 23.005,-12 38.055,-227" fill="rgba(214,230,255,0.045)"/></g></g>
+
+      <g clip-path="url(#glassClip)">
+        <path id="foamFill" fill="url(#foamGrad)" d=""/>
+        <path id="foamTex" fill="url(#foamPat)" d=""/>
+        <path id="beerFill" fill="url(#beerGrad)" d=""/>
+        <path id="beerShine" fill="none" stroke="#fff0bf" stroke-opacity="0.6" stroke-width="1.3" d=""/>
+        <g id="bubbles" fill="#fff6d2" fill-opacity="0.7"><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/><circle r="0"/></g>
+      </g>
+      
+      
+      
+      
+
+      <g id="glass" transform="translate(210.00 339.00) rotate(0.00)">
+        <!-- Glass artwork. Swapped by the glass treatment (?glass=a|b); the
+             training overlays below always draw on top of it. -->
+        <g id="glassArt">
+          <defs><linearGradient id="gA_base" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f4f9ff" stop-opacity="0.32"/><stop offset="1" stop-color="#f4f9ff" stop-opacity="0.62"/>
+          </linearGradient></defs>
+          <path d="M-42.055,-229 L-27.005,-10 Q-28.005,-4 -34,-2 L-34,0 L34,0 L34,-2 Q28.005,-4 27.005,-10 L42.055,-229 L38.055,-227 L23.005,-12 L-23.005,-12 L-38.055,-227 Z" fill="rgba(226,238,255,0.13)" stroke="rgba(238,246,255,0.92)" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M-27.005,-11 L27.005,-11 L29.005,-3 Q30.005,0 26.005,0 L-26.005,0 Q-30.005,0 -29.005,-3 Z" fill="url(#gA_base)" stroke="rgba(238,246,255,0.92)" stroke-width="1.4"/>
+          <ellipse cx="0" cy="-8" rx="18.0" ry="1.8" fill="rgba(255,255,255,0.32)"/>
+          <line x1="-42.055" y1="-228" x2="42.055" y2="-228" stroke="rgba(255,255,255,0.8)" stroke-width="2.4" stroke-linecap="round"/>
+          <polygon points="-19.1,-27.1 -32.0,-212.0 -28.0,-212.0 -15.1,-27.1" fill="rgba(255,255,255,0.24)"/>
+          <polygon points="28.3,-130.3 32.9,-196.9 30.9,-196.9 26.3,-130.3" fill="rgba(255,255,255,0.14)"/></g>
+        <!-- Target zone: hatched band plus a dashed line plus a label, so it
+             does not rely on colour (spec §6). -->
+        
+        
+        
+        
+        <!-- Training mark only: real glassware has no such line. Shown in Watch
+             and Guided so the learner links "about half to two-thirds" to what
+             they see; gone in Solo, where they judge it by eye. -->
+        
+        <!-- Where the player acted, drawn at the level they acted at. Watch and
+             Guided only; Solo sees the same marks in the debrief instead. -->
+        
+      </g>
+
+      <!-- Head gauge: the head band is a thickness, not a place on the glass,
+           so it gets its own scale. Top-left is the one corner the glass never
+           reaches at any tilt. -->
+      
+      
+    </svg>
