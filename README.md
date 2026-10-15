@@ -10,6 +10,16 @@ v2 tests one open question: **staged or continuous straightening?** Both use
 the same simulation, rendering, scoring and feedback; only the straightening
 input differs.
 
+## Status: Pilsner pour mechanic settled
+
+First-timer cold-start test (main link, no explanation): passed on the first
+attempt, brought the glass up slowly (the gradual motion the Watch demo
+teaches), and recited the steps afterwards. One brief hesitation, at
+straightening ("how do I… ah, I see"), resolved within seconds. Decision: the
+mechanic is settled; making the straighten gesture more obvious is a
+presentation task for the station redesign (M5), not a mechanics change.
+Head gauge: kept (revisit only if testers watch it instead of the foam).
+
 ## Links
 
 | Page | What it is |
