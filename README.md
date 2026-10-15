@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation: 61 tests, Node 18+, no installs
-npm run test:ui     # browser: 14 Playwright tests (npm install first)
+npm run test:ui     # browser: 17 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -166,7 +166,9 @@ feedback, Solo fade and debrief, release at the line, snap vs gradual,
 result-sheet layering, keyboard path, blur closes the tap, tap mode, the
 staged fallback, the pour log, the debug ghost check, glass treatments and
 frozen versions loading, and clean mount/unmount (no leaked listeners or
-animation frames; a remount pours exactly like a fresh page).
+animation frames; a remount pours exactly like a fresh page), and the M2
+design pages (the sheet loads; the composite runs the unmodified demo to a
+clean pour, filters only the art, and its shadow follows the glass).
 
 `node test/ui/snapshots.mjs <dir>` writes deterministic screenshots for
 pixel-parity checks across refactors.
@@ -195,6 +197,34 @@ pixel-parity checks across refactors.
   the renderer: back-wall art behind the beer, wall/rim/base/highlights in
   front, training overlays always on top.
 
+## M2: visual system and compositing test (for review)
+
+Nothing in the game changed. These are review pages:
+
+| Page | What it is |
+|---|---|
+| `/design/components.html` | Riverside visual system: palette, type (self-hosted Barlow / Barlow Condensed), buttons, station status chips (Hefeweizen and Nitro Stout shown as "Coming soon", not playable), hub hotspots, caption pills, certification seal, and a result panel that lists only what the pass is judged on. |
+| `/design/composite.html` | The live game (faucet, glass A, beer, foam) inside a fixed 390 x 844 portrait frame over a replaceable backdrop. Pick a treatment, a backdrop (or load your own image file), stage only or stage + pad, the mode, and the reserved-zone overlay. Settings live in the URL, e.g. `?fx=all&zones=1&bg=<image url>`. |
+| `/design/composite-compare.html` | The four treatments side by side. |
+
+- **Treatments** (page-side SVG filters; bands, labels, marks and the head
+  gauge are never filtered): *original*; *warm grade + light wrap* (cool
+  whites pulled toward the amber room light, a faint amber edge on the glass
+  and faucet); *contact shadows* (faucet drop shadow on the wall, a soft
+  shadow on the bar top that follows the glass and fades as it lifts);
+  *grade + shadows*.
+- **Backdrop** `design/backdrops/temp-pilsner.svg` is a labelled temporary
+  stand-in. `design/backdrops/pilsner-portrait-template.png` (1170 x 2532,
+  3x of the frame) marks what the real one must respect: no tap hardware in
+  the live faucet zone (the shank runs off the right edge), a low-contrast
+  glass sweep, the bar top / drip tray at y 494 (the shadow plane), and a dark,
+  even area below y 560 for the controls.
+- **Frame layout** is a proposal for M5, not the current station layout: the
+  scene spans the full width, the caption sits on top and the pad below the
+  bar. The station's own layout is untouched.
+- Carried to M3 unchanged: what happens if the player leaves mid-pour (close
+  the tap, then record or deliberately discard the attempt).
+
 ## Pour log fields (the ones easy to mix up)
 
 All levels are shares of the glass height, upright.
@@ -216,6 +246,8 @@ modules) so `index.html` still opens by double-click from disk.
 |---|---|
 | `index.html` | Shell: shared CSS, the station's markup as a `<template>`, and a three-line boot |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
+| `css/tokens.css`, `css/components.css` | M2 visual system: colour, type, spacing tokens and the shared components (not yet used by the game) |
+| `design/` | M2 review pages and backdrops (see above) |
 | `js/pilsner-station.js` | The Pilsner station: renderer (`Renderer.render(state, view)`, inline SVG, read-only on sim state), pad input, Watch/Guided/Solo, result sheet and debrief, live region, pour log (`perfectPour.log.v2.3`), debug panel. |
 
 The station is a component:

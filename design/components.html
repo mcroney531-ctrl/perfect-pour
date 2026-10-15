@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Riverside components (M2)</title>
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/components.css">
+<style>
+  /* Sheet layout only. */
+  html, body { margin: 0; background: radial-gradient(120% 80% at 50% 0%, #1d2629, var(--pp-charcoal-950)); color: var(--pp-text); font-family: var(--pp-font-ui); }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px var(--pp-gutter) 60px; display: grid; gap: 34px; }
+  h1 { margin: 0; font: 800 var(--pp-fs-h1)/1 var(--pp-font-display); text-transform: uppercase; letter-spacing: 0.02em; }
+  h2 { margin: 0 0 12px; }
+  section > p { color: var(--pp-text-muted); margin: 0 0 14px; max-width: 70ch; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .sw { width: 128px; border-radius: 10px; overflow: hidden; border: 1px solid #2a3336; font-size: 0.78rem; }
+  .sw i { display: block; height: 58px; }
+  .sw span { display: block; padding: 6px 8px; color: var(--pp-text-muted); }
+  .sw b { display: block; color: var(--pp-text); font-weight: 600; }
+  .stage { position: relative; height: 230px; border-radius: var(--pp-radius); overflow: hidden;
+    background: radial-gradient(60% 70% at 50% 100%, rgba(255,181,71,0.18), transparent), linear-gradient(180deg, #1a2022, #0f1314); border: 1px solid #263033; }
+  .stage .pp-ring { position: absolute; }
+  .stage .pp-station { position: absolute; }
+  .note { font-size: var(--pp-fs-small); color: var(--pp-text-muted); }
+  .seal-wrap { display: flex; gap: 28px; flex-wrap: wrap; align-items: center; }
+</style>
+</head>
+<body>
+<!-- Shared symbols so the brand marks pick up the page fonts. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="pp-emblem" viewBox="0 0 64 64">
+      <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M32 6v6M32 9c4-3 9-3 12-1-3 3-8 4-12 1"/>
+        <path d="M32 12C46 18 48 38 32 58 16 38 18 18 32 12Z"/>
+        <path d="M23 21l9-7 9 7M20 29l12-8 12 8M21 37l11-8 11 8M24 45l8-7 8 7M28 52l4-4 4 4"/>
+      </g>
+    </symbol>
+    <linearGradient id="pp-gold-metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe39a"/><stop offset="0.45" stop-color="#e7b143"/><stop offset="1" stop-color="#9a6a17"/>
+    </linearGradient>
+    <!-- Mini glasses for station cards. Pilsner matches the game's glass A shape. -->
+    <symbol id="pp-glass-pils" viewBox="0 0 46 72">
+      <path d="M8 4 L38 4 L33 64 L13 64 Z" fill="#f2b232"/><path d="M8 4 L38 4 L37.2 14 L8.8 14 Z" fill="#fbf2dd"/>
+      <path d="M6 2 L40 2 L34 66 L12 66 Z" fill="none" stroke="#e8f1ff" stroke-width="1.6"/><rect x="11" y="66" width="24" height="4" rx="1.5" fill="#cfd8e3"/>
+    </symbol>
+    <symbol id="pp-glass-hefe" viewBox="0 0 46 72">
+      <path d="M12 4 C6 20 18 30 14 44 C11 54 14 62 16 64 L30 64 C32 62 35 54 32 44 C28 30 40 20 34 4 Z" fill="#e9a74a" opacity="0.55"/>
+      <path d="M12 4 C6 20 18 30 14 44 C11 54 14 62 16 64 L30 64 C32 62 35 54 32 44 C28 30 40 20 34 4 Z" fill="none" stroke="#dfe4e6" stroke-width="1.6" stroke-dasharray="3 3"/>
+    </symbol>
+    <symbol id="pp-glass-stout" viewBox="0 0 46 72">
+      <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="#2a160c" opacity="0.6"/><path d="M9 4 L37 4 L36.6 10 L9.4 10 Z" fill="#e8d6b4" opacity="0.6"/>
+      <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="none" stroke="#dfe4e6" stroke-width="1.6" stroke-dasharray="3 3"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main>
+  <header class="row" style="justify-content:space-between">
+    <div>
+      <div class="pp-label">M2 · visual system · for review</div>
+      <h1>Riverside Brewing Co. / Perfect Pour</h1>
+    </div>
+    <svg width="64" height="64" style="color:var(--pp-gold-400)" role="img" aria-label="Riverside hop emblem"><use href="#pp-emblem"/></svg>
+  </header>
+
+  <section>
+    <h2 class="pp-label">Palette</h2>
+    <div class="row" id="swatches"></div>
+  </section>
+
+  <section>
+    <h2 class="pp-label">Type</h2>
+    <div class="pp-display" style="font-size:var(--pp-fs-hero)">Perfect Pour</div>
+    <div class="pp-label" style="letter-spacing:0.32em;margin:6px 0 18px">Staff training experience</div>
+    <div class="pp-display" style="font-size:var(--pp-fs-h1);text-transform:none">Master the Foundation Pour</div>
+    <p style="font-size:1.05rem;max-width:52ch;color:var(--pp-text)">A crisp, clean pour sets the standard. Tilt, pour down the side, bring it up as it fills, and stop at the line.</p>
+    <p class="note">Display: Barlow Condensed 800. UI and body: Barlow 400–700. Self-hosted, no third-party requests.</p>
+  </section>
+
+  <section>
+    <h2 class="pp-label">Buttons</h2>
+    <div class="row">
+      <button class="pp-btn pp-btn--primary pp-btn--lg">Start Training <span class="pp-arrow">→</span></button>
+      <button class="pp-btn pp-btn--primary">Start Pouring <span class="pp-arrow">→</span></button>
+      <button class="pp-btn pp-btn--secondary">Watch again</button>
+      <button class="pp-btn pp-btn--ghost"><span class="pp-arrow">←</span> Back to Hub</button>
+      <button class="pp-btn pp-btn--primary" disabled>Serve</button>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="pp-label">Station status (icon + words, never colour alone)</h2>
+    <div class="row">
+      <span class="pp-chip pp-chip--new">Start here</span>
+      <span class="pp-chip pp-chip--progress">In progress</span>
+      <span class="pp-chip pp-chip--certified">Certified</span>
+      <span class="pp-chip pp-chip--preview">Coming soon</span>
+      <span class="pp-chip pp-chip--locked">Locked: earn all 3</span>
+    </div>
+    <p class="note" style="margin-top:10px">“Coming soon” is how Hefeweizen and Nitro Stout appear until their simulations exist: visible on the hub, clearly not playable.</p>
+  </section>
+
+  <section>
+    <h2 class="pp-label">Hub hotspots (illustrative stage)</h2>
+    <div class="stage">
+      <div class="pp-ring is-recommended" style="left:9%;bottom:16px"></div>
+      <button class="pp-station pp-panel is-recommended" style="left:4%;top:24px">
+        <svg class="pp-station__art" aria-hidden="true"><use href="#pp-glass-pils"/></svg>
+        <span class="pp-station__name">Pilsner</span><span class="pp-station__sub">Foundation pour</span><span class="pp-chip pp-chip--new">Start here</span>
+      </button>
+      <div class="pp-ring pp-ring--preview" style="left:42%;bottom:16px"></div>
+      <button class="pp-station pp-panel" style="left:36%;top:24px" aria-disabled="true">
+        <svg class="pp-station__art" aria-hidden="true"><use href="#pp-glass-hefe"/></svg>
+        <span class="pp-station__name">Hefeweizen</span><span class="pp-station__sub">Build on your skills</span><span class="pp-chip pp-chip--preview">Coming soon</span>
+      </button>
+      <div class="pp-ring pp-ring--preview" style="left:76%;bottom:16px"></div>
+      <button class="pp-station pp-panel" style="left:69%;top:24px" aria-disabled="true">
+        <svg class="pp-station__art" aria-hidden="true"><use href="#pp-glass-stout"/></svg>
+        <span class="pp-station__name">Nitro Stout</span><span class="pp-station__sub">Two-step pour</span><span class="pp-chip pp-chip--preview">Coming soon</span>
+      </button>
+    </div>
+    <p class="note" style="margin-top:10px">Real <code>&lt;button&gt;</code> elements, so the hub works by keyboard and screen reader. Only the recommended station breathes, and not under reduced motion.</p>
+  </section>
+
+  <section>
+    <h2 class="pp-label">Caption pills and step dots (training)</h2>
+    <div class="row" style="margin-bottom:12px">
+      <ol class="pp-steps" aria-label="Training steps"><li class="is-done">1</li><li aria-current="step">2</li><li>3</li></ol>
+      <span class="pp-note note">1 Watch · 2 Guided · 3 Solo</span>
+    </div>
+    <div class="row">
+      <span class="pp-pill">Open the tap fully. Pour down the side.</span>
+      <span class="pp-pill pp-pill--good">Started straightening in range. Keep it steady.</span>
+      <span class="pp-pill pp-pill--hint">The beer's past the BRING UP band. Bring the glass up now.</span>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="pp-label">Certification</h2>
+    <div class="seal-wrap">
+      <svg width="210" height="210" viewBox="0 0 220 220" role="img" aria-label="Riverside Brewing Co. Pilsner station certified">
+        <defs><path id="seal-top" d="M30 110 A80 80 0 0 1 190 110"/><path id="seal-bot" d="M39.7 156 A84 84 0 0 0 180.3 156"/></defs>
+        <circle cx="110" cy="110" r="104" fill="url(#pp-gold-metal)"/>
+        <circle cx="110" cy="110" r="96" fill="#0f2a23" stroke="#f7d27a" stroke-width="1.5"/>
+        <circle cx="110" cy="110" r="66" fill="none" stroke="#c98d24" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <text font-family="var(--pp-font-display)" font-weight="800" font-size="15" letter-spacing="2.5" fill="#f7d27a"><textPath href="#seal-top" startOffset="50%" text-anchor="middle">RIVERSIDE BREWING CO.</textPath></text>
+        <text font-family="var(--pp-font-display)" font-weight="700" font-size="13" letter-spacing="2.5" fill="#f7d27a"><textPath href="#seal-bot" startOffset="50%" text-anchor="middle">PILSNER STATION</textPath></text>
+        <svg x="82" y="56" width="56" height="56" style="color:#f0bd4a"><use href="#pp-emblem"/></svg>
+        <path d="M34 122 H186 L176 136 L186 150 H34 L44 136 Z" fill="url(#pp-gold-metal)" stroke="#7d5512"/>
+        <text x="110" y="142" text-anchor="middle" font-family="var(--pp-font-display)" font-weight="800" font-size="20" letter-spacing="3" fill="#1c1406">CERTIFIED</text>
+      </svg>
+      <div class="pp-panel" style="padding:18px 20px;max-width:340px">
+        <div class="pp-display" style="font-size:1.9rem;text-transform:none">Great pour!</div>
+        <p style="margin:6px 0 12px;color:var(--pp-text-muted)">You've earned the Pilsner station certification.</p>
+        <ul class="pp-checklist" aria-label="What was assessed">
+          <li>Tilted the glass before opening the tap</li>
+          <li>Finished upright</li>
+          <li>Head in range</li>
+          <li>Stopped in the fill zone</li>
+          <li>No spill</li>
+        </ul>
+        <div class="row" style="margin-top:16px"><button class="pp-btn pp-btn--primary">Back to the bar <span class="pp-arrow">→</span></button></div>
+      </div>
+    </div>
+    <p class="note" style="margin-top:10px">The checklist names only what the pass is judged on (the five checks in the scoring). Straightening timing is coached, not graded, so it is not listed; nor is glass prep (deferred until sourced).</p>
+  </section>
+</main>
+<script>
+  const sw = [['Charcoal 950','--pp-charcoal-950'],['Charcoal 800','--pp-charcoal-800'],['Forest 900','--pp-forest-900'],['Forest line','--pp-forest-line'],
+    ['Gold 400','--pp-gold-400'],['Gold 600','--pp-gold-600'],['Amber glow','--pp-amber-glow'],['Copper','--pp-copper'],['Steel 400','--pp-steel-400'],
+    ['Text','--pp-text'],['Certified','--pp-ok'],['In progress','--pp-progress']];
+  const cs = getComputedStyle(document.documentElement), host = document.getElementById('swatches');
+  for (const [n, v] of sw) {
+    const d = document.createElement('div'); d.className = 'sw';
+    d.innerHTML = `<i style="background:var(${v})"></i><span><b>${n}</b>${cs.getPropertyValue(v).trim()}</span>`;
+    host.appendChild(d);
+  }
+</script>
+</body>
+</html>

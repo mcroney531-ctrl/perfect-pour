@@ -1,0 +1,74 @@
+/* Riverside Brewing Co. / Perfect Pour: design tokens.
+   Taken from the locked storyboard: dark charcoal and forest-green surfaces,
+   warm amber/gold accents, brushed steel and copper. Self-hosted fonts
+   (Barlow Condensed for display, Barlow for UI and body; SIL OFL). */
+
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('../assets/fonts/Barlow-400.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('../assets/fonts/Barlow-500.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('../assets/fonts/Barlow-600.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('../assets/fonts/Barlow-700.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('../assets/fonts/BarlowCondensed-600.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('../assets/fonts/BarlowCondensed-700.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 800; font-display: swap;
+  src: url('../assets/fonts/BarlowCondensed-800.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+:root {
+  /* Surfaces */
+  --pp-charcoal-950: #0c0f10;
+  --pp-charcoal-900: #13181a;
+  --pp-charcoal-800: #1b2224;
+  --pp-forest-950: #0b211b;
+  --pp-forest-900: #10302a;
+  --pp-forest-800: #173f35;
+  --pp-forest-line: #2d6553;
+
+  /* Accents */
+  --pp-gold-300: #f7d27a;
+  --pp-gold-400: #f0bd4a;     /* primary action */
+  --pp-gold-600: #c98d24;
+  --pp-gold-800: #7d5512;
+  --pp-amber-glow: #ffb547;
+  --pp-copper: #b9733f;
+  --pp-steel-200: #dfe4e6;
+  --pp-steel-400: #a6afb3;
+  --pp-steel-600: #6c767a;
+
+  /* Text */
+  --pp-text: #f4efe5;
+  --pp-text-muted: #aab3b0;
+  --pp-text-on-gold: #1c1406;
+
+  /* Status (never the only signal: always paired with an icon and words) */
+  --pp-ok: #5fcf8a;           /* certified */
+  --pp-progress: #59a9ff;     /* in progress */
+  --pp-preview: #8c969a;      /* not yet playable */
+
+  /* Type */
+  --pp-font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
+  --pp-font-ui: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --pp-fs-hero: clamp(2.6rem, 9vw, 4.5rem);
+  --pp-fs-h1: clamp(1.9rem, 6vw, 2.6rem);
+  --pp-fs-h2: 1.45rem;
+  --pp-fs-body: 1rem;
+  --pp-fs-small: 0.85rem;
+  --pp-fs-label: 0.72rem;      /* uppercase labels, tracked */
+
+  /* Shape and depth */
+  --pp-radius-sm: 8px;
+  --pp-radius: 14px;
+  --pp-radius-lg: 20px;
+  --pp-pill: 999px;
+  --pp-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --pp-glow-gold: 0 0 0 1px rgba(240, 189, 74, 0.55), 0 0 22px rgba(255, 181, 71, 0.28);
+  --pp-panel-bg: linear-gradient(180deg, rgba(23, 63, 53, 0.92), rgba(11, 33, 27, 0.94));
+
+  /* Touch */
+  --pp-tap: 44px;              /* minimum target */
+  --pp-gutter: 16px;
+}

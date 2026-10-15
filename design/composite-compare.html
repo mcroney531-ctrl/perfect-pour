@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Composite compare (M2)</title>
+<link rel="stylesheet" href="../css/tokens.css">
+<style>
+  /* Four treatments side by side, each a full 390 x 844 composite scaled to fit. */
+  html, body { margin: 0; background: var(--pp-charcoal-950); color: var(--pp-text); font: 15px/1.4 var(--pp-font-ui); }
+  main { padding: 16px; display: grid; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  h1 { margin: 0; font: 800 1.6rem/1 var(--pp-font-display); text-transform: uppercase; letter-spacing: 0.02em; }
+  p { margin: 0; color: var(--pp-text-muted); font-size: 0.85rem; max-width: 70ch; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  select, button { min-height: 44px; border-radius: 12px; border: 1px solid #3a4447; background: #1b2224; color: inherit; font: 600 0.95rem var(--pp-font-ui); padding: 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; }
+  figure { margin: 0; display: grid; gap: 6px; }
+  figcaption { font: 600 0.8rem var(--pp-font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--pp-text-muted); }
+  .tile { position: relative; width: 100%; aspect-ratio: 390 / 844; overflow: hidden; border-radius: 16px; box-shadow: 0 0 0 1px #2a3336; }
+  .tile iframe { position: absolute; left: 0; top: 0; width: 390px; height: 844px; border: 0; transform-origin: 0 0; }
+  :focus-visible { outline: 3px solid var(--pp-gold-400); outline-offset: 2px; }
+  a { color: var(--pp-gold-300); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Composite: treatments side by side</h1>
+      <p>Same live game in each, unmodified; only the page-side treatment differs. Each pour runs on its own, so they can drift a few frames apart. <a href="composite.html">Single view with all settings</a></p>
+    </div>
+    <div class="opts">
+      <label>Backdrop <select id="bg"><option value="temp">Temporary (M2)</option><option value="flat">Flat charcoal</option><option value="checker">Checker</option></select></label>
+      <label>Show <select id="ui"><option value="stage">Stage only</option><option value="play">Stage + caption + pad</option></select></label>
+      <button type="button" id="restart">Restart all</button>
+    </div>
+  </header>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+  const FX = [['original', 'Original SVG'], ['grade', 'Warm grade + light wrap'], ['shadow', 'Contact shadows'], ['all', 'Grade + shadows']];
+  const grid = document.getElementById('grid'), bg = document.getElementById('bg'), ui = document.getElementById('ui');
+  const q = new URLSearchParams(location.search);
+  if (q.get('bg')) bg.value = q.get('bg');
+  if (q.get('ui')) ui.value = q.get('ui');
+  function build() {
+    grid.textContent = '';
+    for (const [fx, name] of FX) {
+      const fig = document.createElement('figure');
+      fig.innerHTML = `<figcaption>${name}</figcaption><div class="tile"><iframe title="${name}"></iframe></div>`;
+      fig.querySelector('iframe').src = `composite.html?embed=1&fx=${fx}&bg=${bg.value}&ui=${ui.value}`;
+      grid.appendChild(fig);
+    }
+    fit();
+  }
+  function fit() {
+    grid.querySelectorAll('.tile').forEach(t => { t.firstElementChild.style.transform = `scale(${t.clientWidth / 390})`; });
+  }
+  addEventListener('resize', fit);
+  for (const el of [bg, ui]) el.addEventListener('change', () => { history.replaceState(null, '', `?bg=${bg.value}&ui=${ui.value}`); build(); });
+  document.getElementById('restart').addEventListener('click', build);
+  build();
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844" width="1170" height="2532" preserveAspectRatio="xMidYMid slice">
+  <!-- TEMPORARY M2 backdrop. Placeholder art for the compositing test only;
+       the real portrait Pilsner backdrop is being produced separately.
+       Frame: 390 x 844 (1170 x 2532 at 3x). Kept clear on purpose:
+       - live faucet area (x 215-390, y 55-185): no tap hardware, plain wall
+       - glass sweep (x 150-330, y 175-490): low contrast, nothing bright
+       - drip tray / bar top at y 494-560 (the contact-shadow plane)
+       - controls area below y 560: dark, even bar front -->
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151b1d"/><stop offset="0.55" stop-color="#11171a"/><stop offset="1" stop-color="#0d1614"/>
+    </linearGradient>
+    <radialGradient id="pendant" cx="0.6" cy="0" r="0.75">
+      <stop offset="0" stop-color="#ffb547" stop-opacity="0.22"/><stop offset="0.5" stop-color="#ffb547" stop-opacity="0.06"/><stop offset="1" stop-color="#ffb547" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="copper" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3a2416"/><stop offset="0.35" stop-color="#8a5532"/><stop offset="0.55" stop-color="#b9733f"/><stop offset="0.8" stop-color="#6b3f22"/><stop offset="1" stop-color="#2c1b10"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2a3134"/><stop offset="0.4" stop-color="#6c767a"/><stop offset="0.6" stop-color="#8b9599"/><stop offset="1" stop-color="#262d30"/>
+    </linearGradient>
+    <linearGradient id="barTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a3322"/><stop offset="0.5" stop-color="#2f2015"/><stop offset="1" stop-color="#1c130c"/>
+    </linearGradient>
+    <linearGradient id="barFront" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#10261f"/><stop offset="1" stop-color="#070d0b"/>
+    </linearGradient>
+    <linearGradient id="tray" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9aa4a8"/><stop offset="1" stop-color="#3b4346"/>
+    </linearGradient>
+    <filter id="dof" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.6"/></filter>
+    <filter id="bokeh" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5"/></filter>
+    <pattern id="grate" width="5" height="12" patternUnits="userSpaceOnUse">
+      <rect width="5" height="12" fill="#2b3235"/><rect width="2.4" height="12" fill="#7d878b"/>
+    </pattern>
+  </defs>
+
+  <!-- Wall: brushed steel panels, faint seams. -->
+  <rect width="390" height="844" fill="url(#wall)"/>
+  <g stroke="#1f272a" stroke-width="1">
+    <path d="M65 0V494M195 0V40M325 0V40M130 0V494"/>
+    <path d="M0 250H140" stroke="#1a2124"/>
+  </g>
+
+  <!-- Background tanks, out of focus. Kept off the faucet and the glass sweep. -->
+  <g filter="url(#dof)" opacity="0.75">
+    <rect x="-34" y="150" width="128" height="350" rx="58" fill="url(#copper)"/>
+    <path d="M-34 220H94M-34 420H94" stroke="#2c1b10" stroke-width="3"/>
+    <rect x="22" y="120" width="12" height="40" fill="url(#steel)"/>
+    <rect x="336" y="248" width="110" height="260" rx="50" fill="url(#copper)" opacity="0.8"/>
+    <path d="M336 300H446M336 450H446" stroke="#2c1b10" stroke-width="3"/>
+  </g>
+
+  <!-- Warm bokeh, high and to the left, away from the faucet. -->
+  <g filter="url(#bokeh)" fill="#ffb547">
+    <circle cx="40" cy="58" r="9" opacity="0.35"/><circle cx="96" cy="34" r="6" opacity="0.28"/>
+    <circle cx="150" cy="70" r="7" opacity="0.2"/><circle cx="18" cy="112" r="5" opacity="0.25"/>
+    <circle cx="120" cy="108" r="4" opacity="0.18"/>
+  </g>
+
+  <!-- Pendant light pool over the pour. -->
+  <rect width="390" height="560" fill="url(#pendant)"/>
+
+  <!-- Bar top and drip tray: the plane the contact shadow sits on (y 494). -->
+  <rect y="494" width="390" height="66" fill="url(#barTop)"/>
+  <path d="M0 494.5H390" stroke="#a87a4e" stroke-opacity="0.55" stroke-width="1"/>
+  <path d="M160 492 L330 492 L338 512 L152 512 Z" fill="url(#tray)"/>
+  <path d="M165 494.5 L325 494.5 L331 509 L159 509 Z" fill="url(#grate)" opacity="0.9"/>
+  <path d="M0 560H390" stroke="#000" stroke-opacity="0.6" stroke-width="2"/>
+
+  <!-- Bar front (controls sit over this): forest panels, even and dark. -->
+  <rect y="561" width="390" height="283" fill="url(#barFront)"/>
+  <g stroke="#173f35" stroke-opacity="0.55" stroke-width="1">
+    <path d="M78 561V844M156 561V844M234 561V844M312 561V844"/>
+  </g>
+  <path d="M0 566H390" stroke="#b9733f" stroke-opacity="0.35" stroke-width="1.5"/>
+
+  <text x="382" y="836" text-anchor="end" font-family="sans-serif" font-size="8" font-weight="700"
+        fill="#ffffff" fill-opacity="0.28" letter-spacing="1">TEMP BACKDROP · M2 TEST</text>
+</svg>

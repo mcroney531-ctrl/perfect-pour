@@ -1,0 +1,93 @@
+/* Riverside / Perfect Pour components. Class names are prefixed pp- so they
+   can live next to the existing station styles without colliding. */
+
+.pp-display { font-family: var(--pp-font-display); font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; line-height: 0.95; }
+.pp-label { font-family: var(--pp-font-ui); font-size: var(--pp-fs-label); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--pp-gold-300); }
+
+/* Buttons */
+.pp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.6em;
+  min-height: var(--pp-tap); padding: 0 1.4em; border-radius: var(--pp-pill);
+  font: 700 1.05rem/1 var(--pp-font-ui); letter-spacing: 0.01em; cursor: pointer;
+  border: 2px solid transparent; touch-action: manipulation; text-decoration: none;
+}
+.pp-btn--primary {
+  background: linear-gradient(180deg, var(--pp-gold-300), var(--pp-gold-400) 45%, var(--pp-gold-600));
+  color: var(--pp-text-on-gold); box-shadow: 0 6px 18px rgba(201, 141, 36, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.pp-btn--secondary { background: rgba(16, 48, 42, 0.75); color: var(--pp-text); border-color: var(--pp-forest-line); }
+.pp-btn--ghost { background: rgba(12, 15, 16, 0.6); color: var(--pp-text); border-color: rgba(166, 175, 179, 0.35); min-height: 40px; padding: 0 1em; font-size: 0.92rem; }
+.pp-btn--lg { min-height: 56px; font-size: 1.15rem; padding: 0 1.8em; }
+.pp-btn:focus-visible { outline: 3px solid #8fd0ff; outline-offset: 3px; }
+.pp-btn[disabled], .pp-btn[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+.pp-btn .pp-arrow { font-size: 1.1em; line-height: 0; }
+
+/* Panels */
+.pp-panel {
+  background: var(--pp-panel-bg); border: 1px solid var(--pp-forest-line); border-radius: var(--pp-radius);
+  box-shadow: var(--pp-shadow); color: var(--pp-text);
+}
+
+/* Caption pill: short, contextual instructions near the glass. */
+.pp-pill {
+  display: inline-flex; align-items: center; gap: 0.5em; padding: 0.5em 1em; border-radius: var(--pp-pill);
+  background: rgba(12, 15, 16, 0.78); border: 1px solid rgba(240, 189, 74, 0.45);
+  font: 600 0.95rem/1.25 var(--pp-font-ui); color: var(--pp-text); backdrop-filter: blur(6px);
+}
+.pp-pill--good { border-color: rgba(95, 207, 138, 0.7); }
+.pp-pill--hint { border-color: var(--pp-gold-400); color: var(--pp-gold-300); }
+
+/* Step dots: Watch / Guided / Solo as numbered stops. */
+.pp-steps { display: inline-flex; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.pp-steps li {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font: 700 0.9rem/1 var(--pp-font-ui); color: var(--pp-text-muted); border: 1.5px solid var(--pp-steel-600);
+}
+.pp-steps li[aria-current="step"] { background: var(--pp-gold-400); color: var(--pp-text-on-gold); border-color: var(--pp-gold-300); }
+.pp-steps li.is-done { color: var(--pp-ok); border-color: var(--pp-ok); }
+
+/* Station status chips. Icon + words, never colour alone. */
+.pp-chip {
+  display: inline-flex; align-items: center; gap: 0.45em; padding: 0.3em 0.75em; border-radius: var(--pp-pill);
+  font: 600 0.8rem/1.2 var(--pp-font-ui); border: 1px solid; white-space: nowrap;
+}
+.pp-chip::before { font-size: 0.9em; }
+.pp-chip--new { color: var(--pp-gold-300); border-color: rgba(240, 189, 74, 0.6); background: rgba(240, 189, 74, 0.08); }
+.pp-chip--new::before { content: "★"; }
+.pp-chip--progress { color: var(--pp-progress); border-color: rgba(89, 169, 255, 0.6); background: rgba(89, 169, 255, 0.08); }
+.pp-chip--progress::before { content: "◐"; }
+.pp-chip--certified { color: var(--pp-ok); border-color: rgba(95, 207, 138, 0.7); background: rgba(95, 207, 138, 0.1); }
+.pp-chip--certified::before { content: "✓"; }
+.pp-chip--preview { color: var(--pp-steel-400); border-color: rgba(140, 150, 154, 0.5); border-style: dashed; }
+.pp-chip--preview::before { content: "◌"; }
+.pp-chip--locked { color: var(--pp-steel-400); border-color: rgba(140, 150, 154, 0.5); }
+.pp-chip--locked::before { content: "🔒"; filter: grayscale(1); }
+
+/* Station card, as it sits on a hub hotspot. */
+.pp-station {
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center; padding: 10px 14px 12px 10px;
+  min-width: 190px; text-align: left; cursor: pointer; font: inherit; color: var(--pp-text);
+}
+.pp-station__art { grid-row: span 3; width: 46px; height: 72px; }
+.pp-station__name { font: 700 1.2rem/1 var(--pp-font-display); letter-spacing: 0.02em; }
+.pp-station__sub { font-size: var(--pp-fs-small); color: var(--pp-text-muted); }
+.pp-station:focus-visible { outline: 3px solid #8fd0ff; outline-offset: 3px; }
+.pp-station.is-recommended { box-shadow: var(--pp-glow-gold); }
+
+/* Hotspot ring on the floor/bar under a station (restrained: no pulse by default). */
+.pp-ring { width: 90px; height: 26px; border-radius: 50%; border: 2px solid var(--pp-gold-400); box-shadow: 0 0 16px rgba(255, 181, 71, 0.45), inset 0 0 10px rgba(255, 181, 71, 0.3); }
+.pp-ring--ok { border-color: var(--pp-ok); box-shadow: 0 0 16px rgba(95, 207, 138, 0.45), inset 0 0 10px rgba(95, 207, 138, 0.3); }
+.pp-ring--preview { border-color: var(--pp-steel-600); border-style: dashed; box-shadow: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .pp-ring.is-recommended { animation: pp-breathe 3.2s ease-in-out infinite; }
+}
+@keyframes pp-breathe { 50% { box-shadow: 0 0 26px rgba(255, 181, 71, 0.65), inset 0 0 12px rgba(255, 181, 71, 0.4); } }
+
+/* Competency checklist: only what the game actually assesses. */
+.pp-checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pp-checklist li { display: flex; gap: 0.6em; align-items: center; font: 500 0.95rem/1.3 var(--pp-font-ui); }
+.pp-checklist li::before {
+  content: "✓"; flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--pp-ok); color: #06210f; font-size: 0.75rem; font-weight: 800;
+}
+.pp-checklist li.is-miss::before { content: "✕"; background: transparent; color: #ff9b85; border: 1.5px dashed #ff9b85; }

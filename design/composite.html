@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Pilsner composite (M2)</title>
+<link rel="stylesheet" href="../css/tokens.css">
+<style>
+  /* M2 compositing harness. The live game runs unmodified in the iframe;
+     everything here is page-side: the backdrop, a fixed portrait frame,
+     and optional blend treatments injected into the iframe's SVG. */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--pp-charcoal-950); color: var(--pp-text); font: 15px/1.4 var(--pp-font-ui); }
+  /* color-scheme must match the game's (dark), or the browser paints the
+     iframe opaque and the backdrop disappears. */
+  :root { color-scheme: dark; }
+  main { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; padding: 16px; }
+  body.embed main { padding: 0; display: block; }
+  body.embed #panel { display: none; }
+
+  /* The portrait frame: always 390 x 844 CSS px inside (an iPhone 12-15
+     viewport), scaled down as a whole to fit the window. */
+  #fit { position: relative; flex: none; }
+  #frame { position: absolute; left: 0; top: 0; width: 390px; height: 844px; transform-origin: 0 0; overflow: hidden;
+    border-radius: 28px; box-shadow: 0 0 0 1px #2a3336, 0 18px 50px rgba(0,0,0,0.6); }
+  body.embed #frame { border-radius: 0; box-shadow: none; }
+  #bg { position: absolute; inset: 0; background: var(--bg-color, #13181a) center / cover no-repeat; }
+  #bg.checker { background: repeating-conic-gradient(#3a3f42 0% 25%, #24292b 0% 50%) 0 0 / 24px 24px; }
+  #game { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
+  #zones { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #zones text { font: 700 9px var(--pp-font-ui); letter-spacing: 0.06em; }
+
+  #panel { width: min(100%, 300px); display: grid; gap: 14px; }
+  #panel h1 { margin: 0; font: 800 1.6rem/1 var(--pp-font-display); text-transform: uppercase; letter-spacing: 0.02em; }
+  #panel p { margin: 0; color: var(--pp-text-muted); font-size: 0.85rem; }
+  fieldset { margin: 0; padding: 10px 12px 12px; border: 1px solid #2a3336; border-radius: 12px; display: grid; gap: 6px; }
+  legend { padding: 0 6px; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-text-muted); }
+  label { display: flex; gap: 8px; align-items: center; min-height: 32px; cursor: pointer; }
+  input[type=radio], input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--pp-gold-400); }
+  input[type=file] { font-size: 0.8rem; max-width: 100%; }
+  button { min-height: 44px; border-radius: 12px; border: 1px solid #3a4447; background: #1b2224; color: inherit; font: 600 0.95rem var(--pp-font-ui); cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--pp-gold-400); outline-offset: 2px; }
+  a { color: var(--pp-gold-300); }
+</style>
+</head>
+<body>
+<main>
+  <div id="fit">
+    <div id="frame">
+      <div id="bg"></div>
+      <iframe id="game" title="Pilsner station, live"></iframe>
+      <svg id="zones" viewBox="0 0 390 844" aria-hidden="true" hidden></svg>
+    </div>
+  </div>
+
+  <form id="panel" aria-label="Composite settings" onsubmit="return false">
+    <div>
+      <h1>Pilsner composite</h1>
+      <p>M2 test: the live faucet, glass, beer and foam over a replaceable backdrop. The game is unmodified; treatments are page-side only. <a href="composite-compare.html">Side by side</a></p>
+    </div>
+    <fieldset>
+      <legend>Treatment</legend>
+      <label><input type="radio" name="fx" value="original"> Original SVG</label>
+      <label><input type="radio" name="fx" value="grade"> Warm grade + light wrap</label>
+      <label><input type="radio" name="fx" value="shadow"> Contact shadows</label>
+      <label><input type="radio" name="fx" value="all"> Grade + shadows</label>
+    </fieldset>
+    <fieldset>
+      <legend>Backdrop</legend>
+      <label><input type="radio" name="bg" value="temp"> Temporary (M2)</label>
+      <label><input type="radio" name="bg" value="flat"> Flat charcoal</label>
+      <label><input type="radio" name="bg" value="checker"> Checker (shows transparency)</label>
+      <label><input type="radio" name="bg" value="file" disabled> Your file</label>
+      <input type="file" id="bgFile" accept="image/*" aria-label="Choose a backdrop image">
+    </fieldset>
+    <fieldset>
+      <legend>Show</legend>
+      <label><input type="radio" name="ui" value="stage"> Stage only</label>
+      <label><input type="radio" name="ui" value="play"> Stage + caption + pad</label>
+      <label><input type="checkbox" id="zonesOn"> Reserved zones</label>
+    </fieldset>
+    <fieldset>
+      <legend>Mode</legend>
+      <label><input type="radio" name="mode" value="watch"> Watch (demo pour)</label>
+      <label><input type="radio" name="mode" value="guided"> Guided (play it)</label>
+      <label><input type="radio" name="mode" value="solo"> Solo</label>
+    </fieldset>
+    <button type="button" id="reload">Restart pour</button>
+  </form>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const W = 390, H = 844;
+  // Fixed frame layout (a proposal for M5, not the current station layout):
+  // the scene spans the full width; the bar top sits at y 494, the pad below 560.
+  const LAYOUT = { stageTop: 64, stageHeight: 487, barY: 494, controlsTop: 560 };
+  const BACKDROPS = { temp: 'backdrops/temp-pilsner.svg', flat: null, checker: null };
+  // Warm grade: pulls the cool white glass highlights and the cream foam
+  // toward the amber room light, without touching the training overlays.
+  const GRADE = '1.03 0.03 0 0 0  0 0.98 0.02 0 0  -0.02 0.03 0.84 0 0  0 0 0 1 0';
+
+  const params = new URLSearchParams(location.search);
+  const S = {
+    fx: pick(params.get('fx'), ['original', 'grade', 'shadow', 'all'], 'original'),
+    bg: params.get('bg') || 'temp',
+    ui: pick(params.get('ui'), ['stage', 'play'], 'stage'),
+    mode: pick(params.get('mode'), ['watch', 'guided', 'solo'], 'watch'),
+    zones: params.get('zones') === '1',
+    game: params.get('game') || ''    // passed through to the station (e.g. angle=staged)
+  };
+  function pick(v, list, dflt) { return list.includes(v) ? v : dflt; }
+  if (params.get('embed') === '1') document.body.classList.add('embed');
+
+  const frame = document.getElementById('frame'), fit = document.getElementById('fit');
+  const bgEl = document.getElementById('bg'), game = document.getElementById('game');
+  const zonesEl = document.getElementById('zones'), form = document.getElementById('panel');
+  let fileUrl = null, loopId = 0;
+
+  // ---- Fit the 390 x 844 frame to the window ----
+  function scaleFrame() {
+    const embed = document.body.classList.contains('embed');
+    const availW = embed ? innerWidth : Math.min(innerWidth - 32, W);
+    const availH = embed ? innerHeight : innerHeight - 32;
+    const s = Math.min(1, availW / W, Math.max(availH, 400) / H);
+    frame.style.transform = `scale(${s})`;
+    fit.style.width = W * s + 'px'; fit.style.height = H * s + 'px';
+  }
+  addEventListener('resize', scaleFrame); scaleFrame();
+
+  // ---- Backdrop: replaceable, never touches the game ----
+  function applyBg() {
+    bgEl.classList.toggle('checker', S.bg === 'checker');
+    let src = null;
+    if (S.bg === 'file') src = fileUrl;
+    else if (S.bg in BACKDROPS) src = BACKDROPS[S.bg];
+    else if (S.bg !== 'checker') src = S.bg;       // ?bg=<url>, relative to design/
+    bgEl.style.backgroundImage = src ? `url("${src}")` : 'none';
+  }
+  document.getElementById('bgFile').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    fileUrl = URL.createObjectURL(f);
+    const r = form.querySelector('[name=bg][value=file]'); r.disabled = false; r.checked = true;
+    S.bg = 'file'; applyBg();
+  });
+
+  // ---- The game, loaded fresh and dressed from outside ----
+  function loadGame() {
+    cancelLoop();
+    game.src = '../index.html' + (S.game ? '?' + S.game.replace(/^\?/, '') : '');
+  }
+  game.addEventListener('load', () => {
+    const doc = game.contentDocument;
+    if (!doc || !doc.getElementById('scene')) return;
+    const style = doc.createElement('style'); style.id = 'pp-composite';
+    doc.head.appendChild(style);
+    const NS = 'http://www.w3.org/2000/svg';
+    const defs = doc.createElementNS(NS, 'defs'); defs.id = 'pp-fx-defs';
+    doc.getElementById('scene').prepend(defs);
+    // Contact shadow on the bar top, drawn behind the glass.
+    const contact = doc.createElementNS(NS, 'ellipse'); contact.id = 'pp-contact';
+    contact.setAttribute('fill', '#030504'); contact.setAttribute('filter', 'url(#pp-soft)');
+    doc.getElementById('scene').insertBefore(contact, doc.getElementById('glassBack'));
+    applyMode(); applyUi(); applyFx(); startLoop();
+  });
+
+  function applyUi() {
+    const doc = game.contentDocument; if (!doc) return;
+    const css = doc.getElementById('pp-composite'); if (!css) return;
+    const L = LAYOUT;
+    css.textContent = `
+      html, body { background: transparent !important; }
+      #app { max-width: none; padding: 0; display: block; }
+      #app > header { display: none !important; }
+      #stage { position: fixed; left: 0; top: ${L.stageTop}px; width: 100%; height: ${L.stageHeight}px; }
+      #caption { position: fixed; top: 8px; left: 16px; right: 16px; min-height: 48px;
+        text-shadow: 0 1px 3px #000, 0 0 12px rgba(0,0,0,0.8); }
+      #controls { position: fixed; left: 0; right: 0; top: ${L.controlsTop + 14}px; padding: 0 16px; }
+      #transcriptBox, #angleCtl:has(#sliderWrap[hidden]):has(#toggleWrap[hidden]) { display: none !important; }
+      ${S.ui === 'stage' ? '#caption, #controls { visibility: hidden !important; }' : ''}
+    `;
+  }
+
+  function applyMode() {
+    const b = game.contentDocument && game.contentDocument.querySelector(`#modes [data-mode="${S.mode}"]`);
+    if (b) b.click();
+  }
+
+  // Filters are rebuilt from the flags, so "all" is exactly grade + shadow.
+  function applyFx() {
+    const doc = game.contentDocument; if (!doc) return;
+    const defs = doc.getElementById('pp-fx-defs'); if (!defs) return;
+    const grade = S.fx === 'grade' || S.fx === 'all';
+    const shadow = S.fx === 'shadow' || S.fx === 'all';
+    const filter = (id, { wrap, drop }) => {
+      let f = `<filter id="${id}" x="-25%" y="-25%" width="160%" height="160%" color-interpolation-filters="sRGB">`;
+      f += grade ? `<feColorMatrix in="SourceGraphic" type="matrix" values="${GRADE}" result="c"/>` : '<feOffset in="SourceGraphic" result="c"/>';
+      const merge = [];
+      if (drop) {
+        f += '<feGaussianBlur in="SourceAlpha" stdDeviation="4"/><feOffset dx="5" dy="9" result="so"/>' +
+             '<feFlood flood-color="#030504" flood-opacity="0.7"/><feComposite in2="so" operator="in" result="s"/>';
+        merge.push('s');
+      }
+      if (wrap) {
+        f += '<feGaussianBlur in="SourceAlpha" stdDeviation="1.4"/><feOffset dy="-1.2" result="wo"/>' +
+             '<feFlood flood-color="#ffb547" flood-opacity="0.35"/><feComposite in2="wo" operator="in" result="w"/>';
+        merge.push('w');
+      }
+      merge.push('c');
+      return f + '<feMerge>' + merge.map(m => `<feMergeNode in="${m}"/>`).join('') + '</feMerge></filter>';
+    };
+    defs.innerHTML =
+      filter('pp-fx-tap', { wrap: grade, drop: shadow }) +
+      filter('pp-fx-glass', { wrap: grade, drop: false }) +
+      filter('pp-fx-beer', { wrap: false, drop: false }) +
+      '<filter id="pp-soft" x="-50%" y="-200%" width="200%" height="500%"><feGaussianBlur stdDeviation="3"/></filter>';
+    const on = grade || shadow;
+    const set = (sel, id) => doc.querySelectorAll(sel).forEach(el => {
+      if (on) el.setAttribute('filter', `url(#${id})`); else el.removeAttribute('filter');
+    });
+    // Only the art is treated; bands, labels, marks and the gauge stay crisp.
+    set('#tap', 'pp-fx-tap');
+    set('#glassArt, #glassBackArt', 'pp-fx-glass');
+    set('#scene > g[clip-path], #stream, #streamCore, #splash, #spill', 'pp-fx-beer');
+    doc.getElementById('pp-contact').style.display = shadow ? '' : 'none';
+  }
+
+  // The contact shadow follows the glass: it reads the transform the
+  // renderer already wrote, and never touches sim state.
+  function startLoop() {
+    const win = game.contentWindow, doc = game.contentDocument;
+    const glass = doc.getElementById('glass'), contact = doc.getElementById('pp-contact');
+    const scene = doc.getElementById('scene');
+    function tick() {
+      loopId = win.requestAnimationFrame(tick);
+      if (contact.style.display === 'none') return drawZones(scene);
+      const m = /translate\(([-\d.]+) ([-\d.]+)\) rotate\(([-\d.]+)\)/.exec(glass.getAttribute('transform') || '');
+      if (!m) return;
+      const px = +m[1], py = +m[2], a = +m[3] * Math.PI / 180;
+      const plane = toScene(scene, 0, LAYOUT.barY).y;
+      const lift = Math.max(0, plane - py);              // scene units above the bar
+      const k = Math.max(0, 1 - lift / 160);
+      contact.setAttribute('cx', (px + 0.35 * 227 * Math.sin(a)).toFixed(1));
+      contact.setAttribute('cy', (plane + 1).toFixed(1));
+      contact.setAttribute('rx', (40 + lift * 0.12).toFixed(1));
+      contact.setAttribute('ry', (4.5 + lift * 0.02).toFixed(1));
+      contact.setAttribute('opacity', (0.8 * k).toFixed(3));
+      drawZones(scene);
+    }
+    tick();
+  }
+  function cancelLoop() { if (loopId && game.contentWindow) game.contentWindow.cancelAnimationFrame(loopId); loopId = 0; }
+  function toScene(scene, x, y) { return new DOMPoint(x, y).matrixTransform(scene.getScreenCTM().inverse()); }
+  function toFrame(scene, x, y) { return new DOMPoint(x, y).matrixTransform(scene.getScreenCTM()); }
+
+  // ---- Reserved zones (for the backdrop artist), in scene units ----
+  // Measured from the live renderer over the Watch demo (faucet with the
+  // handle at full open; glass from 45° to upright), plus a margin for
+  // players who tilt further (up to 60°).
+  const ZONES = [
+    { label: 'LIVE FAUCET: no tap hardware here', x0: 172, y0: -28, x1: 360, y1: 86, color: '#ff9b85' },
+    { label: 'GLASS SWEEP: keep low contrast', x0: 36, y0: 80, x1: 280, y1: 350, color: '#f0bd4a' },
+    { label: 'HEAD GAUGE', x0: 4, y0: 18, x1: 62, y1: 234, color: '#59a9ff', under: true }
+  ];
+  let zonesDrawn = '';
+  function drawZones(scene) {
+    zonesEl.hidden = !S.zones;
+    if (!S.zones) return;
+    const parts = ZONES.map(z => {
+      const a = toFrame(scene, z.x0, z.y0), b = toFrame(scene, z.x1, z.y1);
+      const x = Math.max(0, a.x), y = a.y, w = Math.min(W, b.x) - x, h = b.y - a.y;
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${z.color}" fill-opacity="0.08" stroke="${z.color}" stroke-width="1.5" stroke-dasharray="6 4"/>` +
+        `<text x="${(x + 4).toFixed(1)}" y="${(z.under ? y + h + 12 : z.below ? y + h - 5 : y + 12).toFixed(1)}" fill="${z.color}">${z.label}</text>`;
+    });
+    const L = LAYOUT;
+    parts.push(`<line x1="0" x2="${W}" y1="${L.barY}" y2="${L.barY}" stroke="#5fcf8a" stroke-width="1.5" stroke-dasharray="6 4"/><text x="6" y="${L.barY - 4}" fill="#5fcf8a">BAR TOP / DRIP TRAY (shadow plane) y ${L.barY}</text>`);
+    parts.push(`<rect x="0" y="${L.controlsTop}" width="${W}" height="${H - L.controlsTop}" fill="#fff" fill-opacity="0.05" stroke="#dfe4e6" stroke-dasharray="6 4"/><text x="6" y="${L.controlsTop + 14}" fill="#dfe4e6">CONTROLS: dark and even (pad, buttons)</text>`);
+    parts.push(`<rect x="0" y="0" width="${W}" height="${L.stageTop}" fill="#fff" fill-opacity="0.05" stroke="#dfe4e6" stroke-dasharray="6 4"/><text x="6" y="14" fill="#dfe4e6">CAPTION</text>`);
+    const svg = parts.join('');
+    if (svg !== zonesDrawn) { zonesEl.innerHTML = svg; zonesDrawn = svg; }
+  }
+
+  // ---- Panel ----
+  function syncForm() {
+    for (const k of ['fx', 'ui', 'mode']) { const r = form.querySelector(`[name=${k}][value="${S[k]}"]`); if (r) r.checked = true; }
+    const r = form.querySelector(`[name=bg][value="${S.bg}"]`); if (r) r.checked = true;
+    document.getElementById('zonesOn').checked = S.zones;
+  }
+  function saveUrl() {
+    const p = new URLSearchParams(location.search);
+    for (const k of ['fx', 'ui', 'mode']) p.set(k, S[k]);
+    if (S.bg !== 'file') p.set('bg', S.bg);
+    if (S.zones) p.set('zones', '1'); else p.delete('zones');
+    history.replaceState(null, '', '?' + p);
+  }
+  form.addEventListener('change', e => {
+    const t = e.target;
+    if (t.name === 'fx') { S.fx = t.value; applyFx(); }
+    else if (t.name === 'bg') { S.bg = t.value; applyBg(); }
+    else if (t.name === 'ui') { S.ui = t.value; applyUi(); }
+    else if (t.name === 'mode') { S.mode = t.value; applyMode(); }
+    else if (t.id === 'zonesOn') { S.zones = t.checked; zonesDrawn = ''; }
+    saveUrl();
+  });
+  document.getElementById('reload').addEventListener('click', loadGame);
+
+  syncForm(); applyBg(); loadGame();
+  // For tests and the compare page.
+  window.ppComposite = { state: S, game, layout: LAYOUT, zones: ZONES };
+})();
+</script>
+</body>
+</html>
