@@ -165,3 +165,55 @@ test('glass treatments and frozen versions still load', async () => {
     await h.close();
   }
 });
+
+// ---- M1: the station mounts and unmounts cleanly ----------------------------
+// Counts window/document listeners and animation-frame requests from page
+// start, so a leak after unmount() shows up as a number, not a hunch.
+const INSTRUMENT = () => {
+  const live = new Map(); window.__pp = { live, raf: 0 };
+  for (const t of [window, document]) {
+    const add = t.addEventListener.bind(t), rem = t.removeEventListener.bind(t);
+    const key = (type, fn, o) => `${t === window ? 'w' : 'd'}:${type}:${typeof o === 'object' ? !!o.capture : !!o}`;
+    t.addEventListener = (type, fn, o) => { const k = key(type, fn, o); live.set(fn, (live.get(fn) || new Set()).add(k)); add(type, fn, o); };
+    t.removeEventListener = (type, fn, o) => { const s = live.get(fn); if (s) { s.delete(key(type, fn, o)); if (!s.size) live.delete(fn); } rem(type, fn, o); };
+  }
+  const raf = window.requestAnimationFrame.bind(window);
+  window.requestAnimationFrame = cb => { window.__pp.raf++; return raf(cb); };
+};
+const counts = h => h.page.evaluate(() => ({ listeners: [...window.__pp.live.values()].reduce((n, s) => n + s.size, 0), raf: window.__pp.raf }));
+
+test('unmount removes every global listener, stops the loop, and leaves keys inert', async () => {
+  const h = await openPage(browser, URL0 + '/', { mobile: false, init: INSTRUMENT });
+  await h.run(200);
+  const mounted = await counts(h);
+  assert.ok(mounted.listeners >= 8, `station registers its global listeners (${mounted.listeners})`);
+  await h.page.evaluate(() => window.ppStation.unmount());
+  const after = await counts(h);
+  assert.equal(after.listeners, 0, 'no window/document listeners left');
+  assert.equal(await h.page.evaluate(() => document.getElementById('pp-root').childElementCount), 0, 'markup removed');
+  await h.run(1000);
+  assert.equal((await counts(h)).raf, after.raf, 'no animation frames requested after unmount');
+  await h.page.keyboard.press(' '); await h.page.keyboard.press('t'); await h.page.keyboard.press('s'); await h.run(100);
+  assert.deepEqual(h.errors, [], 'keys after unmount do nothing and throw nothing');
+  await h.close();
+});
+
+test('mount → unmount → remount behaves exactly like a fresh page', async () => {
+  const pourFor = async (h, remount) => {
+    if (remount) {
+      await h.page.evaluate(() => { window.ppStation.unmount(); window.ppStation = PilsnerStation.mount(document.getElementById('pp-root')); });
+      await h.run(50);
+    }
+    await h.page.click('#modes [data-mode=solo]'); await h.run(100);
+    await h.page.keyboard.press('t'); await h.run(400);
+    await h.page.keyboard.down(' '); await h.run(3000); await h.page.keyboard.up(' '); await h.run(300);
+    return h.page.evaluate(() => document.getElementById('levelText').textContent);
+  };
+  const a = await openPage(browser, URL0 + '/', { mobile: false, init: INSTRUMENT });
+  const fresh = await pourFor(a, false);
+  const b = await openPage(browser, URL0 + '/', { mobile: false, init: INSTRUMENT });
+  const re = await pourFor(b, true);
+  assert.equal(re, fresh, 'same pour after remount (a leaked second loop or listener would change it)');
+  assert.equal((await counts(b)).listeners, (await counts(a)).listeners, 'listener count matches a single mount');
+  await a.close(); await b.close();
+});

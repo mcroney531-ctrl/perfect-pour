@@ -139,15 +139,27 @@ glass is.**
 ## Tests
 
 ```
-npm test
+npm test            # simulation: 61 tests, Node 18+, no installs
+npm run test:ui     # browser: 14 Playwright tests (npm install first)
+npm run test:all    # both
 ```
 
-Node 18+, no installs. The tests lift the `<script id="sim">` block out of
-`index.html` and run that exact code. Covered: geometry, purity, the staged
-rate, spill, Serve timing, the ghost passing mid-band in both variants and
-staying in its own zone, every v1 exploit, the straightening window (40-65%
-full passes), known-bad pours and their feedback, the zone being
-coaching-only, and the guided hints.
+**Simulation tests** run `js/sim.js`, the exact file the page loads.
+Covered: geometry, purity, the staged rate, spill, Serve timing, the ghost
+passing mid-band and staying in its own zone, every v1 exploit, the
+straightening window, known-bad pours and their feedback, the centred fill
+zone, pad travel, bring-up style, action events, and the guided hints.
+
+**Browser tests** drive the real page with Playwright and a paused clock, so
+every frame is reproducible: Watch demo, Guided touch pour with live
+feedback, Solo fade and debrief, release at the line, snap vs gradual,
+result-sheet layering, keyboard path, blur closes the tap, tap mode, the
+staged fallback, the pour log, the debug ghost check, glass treatments and
+frozen versions loading, and clean mount/unmount (no leaked listeners or
+animation frames; a remount pours exactly like a fresh page).
+
+`node test/ui/snapshots.mjs <dir>` writes deterministic screenshots for
+pixel-parity checks across refactors.
 
 | Pour (staged) | Result |
 |---|---|
@@ -187,13 +199,24 @@ All levels are shares of the glass height, upright.
 
 ## Architecture
 
-- **Sim** (`<script id="sim">`): pure `step(state, input, dt)` at a fixed
-  60 Hz; geometry, coaching zone, evaluation, feedback copy, hints, and the
-  ghost timeline. Constants are labelled PHYSICAL, SOURCED or GAME.
-- **Renderer** (`Renderer.render(state, view)`): inline SVG, read-only on sim
-  state. Swapping to Canvas or final art touches only this block.
-- **App**: pad input, modes, result sheet, live region, metrics log
-  (`perfectPour.log.v2`), debug panel.
+No build step; static files on GitHub Pages. Classic scripts (not ES
+modules) so `index.html` still opens by double-click from disk.
+
+| File | What it is |
+|---|---|
+| `index.html` | Shell: shared CSS, the station's markup as a `<template>`, and a three-line boot |
+| `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
+| `js/pilsner-station.js` | The Pilsner station: renderer (`Renderer.render(state, view)`, inline SVG, read-only on sim state), pad input, Watch/Guided/Solo, result sheet and debrief, live region, pour log (`perfectPour.log.v2.3`), debug panel. |
+
+The station is a component:
+
+```js
+const station = PilsnerStation.mount(hostElement, { search: '?angle=staged' });
+station.unmount();   // removes its markup, loop, timers and every window/document listener
+```
+
+The brewery shell (later milestones) mounts and unmounts stations; the
+station never needs to know about it.
 
 ## Still open
 

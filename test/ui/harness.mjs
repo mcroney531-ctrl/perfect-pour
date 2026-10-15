@@ -34,15 +34,19 @@ export function startServer() {
 }
 
 // One fresh page per test: phone-sized, touch-capable, fake clock.
-export async function openPage(browser, url, { mobile = true, size } = {}) {
+export async function openPage(browser, url, { mobile = true, size, init } = {}) {
   const ctx = await browser.newContext(mobile
     ? { viewport: size || { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }
     : { viewport: size || { width: 1280, height: 800 } });
   const page = await ctx.newPage();
+  if (init) await page.addInitScript(init);
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  // Paused clock: time only moves when a test calls run(), so every frame is
+  // reproducible (an installed-but-running clock still leaks page-load time).
   await page.clock.install({ time: new Date('2026-01-01T12:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-01-01T12:00:01Z'));
   await page.goto(url);
   await page.clock.runFor(50);
   const cdp = mobile ? await ctx.newCDPSession(page) : null;
