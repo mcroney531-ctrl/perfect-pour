@@ -1,8 +1,13 @@
 {
   "name": "perfect-pour",
   "private": true,
-  "description": "Prototype. The game is index.html and has no dependencies; this file only runs the headless tests.",
+  "description": "Perfect Pour training prototype. The game runs from index.html with no build step; this file only runs the tests.",
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:ui": "node --test test/ui/*.test.mjs",
+    "test:all": "npm test && npm run test:ui"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
   }
 }
