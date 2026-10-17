@@ -87,7 +87,8 @@ test('open the Pilsner, come back: In progress is saved, focus returns, nothing 
   await h.page.tap('#exitBtn'); await settle(h, 300);
   assert.ok(await hubVisible(h));
   assert.equal(await h.page.evaluate(() => location.hash), '', 'stepped back in history, not forward');
-  assert.equal(await chip(h, 'pilsner'), 'In progress');
+  assert.equal(await chip(h, 'pilsner'), 'Continue');
+  assert.match(await h.text('#status-pilsner'), /In progress/);
   assert.equal(await h.page.evaluate(() => document.activeElement.dataset.station), 'pilsner');
   assert.equal(await h.page.evaluate(() => document.getElementById('stationHost').childElementCount), 0);
   assert.equal(await listeners(h), atHub, 'station listeners all removed');
@@ -96,8 +97,8 @@ test('open the Pilsner, come back: In progress is saved, focus returns, nothing 
   assert.equal(await h.page.evaluate(() => window.__pp.raf), raf, 'no animation loop left running');
   // Progress survives a reload.
   await h.page.reload(); await h.run(200);
-  assert.equal(await chip(h, 'pilsner'), 'In progress');
-  assert.equal(await h.page.evaluate(() => document.querySelector('.hub-ring[data-ring=pilsner]').getAttribute('class')), 'hub-ring hub-ring--inProgress');
+  assert.equal(await chip(h, 'pilsner'), 'Continue');
+  assert.equal(await h.page.evaluate(() => document.querySelector('.hub__ring[data-ring=pilsner]').className), 'hub__ring hub__ring--progress');
   assert.deepEqual(h.errors, []);
   await h.close();
 });
@@ -175,4 +176,94 @@ test('progress storage: unreadable data starts fresh; data from a newer version 
   await nw.page.tap('[data-station=pilsner]'); await settle(nw, 200);
   assert.equal(await nw.page.evaluate(() => localStorage.getItem('riverside.progress')), NEWER);
   await nw.close();
+});
+
+// ---- Hub scene: plates, anchoring, responsive layout ----
+const geometry = h => h.page.evaluate(() => {
+  const r = el => { const b = el.getBoundingClientRect(); return { x: b.left, y: b.top, w: b.width, h: b.height }; };
+  const hub = document.getElementById('hub');
+  const L = window.ppBrewery.layout();
+  return {
+    scene: hub.dataset.scene, L, vw: hub.clientWidth, vh: hub.clientHeight,
+    scrollW: hub.scrollWidth, docScrollW: document.documentElement.scrollWidth,
+    plate: r(document.getElementById('hubPlate')),
+    rings: Object.fromEntries([...document.querySelectorAll('.hub__ring')].map(e => [e.dataset.ring, r(e)])),
+    boxes: [...document.querySelectorAll('.hub__card, #rushBtn')].map(e => ({ id: e.dataset.station || e.id, ...r(e) })),
+    header: r(document.getElementById('hubTop'))
+  };
+});
+const overlap = (a, b) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
+
+for (const [w, hgt, expect] of [[360, 740, 'portrait'], [390, 844, 'portrait'], [412, 915, 'portrait'], [375, 667, 'portrait'],
+  [320, 568, 'portrait'], [768, 1024, 'portrait'], [1440, 900, 'desktop']]) {
+  test(`hub ${w}x${hgt}: ${expect} plate, hotspots on their anchors, nothing clipped or overlapping`, async () => {
+    const h = await openPage(browser, APP(), { size: { width: w, height: hgt }, mobile: w < 1000 });
+    await h.run(300);
+    const g = await geometry(h);
+    assert.equal(g.scene, expect);
+    // The plate is drawn exactly where the layout says, so anchors line up with the art.
+    assert.ok(Math.abs(g.plate.x - g.L.ox) < 1 && Math.abs(g.plate.y - g.L.oy) < 1, 'plate offset');
+    for (const [id, ring] of Object.entries(g.rings)) {
+      const [ax, ay] = g.L.points[id];
+      assert.ok(Math.abs(ring.x + ring.w / 2 - ax) < 1 && Math.abs(ring.y + ring.h / 2 - ay) < 1, `${id} ring on its anchor`);
+    }
+    for (const b of g.boxes) {
+      assert.ok(b.x >= 0 && b.x + b.w <= g.vw + 0.5, `${b.id} inside the width`);
+      assert.ok(b.y >= g.header.y + g.header.h - 1, `${b.id} below the header`);
+      assert.ok(b.w >= 44 && b.h >= 44, `${b.id} touch target`);
+    }
+    for (let i = 0; i < g.boxes.length; i++) for (let j = i + 1; j < g.boxes.length; j++)
+      assert.ok(!overlap(g.boxes[i], g.boxes[j]), `${g.boxes[i].id} and ${g.boxes[j].id} overlap`);
+    assert.ok(g.scrollW <= g.vw + 1 && g.docScrollW <= w + 1, 'no horizontal scroll');
+    assert.deepEqual(h.errors, []);
+    await h.close();
+  });
+}
+
+test('hub switches plate when the screen turns, and hotspots follow', async () => {
+  const h = await openPage(browser, APP(), { size: { width: 768, height: 1024 } });
+  await h.run(200);
+  assert.equal((await geometry(h)).scene, 'portrait');
+  await h.page.setViewportSize({ width: 1024, height: 768 }); await settle(h, 200);
+  const g = await geometry(h);
+  assert.equal(g.scene, 'desktop');
+  assert.match(await h.page.getAttribute('#hubPlate', 'src'), /hub-desktop/);
+  const ring = g.rings.pilsner, [ax, ay] = g.L.points.pilsner;
+  assert.ok(Math.abs(ring.x + ring.w / 2 - ax) < 1 && Math.abs(ring.y + ring.h / 2 - ay) < 1);
+  await h.close();
+});
+
+test('provisional art is labelled; missing art is visibly flagged, and the hub still works', async () => {
+  const h = await openPage(browser, APP());
+  await h.run(200);
+  assert.equal(await h.page.isVisible('#hubProvisional'), true);
+  assert.equal(await h.text('#hubProvisional'), 'Provisional art');
+  await h.close();
+  const b = await openPage(browser, APP());
+  await b.page.route('**/assets/hub/**', r => r.abort());
+  await b.page.reload(); await b.run(300);
+  assert.equal(await b.page.evaluate(() => document.getElementById('hub').classList.contains('hub--noart')), true);
+  assert.equal(await b.text('#hubProvisional'), 'Hub art failed to load');
+  await b.page.tap('[data-station=pilsner]'); await settle(b, 200);
+  assert.equal(await b.page.evaluate(() => window.ppBrewery.current()), 'pilsner');
+  await b.close();
+});
+
+test('truthful hub: nothing certified, no rejected slogan, coming-soon cards offer no Start', async () => {
+  const h = await openPage(browser, APP());
+  await h.run(200);
+  const text = await h.page.evaluate(() => document.body.innerText);
+  assert.doesNotMatch(text, /good beer|better people/i);
+  assert.doesNotMatch(text, /✓|Replay/, 'no certified station shown');
+  assert.equal(await h.text('#hubCount'), '0');
+  assert.equal(await h.page.locator('.hub__action--certified, .hub__ring--certified').count(), 0);
+  for (const id of ['hefeweizen', 'stout']) {
+    assert.equal(await chip(h, id), 'Coming soon');
+    assert.doesNotMatch(await h.text(`[data-station=${id}]`), /Start|Continue/);
+  }
+  for (const f of ['assets/hub/hub-portrait-provisional.svg', 'assets/hub/hub-desktop-provisional.svg']) {
+    const svg = await h.page.evaluate(async u => (await fetch(u)).text(), f);
+    assert.doesNotMatch(svg, /good beer|better people/i, f);
+  }
+  await h.close();
 });

@@ -1,54 +1,124 @@
-/* Brewery hub (M3). Portrait first: a stage at the illustration's aspect
-   ratio, sized to fit the screen's height as well as its width, with the
-   station cards placed over it in percentages. */
+/* Brewery hub. The scene fills the screen; js/brewery.js sizes and places the
+   plate and the hotspots (see js/hub-scenes.js). Everything here is the
+   live layer: header, station cards, rings, Final Rush, notices. */
 .hub {
-  height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
-  background: radial-gradient(120% 70% at 50% 0%, #1b2326, var(--pp-charcoal-950));
-  color: var(--pp-text); font-family: var(--pp-font-ui);
-  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-           max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  --card-w: min(42vw, 190px);
+  position: relative; height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--pp-charcoal-950); color: var(--pp-text); font-family: var(--pp-font-ui);
 }
-.hub__top { width: min(100%, 460px); display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
-.hub__emblem { width: 40px; height: 40px; color: var(--pp-gold-400); }
+.hub__canvas { position: relative; width: 100%; min-height: 100%; overflow: hidden; }
+.hub__scene { position: absolute; inset: 0; background: radial-gradient(90% 60% at 50% 40%, #1d2528, var(--pp-charcoal-950)); }
+.hub__scene img { position: absolute; max-width: none; display: block; user-select: none; -webkit-user-drag: none; }
+.hub--noart .hub__scene img { display: none; }
+/* Readability: a scrim under the header and a soft floor of shade, no more. */
+.hub__shade { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(8, 11, 12, 0.88) 0, rgba(8, 11, 12, 0.55) 96px, rgba(8, 11, 12, 0) 170px),
+              linear-gradient(to top, rgba(8, 11, 12, 0.55) 0, rgba(8, 11, 12, 0) 110px); }
+
+/* ---- Header ---- */
+.hub__top {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start;
+  padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 6px max(16px, env(safe-area-inset-left));
+  max-width: 980px; margin: 0 auto;
+}
+.hub__emblem { width: 36px; height: 36px; color: var(--pp-gold-400); margin-top: 2px; }
 .hub__titles .pp-label { margin: 0; }
-.hub__title { margin: 2px 0 0; font-size: var(--pp-fs-h1); }
+.hub__title { margin: 2px 0 0; font-size: clamp(1.7rem, 6.5vw, 2.4rem); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7); }
 .hub__title:focus { outline: none; }
-.hub__score { margin: 0; text-align: right; font-size: var(--pp-fs-small); color: var(--pp-text-muted); line-height: 1.15; }
+.hub__lede { margin: 4px 0 0; font-size: 0.9rem; color: #d6dbd9; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9); }
+.hub__score { margin: 2px 0 0; text-align: right; font-size: var(--pp-fs-small); color: var(--pp-text-muted); line-height: 1.15; }
 .hub__score b { font: 800 1.6rem/1 var(--pp-font-display); color: var(--pp-text); margin-right: 3px; }
 .hub__score span { display: block; }
-.hub__lede { width: min(100%, 460px); margin: 0; color: var(--pp-text-muted); font-size: 0.95rem; }
 
-.hub__stage {
-  position: relative; flex: none;
-  width: min(100%, 460px, calc((100dvh - 150px) * 390 / 560)); min-width: min(100%, 300px);
-  aspect-ratio: 390 / 560; border-radius: var(--pp-radius-lg); overflow: hidden;
-  box-shadow: 0 0 0 1px #243033, var(--pp-shadow);
+/* ---- Hotspots: each <li> sits exactly on its anchor (--x, --y) ---- */
+.hub__spots { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.hub__spot { position: absolute; left: var(--x, -999px); top: var(--y, -999px); width: 0; height: 0; }
+.hub__spot > * { pointer-events: auto; }
+
+.hub__ring {
+  position: absolute; left: 0; top: 0; width: var(--ring, 60px); height: calc(var(--ring, 60px) * 0.3);
+  transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid; pointer-events: none;
 }
-.hub__art { position: absolute; inset: 0; pointer-events: none; width: 100%; height: 100%; display: block; }
-.hub__stations { list-style: none; margin: 0; padding: 0; }
-.hub__stations li { position: absolute; width: 47%; }
-.hub__card { width: 100%; min-width: 0; padding: 8px 10px 10px 8px; gap: 3px 10px; }
-.hub__card .pp-station__art { width: 34px; height: 54px; }
-.hub__card .pp-station__name { font-size: 1.15rem; }
-.hub__card .pp-chip { justify-self: start; }
-.hub__card.is-preview { opacity: 0.78; }
-.hub__card.is-preview, .hub__rush { cursor: default; }
-.hub__rush-item { left: 50%; bottom: 3%; transform: translateX(-50%); width: 56% !important; }
-.hub__rush { width: 100%; min-height: 56px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 10px;
-  color: var(--pp-text-muted); font: inherit; border-style: dashed; }
-.hub__rush-name { font: 800 1.2rem/1 var(--pp-font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-steel-200); }
-.hub__rush:focus-visible { outline: 3px solid #8fd0ff; outline-offset: 3px; }
-
-/* Counter hotspots under each card: colour plus line style, never colour alone. */
-.hub-ring { fill: none; stroke-width: 2; }
-.hub-ring--new { stroke: var(--pp-gold-400); }
-.hub-ring--inProgress { stroke: var(--pp-progress); }
-.hub-ring--certified { stroke: var(--pp-ok); }
-.hub-ring--preview { stroke: var(--pp-steel-600); stroke-dasharray: 4 4; }
+.hub__ring--new { border-color: var(--pp-ok); box-shadow: 0 0 14px rgba(95, 207, 138, 0.55), inset 0 0 8px rgba(95, 207, 138, 0.35); }
+.hub__ring--progress { border-color: var(--pp-progress); box-shadow: 0 0 12px rgba(89, 169, 255, 0.5), inset 0 0 8px rgba(89, 169, 255, 0.3); }
+.hub__ring--certified { border-color: var(--pp-ok); border-width: 3px; }
+.hub__ring--preview { border-color: var(--pp-steel-400); border-style: dashed; opacity: 0.7; }
 @media (prefers-reduced-motion: no-preference) {
-  .hub-ring.is-recommended { animation: hub-breathe 3.2s ease-in-out infinite; }
+  .hub__ring--new { animation: hub-breathe 3.2s ease-in-out infinite; }
 }
-@keyframes hub-breathe { 50% { stroke-width: 3.5; stroke-opacity: 0.6; } }
+@keyframes hub-breathe { 50% { box-shadow: 0 0 24px rgba(95, 207, 138, 0.75), inset 0 0 10px rgba(95, 207, 138, 0.45); } }
 
-.hub__notice { width: min(100%, 460px); min-height: 1.4em; margin: 2px 0 0; text-align: center; color: var(--pp-gold-300); font-weight: 600; font-size: 0.92rem; }
+/* Station card: compact, dark and translucent, standing just above its ring. */
+.hub__card {
+  position: absolute; left: 0; bottom: 12px; width: var(--card-w); min-height: 44px;
+  transform: translateX(calc(-50% + var(--nudge, 0px)));
+  display: grid; grid-template-columns: auto 1fr; column-gap: 9px; row-gap: 1px; align-items: center;
+  padding: 8px 10px 9px 8px; text-align: left; cursor: pointer; color: var(--pp-text); font: inherit;
+  background: linear-gradient(180deg, rgba(21, 52, 44, 0.9), rgba(10, 26, 22, 0.92));
+  border: 1px solid rgba(45, 101, 83, 0.9); border-radius: var(--pp-radius);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.hub__card:focus-visible, .hub__rush:focus-visible { outline: 3px solid #8fd0ff; outline-offset: 3px; }
+.hub__thumb { grid-row: span 3; width: 30px; height: 48px; }
+.hub__name { font: 700 1.12rem/1 var(--pp-font-display); letter-spacing: 0.02em; }
+.hub__sub { font-size: 0.78rem; color: var(--pp-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hub__card--new { border-color: rgba(95, 207, 138, 0.75); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(95, 207, 138, 0.25); }
+.hub__card--preview { background: linear-gradient(180deg, rgba(27, 34, 36, 0.86), rgba(14, 18, 19, 0.9)); border-color: rgba(108, 118, 122, 0.7); cursor: default; }
+.hub__card--preview .hub__thumb { opacity: 0.75; }
+
+/* The state, in words: a filled pill to act on, or a dashed chip for "not yet". */
+.hub__action {
+  justify-self: start; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;
+  min-height: 24px; padding: 0 10px; border-radius: var(--pp-pill); border: 1px solid;
+  font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+}
+.hub__action--new, .hub__action--progress, .hub__action--certified { }
+.hub__action--new { background: var(--pp-ok); border-color: var(--pp-ok); color: #06210f; }
+.hub__action--progress { background: rgba(89, 169, 255, 0.16); border-color: var(--pp-progress); color: #cfe5ff; }
+.hub__action--certified { background: rgba(95, 207, 138, 0.14); border-color: var(--pp-ok); color: #c9f2d8; }
+.hub__action--new::after, .hub__action--progress::after, .hub__action--certified::after { content: "›"; font-size: 1.15em; line-height: 0; }
+.hub__action--certified::before { content: "✓"; }
+.hub__action--preview { border-style: dashed; border-color: rgba(166, 175, 179, 0.6); color: var(--pp-steel-200); }
+.hub__action--preview::before { content: "◌"; }
+
+/* ---- Final Rush: the locked capstone in the centre aisle ---- */
+.hub__rush {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
+  width: min(72vw, 290px); min-height: 44px; padding: 8px 14px 12px; cursor: default;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; font: inherit;
+  color: var(--pp-gold-400); border-radius: 22px;
+  background: radial-gradient(120% 120% at 50% 0%, rgba(40, 30, 14, 0.92), rgba(10, 12, 12, 0.92));
+  border: 1px solid rgba(201, 141, 36, 0.65);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 28px rgba(255, 181, 71, 0.18), 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+.hub__laurel { width: 66px; height: 35px; }
+.hub__rush-name { font: 800 1.35rem/1 var(--pp-font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-gold-300); }
+.hub__rush-sub { font-size: 0.8rem; color: #d9cdb4; }
+
+/* ---- Messages ---- */
+.hub__notice {
+  position: fixed; z-index: 4; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: max-content; max-width: calc(100% - 32px); margin: 0; padding: 8px 14px; border-radius: var(--pp-radius);
+  background: rgba(12, 15, 16, 0.92); border: 1px solid rgba(240, 189, 74, 0.5); color: var(--pp-gold-300);
+  font-weight: 600; font-size: 0.9rem; text-align: center; opacity: 0; pointer-events: none;
+}
+.hub__notice.is-on { opacity: 1; }
+.hub__side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+/* Shown while the plate is a provisional template (or failed to load). */
+.hub__provisional {
+  margin: 0; padding: 2px 8px; border-radius: var(--pp-pill); border: 1px dashed rgba(240, 189, 74, 0.6);
+  background: rgba(12, 15, 16, 0.8); color: var(--pp-gold-300); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap;
+}
+
+/* Very narrow phones: the same card, tighter. */
+@media (max-width: 359px) {
+  .hub__titles .pp-label { letter-spacing: 0.08em; white-space: nowrap; }
+  .hub__card { column-gap: 6px; padding: 7px 7px 8px 6px; }
+  .hub__thumb { width: 22px; height: 38px; }
+  .hub__name { font-size: 1rem; }
+  .hub__sub { font-size: 0.72rem; }
+  .hub__action { padding: 0 7px; font-size: 0.72rem; }
+  .hub__rush-sub { font-size: 0.74rem; }
+}

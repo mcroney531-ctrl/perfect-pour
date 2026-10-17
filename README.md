@@ -149,8 +149,8 @@ glass is.**
 ## Tests
 
 ```
-npm test            # simulation: 61 tests, Node 18+, no installs
-npm run test:ui     # browser: 24 Playwright tests (npm install first)
+npm test            # simulation (61) + hub layout (15), Node 18+, no installs
+npm run test:ui     # browser: 34 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -203,16 +203,24 @@ pixel-parity checks across refactors.
 station opened from it. `index.html` stays the standalone station (the test
 links and the composite page use it); M4 can make the app the front door.
 
-- **Hub:** portrait first. The bar is drawn from its open end: Pilsner on
-  the left arm, Hefeweizen on the back bar, Nitro Stout on the right arm,
-  Final Rush in the middle where the bartender stands. Station cards are
-  real buttons in teaching order, laid over the illustration (placeholder
-  art; final art needs approval). Hefeweizen and Nitro Stout show
-  "Coming soon" and do nothing but say so; Final Rush shows "Locked: earn
-  all 3". The stage scales to fit the screen's height as well as width.
-- **Progress states:** Start here (new) → In progress (first time the
-  station is opened) → Certified (M6). Each state has a chip with an icon and
-  words, and a matching hotspot ring on the counter (colour plus line style).
+- **Hub (visual pass, in review):** an image-based brewery scene with live
+  hotspots. Each composition (portrait, desktop) is a plate with station
+  anchors in the plate's own pixels (`js/hub-scenes.js`); `layoutScene()`
+  fits the plate like `object-fit: cover` but never at the cost of a
+  station, and maps the anchors to the screen (unit-tested in
+  `test/hub-layout.test.js`). Station cards are real buttons, in teaching
+  order, standing on a ring at their anchor; Final Rush is a locked medallion
+  in the centre aisle. On very small screens the hub scrolls rather than
+  stacking cards.
+- **Art status:** the clean hub plates are not made yet. The app shows
+  provisional template plates generated from the anchor table
+  (`node tools/make-hub-plates.mjs`), labelled "Provisional art" on screen.
+  The art spec is [`docs/art-brief-brewery-hub.md`](docs/art-brief-brewery-hub.md)
+  with full-size templates in `design/hub-templates/`.
+- **Progress states:** new ("Start here", green) → in progress ("Continue",
+  blue) → certified ("Replay", M6 only). Hefeweizen and Nitro Stout show a
+  dashed "Coming soon" chip and no Start. The state is in words on the card
+  (and for screen readers), with a matching ring (colour plus line style).
 - **Navigation:** hash routes (`#/`, `#/pilsner`), so the browser's back
   button works and the page still opens from disk. The station's brand is
   replaced by "‹ Bar", which steps back in history (or returns to the hub if
@@ -295,6 +303,8 @@ modules) so `index.html` still opens by double-click from disk.
 |---|---|
 | `index.html` | The standalone Pilsner station: a stylesheet link, a host element and a three-line boot |
 | `brewery.html`, `js/brewery.js`, `css/brewery.css` | The brewery app (M3): hub, hash router, station mounting |
+| `js/hub-scenes.js` | Hub plates, station anchors (plate pixels) and the pure `layoutScene()` mapping |
+| `assets/hub/`, `tools/make-hub-plates.mjs` | Hub plates (provisional templates, generated from the anchors, until the art arrives) |
 | `js/progress.js` | Versioned training progress on this device (`RiversideProgress`) |
 | `css/pilsner-station.css` | The station's styles, scoped to its host (`.pp-st`) |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |

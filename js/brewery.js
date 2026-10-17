@@ -1,95 +1,169 @@
-// Riverside brewery app (M3): the U-shaped bar hub and navigation between
-// it and the stations. The hub is a list of real buttons laid over an
-// illustration, so it works by keyboard and screen reader; the router is
-// hash-based (#/ and #/pilsner) so the browser's back button works and the
-// page still opens from disk. Stations are mounted and unmounted whole.
+// Riverside brewery app: the hub (an image-based brewery scene with live
+// station hotspots) and navigation between it and the stations.
+// - Environment art is a plate per composition (portrait / desktop) with
+//   anchors in plate pixels: js/hub-scenes.js. Art carries no UI or state.
+// - Hotspots are real buttons, in teaching order, placed by layoutScene().
+// - Hash routes (#/ and #/pilsner) so the browser back button works and the
+//   page still opens from disk. Stations are mounted and unmounted whole.
 (function () {
   'use strict';
   const P = window.RiversideProgress;
+  const { SCENES, pickScene, layoutScene } = window.RiversideHubScenes;
 
-  // The three stations around the U, in teaching order. Only the Pilsner has
-  // a simulation; the others are shown, clearly not playable, until theirs exist.
+  // ---- Stations (metadata only; state comes from progress) ----
   const STATIONS = [
-    { id: 'pilsner', name: 'Pilsner', sub: 'Foundation pour', glass: 'pils', playable: true, badge: '#a5392b',
-      card: 'left:3%;top:40%', spot: [64, 360] },
-    { id: 'hefeweizen', name: 'Hefeweizen', sub: 'Transfer pour', glass: 'hefe', playable: false, badge: '#c7802a',
-      card: 'left:50%;top:12%;transform:translateX(-50%)', spot: [195, 205] },
-    { id: 'stout', name: 'Nitro Stout', sub: 'Two-step pour', glass: 'stout', playable: false, badge: '#1c1410',
-      card: 'right:3%;top:58%', spot: [343, 455] }
+    { id: 'pilsner', name: 'Pilsner', sub: 'Foundation pour', glass: 'pils', playable: true },
+    { id: 'hefeweizen', name: 'Hefeweizen', sub: 'Transfer pour', glass: 'hefe', playable: false },
+    { id: 'stout', name: 'Nitro Stout', sub: 'Two-step pour', glass: 'stout', playable: false }
   ];
   const BY_ID = Object.fromEntries(STATIONS.map(s => [s.id, s]));
-  const CHIP = {
-    new: ['pp-chip--new', 'Start here'],
-    inProgress: ['pp-chip--progress', 'In progress'],
-    certified: ['pp-chip--certified', 'Certified'],
-    preview: ['pp-chip--preview', 'Coming soon']
+  // What each state looks like on a card: words first, colour second.
+  const STATE = {
+    new: { action: 'Start here', status: 'Not started. Recommended first station.', ring: 'new' },
+    inProgress: { action: 'Continue', status: 'In progress.', ring: 'progress' },
+    certified: { action: 'Replay', status: 'Certified.', ring: 'certified' },   // set by M6 only
+    preview: { action: 'Coming soon', status: 'Coming soon. Not playable yet.', ring: 'preview' }
   };
+  const ROOM = { top: 0, bottom: 52, side: 12 };   // top is the measured header height
 
   const root = document.getElementById('app-root');
   root.innerHTML = `
     <div class="hub" id="hub">
-      <header class="hub__top">
-        <svg class="hub__emblem" aria-hidden="true"><use href="#pp-emblem"/></svg>
-        <div class="hub__titles">
-          <p class="pp-label">Riverside Brewing Co.</p>
-          <h1 class="pp-display hub__title" id="hubTitle" tabindex="-1">The Bar</h1>
-        </div>
-        <p class="hub__score"><b id="hubCount">0</b> of 3<span>certified</span></p>
-      </header>
-      <p class="hub__lede" id="hubLede"></p>
-      <div class="hub__stage">
-        ${hubArt()}
-        <ol class="hub__stations" aria-label="Stations">
+      <div class="hub__canvas" id="hubCanvas">
+        <div class="hub__scene" aria-hidden="true"><img id="hubPlate" alt="" decoding="async"></div>
+        <div class="hub__shade" aria-hidden="true"></div>
+        <ol class="hub__spots" aria-label="Stations">
           ${STATIONS.map(s => `
-            <li style="${s.card}">
-              <button type="button" class="pp-station pp-panel hub__card" data-station="${s.id}"
-                ${s.playable ? '' : 'aria-disabled="true"'} aria-describedby="chip-${s.id}">
-                <svg class="pp-station__art" aria-hidden="true"><use href="#pp-glass-${s.glass}"/></svg>
-                <span class="pp-station__name">${s.name}</span>
-                <span class="pp-station__sub">${s.sub}</span>
-                <span class="pp-chip" id="chip-${s.id}"></span>
+            <li class="hub__spot" data-spot="${s.id}">
+              <span class="hub__ring" data-ring="${s.id}" aria-hidden="true"></span>
+              <button type="button" class="hub__card" data-station="${s.id}"
+                ${s.playable ? '' : 'aria-disabled="true"'} aria-describedby="status-${s.id}">
+                <svg class="hub__thumb" aria-hidden="true"><use href="#pp-glass-${s.glass}"/></svg>
+                <span class="hub__name">${s.name}</span>
+                <span class="hub__sub">${s.sub}</span>
+                <span class="hub__action" id="chip-${s.id}"></span>
+                <span class="sr-only" id="status-${s.id}"></span>
               </button>
             </li>`).join('')}
-          <li class="hub__rush-item">
-            <button type="button" class="pp-panel hub__rush" id="rushBtn" aria-disabled="true" aria-describedby="rushChip">
+          <li class="hub__spot hub__spot--rush" data-spot="finalRush">
+            <button type="button" class="hub__rush" id="rushBtn" aria-disabled="true" aria-describedby="rushChip">
+              <svg class="hub__laurel" viewBox="0 0 120 64" aria-hidden="true">
+                <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                  <path d="M36 58C18 50 10 34 14 14M84 58c18-8 26-24 22-44"/>
+                  <path d="M16 22c6 2 9 6 9 12M13 32c6 1 10 5 11 11M17 43c6 0 10 3 12 8M104 22c-6 2-9 6-9 12M107 32c-6 1-10 5-11 11M103 43c-6 0-10 3-12 8"/>
+                </g>
+                <g fill="currentColor"><rect x="49" y="28" width="22" height="18" rx="3"/></g>
+                <path d="M53 29v-6a7 7 0 0 1 14 0v6" fill="none" stroke="currentColor" stroke-width="3"/>
+              </svg>
               <span class="hub__rush-name">Final Rush</span>
-              <span class="pp-chip pp-chip--locked" id="rushChip">Locked: earn all 3</span>
+              <span class="hub__rush-sub" id="rushChip">Locked · complete all 3 stations to unlock</span>
             </button>
           </li>
         </ol>
       </div>
+      <header class="hub__top" id="hubTop">
+        <svg class="hub__emblem" aria-hidden="true"><use href="#pp-emblem"/></svg>
+        <div class="hub__titles">
+          <p class="pp-label">Riverside Brewing Co.</p>
+          <h1 class="pp-display hub__title" id="hubTitle" tabindex="-1">The Bar</h1>
+          <p class="hub__lede" id="hubLede"></p>
+        </div>
+        <div class="hub__side">
+          <p class="hub__score"><b id="hubCount">0</b> of 3<span>certified</span></p>
+          <p class="hub__provisional" id="hubProvisional" hidden></p>
+        </div>
+      </header>
       <p class="hub__notice" id="hubNotice" role="status" aria-live="polite"></p>
     </div>
     <div id="stationHost"></div>`;
 
   const hub = document.getElementById('hub');
+  const canvas = document.getElementById('hubCanvas');
+  const plate = document.getElementById('hubPlate');
+  const top = document.getElementById('hubTop');
   const stationHost = document.getElementById('stationHost');
   const notice = document.getElementById('hubNotice');
+  const provisional = document.getElementById('hubProvisional');
   let current = null;        // { id, station } while a station is mounted
   let cameFromHub = false;   // so "Back to the bar" can step back in history
   let noticeTimer = 0;
+  let sceneName = null, lastLayout = null;
 
   function say(text) {
     clearTimeout(noticeTimer);
     notice.textContent = text;
-    if (text) noticeTimer = setTimeout(() => { notice.textContent = ''; }, 6000);
+    notice.classList.toggle('is-on', !!text);
+    if (text) noticeTimer = setTimeout(() => { notice.textContent = ''; notice.classList.remove('is-on'); }, 6000);
   }
 
-  // ---- Hub ----
+  // ---- Scene: pick the plate, fit it, place the hotspots ----
+  function setPlate(name) {
+    if (name === sceneName) return;
+    sceneName = name;
+    const sc = SCENES[name];
+    hub.classList.remove('hub--noart');
+    hub.dataset.scene = name;
+    plate.src = sc.src;
+    plate.width = sc.width; plate.height = sc.height;
+    provisional.hidden = !sc.provisional;
+    provisional.textContent = 'Provisional art';
+  }
+  plate.addEventListener('error', () => {
+    // Visibly broken in development rather than silently plain.
+    hub.classList.add('hub--noart');
+    provisional.hidden = false;
+    provisional.textContent = 'Hub art failed to load';
+  });
+
+  function layout() {
+    if (hub.hidden) return;
+    const vw = hub.clientWidth, vh = hub.clientHeight;
+    if (!vw || !vh) return;
+    setPlate(pickScene(vw, vh));
+    const sc = SCENES[sceneName];
+    const cards = [...hub.querySelectorAll('.hub__card')];
+    const card = { w: Math.max(...cards.map(c => c.offsetWidth)), h: Math.max(...cards.map(c => c.offsetHeight)) + 12 };
+    const rushEl = document.getElementById('rushBtn');
+    const rush = { h: rushEl.offsetHeight };
+    const L = layoutScene(sc, vw, vh, { ...ROOM, top: top.offsetHeight + 8 }, card, rush);
+    lastLayout = { scene: sceneName, ...L, card };
+    canvas.style.height = L.height + 'px';
+    const img = plate.style;
+    img.left = L.ox + 'px'; img.top = L.oy + 'px';
+    img.width = sc.width * L.s + 'px'; img.height = sc.height * L.s + 'px';
+
+    // Cards centre on their anchors, then are pushed apart if two would touch
+    // and kept inside the side margins.
+    const half = card.w / 2, minX = ROOM.side + half, maxX = vw - ROOM.side - half;
+    const cx = {};
+    for (const s of STATIONS) cx[s.id] = Math.min(maxX, Math.max(minX, L.points[s.id][0]));
+    const gap = card.w + 8 - (cx.stout - cx.pilsner);
+    if (gap > 0) { cx.pilsner = Math.max(minX, cx.pilsner - gap / 2); cx.stout = Math.min(maxX, cx.stout + gap / 2); }
+    hub.querySelectorAll('.hub__spot').forEach(li => {
+      const id = li.dataset.spot, [x, y] = L.points[id];
+      li.style.setProperty('--x', x.toFixed(1) + 'px');
+      li.style.setProperty('--y', y.toFixed(1) + 'px');
+      if (cx[id] !== undefined) li.style.setProperty('--nudge', (cx[id] - x).toFixed(1) + 'px');
+      li.style.setProperty('--ring', Math.max(44, Math.min(96, 150 * L.s)).toFixed(1) + 'px');
+    });
+  }
+  new ResizeObserver(layout).observe(hub);
+  addEventListener('resize', layout);      // belt and braces: rotation on some phones
+
+  // ---- Hub state ----
   function renderHub() {
     STATIONS.forEach(s => {
       const state = s.playable ? P.station(s.id).status : 'preview';
+      const look = STATE[state] || STATE.new;
       const btn = hub.querySelector(`[data-station="${s.id}"]`);
-      const chip = document.getElementById('chip-' + s.id);
-      chip.className = 'pp-chip ' + CHIP[state][0];
-      chip.textContent = CHIP[state][1];
-      btn.classList.toggle('is-recommended', state === 'new');
-      btn.classList.toggle('is-preview', state === 'preview');
-      const ring = hub.querySelector(`.hub-ring[data-ring="${s.id}"]`);
-      ring.setAttribute('class', `hub-ring hub-ring--${state}` + (state === 'new' ? ' is-recommended' : ''));
+      const action = document.getElementById('chip-' + s.id);
+      action.textContent = look.action;
+      action.className = 'hub__action hub__action--' + look.ring;
+      document.getElementById('status-' + s.id).textContent = look.status;
+      btn.className = `hub__card hub__card--${look.ring}`;
+      hub.querySelector(`.hub__ring[data-ring="${s.id}"]`).className = `hub__ring hub__ring--${look.ring}`;
     });
-    const n = P.certifiedCount();
-    document.getElementById('hubCount').textContent = n;
+    document.getElementById('hubCount').textContent = P.certifiedCount();
     const pil = P.station('pilsner').status;
     document.getElementById('hubLede').textContent =
       pil === 'new' ? 'Your first shift. Start at the Pilsner station.'
@@ -148,7 +222,7 @@
     if (current && current.id === id) return;
     const left = closeStation();
     if (id && BY_ID[id] && BY_ID[id].playable) return openStation(id);
-    if (id && !(location.hash === '#/' || location.hash === '')) {
+    if (id) {
       history.replaceState(null, '', '#/');
       if (BY_ID[id]) say(`${BY_ID[id].name} is coming soon. Start with the Pilsner.`);
     }
@@ -159,6 +233,7 @@
     cameFromHub = false;
     renderHub();
     hub.hidden = false;
+    layout();
     document.title = 'The Bar · Riverside Brewing Co.';
     if (left) {
       if (left.abandoned) say("Pour stopped. That attempt wasn't scored; you'll start fresh next time.");
@@ -171,72 +246,5 @@
   route();
 
   // For tests and debugging.
-  window.ppBrewery = { current: () => current && current.id, progress: P };
-
-  // ---- Illustration (placeholder art; final art needs separate approval) ----
-  function hubArt() {
-    const towers = STATIONS.map(s => {
-      const [x, y] = s.spot, dim = s.playable ? 1 : 0.5;
-      return `
-        <ellipse class="hub-glow" cx="${x}" cy="${y}" rx="78" ry="46" fill="url(#hubGlow)" opacity="${s.playable ? 0.9 : 0.45}"/>
-        <ellipse class="hub-ring" data-ring="${s.id}" cx="${x}" cy="${y + 4}" rx="30" ry="8"/>
-        <g opacity="${dim}">
-          <rect x="${x - 6}" y="${y - 30}" width="12" height="30" rx="3" fill="url(#hubSteel)"/>
-          <rect x="${x - 3.5}" y="${y - 48}" width="7" height="20" rx="2.5" fill="${s.badge}" stroke="#f2d9a6" stroke-width="0.8"/>
-          <rect x="${x - 13}" y="${y - 2}" width="26" height="5" rx="2" fill="#5c6468"/>
-        </g>`;
-    }).join('');
-    return `
-      <svg class="hub__art" viewBox="0 0 390 560" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <defs>
-          <linearGradient id="hubWall" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#161d1f"/><stop offset="1" stop-color="#0d1514"/>
-          </linearGradient>
-          <linearGradient id="hubWood" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#3f2a1b"/><stop offset="1" stop-color="#24170e"/>
-          </linearGradient>
-          <linearGradient id="hubCopper" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#3a2416"/><stop offset="0.5" stop-color="#9a5f35"/><stop offset="1" stop-color="#2c1b10"/>
-          </linearGradient>
-          <linearGradient id="hubSteel" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#5a6367"/><stop offset="0.45" stop-color="#c9d0d3"/><stop offset="1" stop-color="#4a5256"/>
-          </linearGradient>
-          <radialGradient id="hubGlow">
-            <stop offset="0" stop-color="#ffb547" stop-opacity="0.32"/><stop offset="1" stop-color="#ffb547" stop-opacity="0"/>
-          </radialGradient>
-          <radialGradient id="hubPool" cx="0.5" cy="0" r="1">
-            <stop offset="0" stop-color="#ffb547" stop-opacity="0.12"/><stop offset="1" stop-color="#ffb547" stop-opacity="0"/>
-          </radialGradient>
-        </defs>
-        <rect width="390" height="560" fill="url(#hubWall)"/>
-        <!-- Back wall: tanks and a shelf, kept dim so the cards read. -->
-        <g opacity="0.35">
-          <rect x="4" y="40" width="58" height="150" rx="28" fill="url(#hubCopper)"/>
-          <rect x="328" y="40" width="58" height="150" rx="28" fill="url(#hubCopper)"/>
-        </g>
-        <rect x="96" y="150" width="198" height="3" fill="#3a4245"/>
-        <g fill="#24302c" opacity="0.8">
-          ${[108, 122, 136, 150, 232, 246, 260, 274].map((x, i) => `<rect x="${x}" y="${128 - (i % 3) * 3}" width="9" height="${22 + (i % 3) * 3}" rx="3"/>`).join('')}
-        </g>
-        <!-- Pendants. -->
-        <g stroke="#2a3336" stroke-width="1.2">
-          <line x1="195" y1="0" x2="195" y2="26"/><line x1="70" y1="0" x2="70" y2="16"/><line x1="320" y1="0" x2="320" y2="16"/>
-        </g>
-        <g fill="#2b2f31">
-          <path d="M183 26 h24 l6 10 h-36z"/><path d="M60 16 h20 l5 8 h-30z"/><path d="M310 16 h20 l5 8 h-30z"/>
-        </g>
-        <g fill="#ffd27a"><ellipse cx="195" cy="37" rx="8" ry="2"/><ellipse cx="70" cy="25" rx="6" ry="1.6"/><ellipse cx="320" cy="25" rx="6" ry="1.6"/></g>
-        <rect width="390" height="300" fill="url(#hubPool)"/>
-        <!-- Floor, then the U-shaped counter (seen from the open end). -->
-        <rect y="180" width="390" height="380" fill="#090d0c"/>
-        <path d="M108 228 L282 228 L320 560 L70 560 Z" fill="#0e1312"/>
-        <path d="M60 180 L330 180 L400 560 L-10 560 Z M108 228 L70 560 L320 560 L282 228 Z" fill="url(#hubWood)" fill-rule="evenodd"/>
-        <path d="M108 228 L282 228 L284 246 L106 246 Z" fill="#170f09"/>
-        <path d="M108 228 L116 246 L86 560 L70 560 Z" fill="#170f09"/>
-        <path d="M282 228 L274 246 L304 560 L320 560 Z" fill="#170f09"/>
-        <path d="M-10 560 L60 180 L330 180 L400 560" fill="none" stroke="#6b4a2e" stroke-width="1.2"/>
-        <path d="M70 560 L108 228 L282 228 L320 560" fill="none" stroke="#b9733f" stroke-width="1.6" stroke-opacity="0.85"/>
-        ${towers}
-      </svg>`;
-  }
+  window.ppBrewery = { current: () => current && current.id, progress: P, layout: () => lastLayout };
 })();
