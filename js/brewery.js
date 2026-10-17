@@ -24,7 +24,7 @@
     certified: { action: 'Replay', status: 'Certified.', ring: 'certified' },   // set by M6 only
     preview: { action: 'Coming soon', status: 'Coming soon. Not playable yet.', ring: 'preview' }
   };
-  const ROOM = { top: 0, bottom: 52, side: 12 };   // top is the measured header height
+  const ROOM = { top: 0, bottom: 52, side: 12, edge: 4, ring: 44 };   // top is the measured header height
 
   const root = document.getElementById('app-root');
   root.innerHTML = `
@@ -122,29 +122,24 @@
     setPlate(pickScene(vw, vh));
     const sc = SCENES[sceneName];
     const cards = [...hub.querySelectorAll('.hub__card')];
-    const card = { w: Math.max(...cards.map(c => c.offsetWidth)), h: Math.max(...cards.map(c => c.offsetHeight)) + 12 };
+    const card = { w: Math.max(...cards.map(c => c.offsetWidth)), h: Math.max(...cards.map(c => c.offsetHeight)) };
     const rushEl = document.getElementById('rushBtn');
-    const rush = { h: rushEl.offsetHeight };
+    const rush = { w: rushEl.offsetWidth, h: rushEl.offsetHeight };
     const L = layoutScene(sc, vw, vh, { ...ROOM, top: top.offsetHeight + 8 }, card, rush);
     lastLayout = { scene: sceneName, ...L, card };
     canvas.style.height = L.height + 'px';
     const img = plate.style;
     img.left = L.ox + 'px'; img.top = L.oy + 'px';
     img.width = sc.width * L.s + 'px'; img.height = sc.height * L.s + 'px';
-
-    // Cards centre on their anchors, then are pushed apart if two would touch
-    // and kept inside the side margins.
-    const half = card.w / 2, minX = ROOM.side + half, maxX = vw - ROOM.side - half;
-    const cx = {};
-    for (const s of STATIONS) cx[s.id] = Math.min(maxX, Math.max(minX, L.points[s.id][0]));
-    const gap = card.w + 8 - (cx.stout - cx.pilsner);
-    if (gap > 0) { cx.pilsner = Math.max(minX, cx.pilsner - gap / 2); cx.stout = Math.min(maxX, cx.stout + gap / 2); }
+    // Each <li> sits on its point (the ring); its card is placed from the
+    // layout's card box, relative to that point.
     hub.querySelectorAll('.hub__spot').forEach(li => {
-      const id = li.dataset.spot, [x, y] = L.points[id];
+      const id = li.dataset.spot, [x, y] = L.points[id], c = L.cards[id];
       li.style.setProperty('--x', x.toFixed(1) + 'px');
       li.style.setProperty('--y', y.toFixed(1) + 'px');
-      if (cx[id] !== undefined) li.style.setProperty('--nudge', (cx[id] - x).toFixed(1) + 'px');
-      li.style.setProperty('--ring', Math.max(44, Math.min(96, 150 * L.s)).toFixed(1) + 'px');
+      li.style.setProperty('--cx', (c.cx - x).toFixed(1) + 'px');
+      li.style.setProperty('--cy', (c.top - y).toFixed(1) + 'px');
+      li.style.setProperty('--ring', Math.max(44, Math.min(96, 140 * L.s)).toFixed(1) + 'px');
     });
   }
   new ResizeObserver(layout).observe(hub);

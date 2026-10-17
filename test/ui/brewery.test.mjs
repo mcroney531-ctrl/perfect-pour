@@ -233,12 +233,25 @@ test('hub switches plate when the screen turns, and hotspots follow', async () =
   await h.close();
 });
 
-test('provisional art is labelled; missing art is visibly flagged, and the hub still works', async () => {
+test('portrait art loads unlabelled; provisional art is labelled; missing art is flagged and the hub still works', async () => {
+  // Portrait has its real plate: no label, and the art itself loads at full size.
   const h = await openPage(browser, APP());
   await h.run(200);
-  assert.equal(await h.page.isVisible('#hubProvisional'), true);
-  assert.equal(await h.text('#hubProvisional'), 'Provisional art');
+  assert.equal(await h.page.isVisible('#hubProvisional'), false);
+  assert.match(await h.page.getAttribute('#hubPlate', 'src'), /hub-portrait\.webp$/);
+  let size = null;
+  for (let i = 0; i < 60 && !size; i++) {
+    size = await h.page.evaluate(() => { const im = document.getElementById('hubPlate'); return im.complete && im.naturalWidth ? [im.naturalWidth, im.naturalHeight] : null; });
+    if (!size) await h.page.waitForTimeout(100);
+  }
+  assert.deepEqual(size, [1170, 2532]);
   await h.close();
+  // Desktop is still a provisional template, and says so.
+  const d = await openPage(browser, APP(), { size: { width: 1440, height: 900 }, mobile: false });
+  await d.run(200);
+  assert.equal(await d.page.isVisible('#hubProvisional'), true);
+  assert.equal(await d.text('#hubProvisional'), 'Provisional art');
+  await d.close();
   const b = await openPage(browser, APP());
   await b.page.route('**/assets/hub/**', r => r.abort());
   await b.page.reload(); await b.run(300);
@@ -261,7 +274,7 @@ test('truthful hub: nothing certified, no rejected slogan, coming-soon cards off
     assert.equal(await chip(h, id), 'Coming soon');
     assert.doesNotMatch(await h.text(`[data-station=${id}]`), /Start|Continue/);
   }
-  for (const f of ['assets/hub/hub-portrait-provisional.svg', 'assets/hub/hub-desktop-provisional.svg']) {
+  for (const f of ['assets/hub/hub-desktop-provisional.svg']) {
     const svg = await h.page.evaluate(async u => (await fetch(u)).text(), f);
     assert.doesNotMatch(svg, /good beer|better people/i, f);
   }

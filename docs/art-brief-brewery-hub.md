@@ -1,10 +1,12 @@
 # Art brief: brewery hub plates (portrait and desktop)
 
-For GPT and the user. The hub's code is done and waiting on these two images;
-until they arrive the app shows labelled provisional plates. Attach
-`design/hub-templates/hub-portrait-template.png` and
-`hub-desktop-template.png` (same size as the deliverables, anchors marked) and
-the Brewery Hub Visual Guide for atmosphere.
+For GPT and the user.
+
+**Status:** portrait plate delivered (candidate 1, `assets/hub/hub-portrait.webp`)
+and live in the app with its stations mapped to the art (table below).
+Desktop plate still to come; the app shows a labelled provisional template
+for it. Templates: `design/hub-templates/hub-portrait-template.jpg` (the
+delivered art with the station points marked) and `hub-desktop-template.png`.
 
 ## What the plates are
 
@@ -39,30 +41,30 @@ points below, so state can change without new art.
 
 Coordinates are in the deliverable's own pixels (x from the left, y from the
 top). The ring sits on this point, so it should be the drip-tray / counter
-surface in front of that tap. The station card is drawn above the point.
+surface in front of that tap.
 
-| | Portrait 1170 x 2532 | Desktop 1920 x 1080 |
-|---|---|---|
-| 1 Pilsner tap (near left) | (330, 1560) | (600, 650) |
-| 2 Hefeweizen tap (back centre) | (585, 1170) | (960, 480) |
-| 3 Nitro Stout tap (near right) | (840, 1560) | (1320, 650) |
-| 4 Final Rush medallion (centre aisle) | (585, 2060) | (960, 905) |
+**Portrait (as delivered, candidate 1):** the three taps sit in one band, so
+the cards are staggered: the Hefeweizen card floats above its tap tower
+(slid right to clear the sign) and the Pilsner and Nitro Stout cards sit just
+below their drip trays, on the counter. Final Rush sits on the floor medallion.
 
-Zones to respect (portrait, at a typical phone scale):
+| | Portrait 1170 x 2532 (delivered) | Card | Desktop 1920 x 1080 (requested) |
+|---|---|---|---|
+| 1 Pilsner tap (near left) | (115, 1095) | below the tray | (600, 650) |
+| 2 Hefeweizen tap (back centre) | (587, 935) | above the tower, slid right | (960, 480) |
+| 3 Nitro Stout tap (near right) | (1065, 1095) | below the tray | (1320, 650) |
+| 4 Final Rush medallion (centre aisle) | (584, 1772) | centred | (960, 905) |
 
-- **Header:** the top ~300 px is under a dark scrim with the title. Keep it
-  calm; ceiling, pendants or the top of the back wall are fine.
-- **Above each tap anchor:** a station card covers roughly 500 x 310 px
-  directly above the anchor. The tap tower itself can sit under the card's
-  lower edge; keep the drip tray and anchor point visible.
-- **Final Rush:** a medallion roughly 870 x 300 px is centred on its anchor.
-- The sign and the back wall sit between the header and the Hefeweizen card
-  (about y 330-850): that is where the brewery identity should read.
-- Desktop scales the same ideas to 1920 x 1080; cards there cover about
-  230 x 120 px above each anchor.
+For a future portrait revision, keep these four points (or say where they
+moved). What to keep calm: the counter tops just below the side trays and
+the area right of the sign above the back tower (cards sit there), and the
+floor medallion (Final Rush sits on it).
+
+Desktop zones: cards cover about 230 x 120 px above each anchor; keep the
+anchor points visible and the space above them calm.
 
 If the composition works better with an anchor moved, move it and say where:
-the anchors are one table in `js/hub-scenes.js`, and the app re-maps them
+the stations are one table in `js/hub-scenes.js`, and the app re-maps them
 for every screen size.
 
 ## Format

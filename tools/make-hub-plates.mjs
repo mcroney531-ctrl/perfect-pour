@@ -15,7 +15,8 @@ const { SCENES } = ctx.RiversideHubScenes;
 const LABEL = { pilsner: '1  PILSNER TAP', hefeweizen: '2  HEFEWEIZEN TAP', stout: '3  NITRO STOUT TAP', finalRush: '4  FINAL RUSH MEDALLION' };
 
 function plate(name, sc) {
-  const { width: W, height: H, anchors: A } = sc;
+  const { width: W, height: H } = sc;
+  const A = Object.fromEntries(Object.entries(sc.stations).map(([id, st]) => [id, st.at]));
   const k = Math.min(W / 1170, H / 1200);               // text and stroke scale
   const f = n => (n * k).toFixed(1);
   const p = A.pilsner, h = A.hefeweizen, s = A.stout, r = A.finalRush;
@@ -63,6 +64,7 @@ function plate(name, sc) {
 
 fs.mkdirSync(path.join(ROOT, 'assets/hub'), { recursive: true });
 for (const [name, sc] of Object.entries(SCENES)) {
+  if (!sc.provisional) continue;            // real art in place for this composition
   const out = path.join(ROOT, sc.src);
   fs.writeFileSync(out, plate(name, sc));
   console.log('wrote', path.relative(ROOT, out));

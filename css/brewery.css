@@ -2,7 +2,7 @@
    plate and the hotspots (see js/hub-scenes.js). Everything here is the
    live layer: header, station cards, rings, Final Rush, notices. */
 .hub {
-  --card-w: min(42vw, 190px);
+  --card-w: min(38vw, 176px);
   position: relative; height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
   background: var(--pp-charcoal-950); color: var(--pp-text); font-family: var(--pp-font-ui);
 }
@@ -51,28 +51,28 @@
 
 /* Station card: compact, dark and translucent, standing just above its ring. */
 .hub__card {
-  position: absolute; left: 0; bottom: 12px; width: var(--card-w); min-height: 44px;
-  transform: translateX(calc(-50% + var(--nudge, 0px)));
-  display: grid; grid-template-columns: auto 1fr; column-gap: 9px; row-gap: 1px; align-items: center;
-  padding: 8px 10px 9px 8px; text-align: left; cursor: pointer; color: var(--pp-text); font: inherit;
+  position: absolute; left: var(--cx, 0); top: var(--cy, 0); width: var(--card-w); min-height: 44px;
+  transform: translateX(-50%);
+  display: grid; grid-template-columns: auto 1fr; column-gap: 7px; row-gap: 0; align-items: center;
+  padding: 6px 8px 7px 6px; text-align: left; cursor: pointer; color: var(--pp-text); font: inherit;
   background: linear-gradient(180deg, rgba(21, 52, 44, 0.9), rgba(10, 26, 22, 0.92));
   border: 1px solid rgba(45, 101, 83, 0.9); border-radius: var(--pp-radius);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 .hub__card:focus-visible, .hub__rush:focus-visible { outline: 3px solid #8fd0ff; outline-offset: 3px; }
-.hub__thumb { grid-row: span 3; width: 30px; height: 48px; }
-.hub__name { font: 700 1.12rem/1 var(--pp-font-display); letter-spacing: 0.02em; }
-.hub__sub { font-size: 0.78rem; color: var(--pp-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hub__thumb { grid-row: span 3; width: 24px; height: 40px; }
+.hub__name { font: 700 1.02rem/1.05 var(--pp-font-display); letter-spacing: 0.02em; }
+.hub__sub { font-size: 0.72rem; color: var(--pp-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hub__card--new { border-color: rgba(95, 207, 138, 0.75); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(95, 207, 138, 0.25); }
 .hub__card--preview { background: linear-gradient(180deg, rgba(27, 34, 36, 0.86), rgba(14, 18, 19, 0.9)); border-color: rgba(108, 118, 122, 0.7); cursor: default; }
 .hub__card--preview .hub__thumb { opacity: 0.75; }
 
 /* The state, in words: a filled pill to act on, or a dashed chip for "not yet". */
 .hub__action {
-  justify-self: start; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;
-  min-height: 24px; padding: 0 10px; border-radius: var(--pp-pill); border: 1px solid;
-  font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+  justify-self: start; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;
+  min-height: 22px; padding: 0 8px; border-radius: var(--pp-pill); border: 1px solid;
+  font-size: 0.72rem; font-weight: 700; white-space: nowrap;
 }
 .hub__action--new, .hub__action--progress, .hub__action--certified { }
 .hub__action--new { background: var(--pp-ok); border-color: var(--pp-ok); color: #06210f; }
@@ -85,17 +85,17 @@
 
 /* ---- Final Rush: the locked capstone in the centre aisle ---- */
 .hub__rush {
-  position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
-  width: min(72vw, 290px); min-height: 44px; padding: 8px 14px 12px; cursor: default;
+  position: absolute; left: var(--cx, 0); top: var(--cy, 0); transform: translateX(-50%);
+  width: min(56vw, 230px); min-height: 44px; padding: 6px 12px 9px; cursor: default;
   display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; font: inherit;
   color: var(--pp-gold-400); border-radius: 22px;
   background: radial-gradient(120% 120% at 50% 0%, rgba(40, 30, 14, 0.92), rgba(10, 12, 12, 0.92));
   border: 1px solid rgba(201, 141, 36, 0.65);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 28px rgba(255, 181, 71, 0.18), 0 12px 28px rgba(0, 0, 0, 0.55);
 }
-.hub__laurel { width: 66px; height: 35px; }
-.hub__rush-name { font: 800 1.35rem/1 var(--pp-font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-gold-300); }
-.hub__rush-sub { font-size: 0.8rem; color: #d9cdb4; }
+.hub__laurel { width: 54px; height: 29px; }
+.hub__rush-name { font: 800 1.15rem/1 var(--pp-font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-gold-300); }
+.hub__rush-sub { font-size: 0.72rem; color: #d9cdb4; }
 
 /* ---- Messages ---- */
 .hub__notice {
@@ -115,10 +115,8 @@
 /* Very narrow phones: the same card, tighter. */
 @media (max-width: 359px) {
   .hub__titles .pp-label { letter-spacing: 0.08em; white-space: nowrap; }
-  .hub__card { column-gap: 6px; padding: 7px 7px 8px 6px; }
-  .hub__thumb { width: 22px; height: 38px; }
-  .hub__name { font-size: 1rem; }
-  .hub__sub { font-size: 0.72rem; }
-  .hub__action { padding: 0 7px; font-size: 0.72rem; }
-  .hub__rush-sub { font-size: 0.74rem; }
+  .hub__card { column-gap: 5px; padding: 6px 6px 7px 5px; }
+  .hub__thumb { width: 20px; height: 34px; }
+  .hub__name { font-size: 0.95rem; }
+  .hub__action { padding: 0 6px; font-size: 0.68rem; }
 }

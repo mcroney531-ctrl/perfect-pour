@@ -149,7 +149,7 @@ glass is.**
 ## Tests
 
 ```
-npm test            # simulation (61) + hub layout (15), Node 18+, no installs
+npm test            # simulation (61) + hub layout (16), Node 18+, no installs
 npm run test:ui     # browser: 34 Playwright tests (npm install first)
 npm run test:all    # both
 ```
@@ -212,11 +212,12 @@ links and the composite page use it); M4 can make the app the front door.
   order, standing on a ring at their anchor; Final Rush is a locked medallion
   in the centre aisle. On very small screens the hub scrolls rather than
   stacking cards.
-- **Art status:** the clean hub plates are not made yet. The app shows
-  provisional template plates generated from the anchor table
+- **Art status:** portrait plate delivered (`assets/hub/hub-portrait.webp`,
+  candidate 1, in review) with its stations mapped to the art. The desktop
+  plate is still a provisional template generated from the station table
   (`node tools/make-hub-plates.mjs`), labelled "Provisional art" on screen.
-  The art spec is [`docs/art-brief-brewery-hub.md`](docs/art-brief-brewery-hub.md)
-  with full-size templates in `design/hub-templates/`.
+  Spec: [`docs/art-brief-brewery-hub.md`](docs/art-brief-brewery-hub.md);
+  templates in `design/hub-templates/`.
 - **Progress states:** new ("Start here", green) → in progress ("Continue",
   blue) → certified ("Replay", M6 only). Hefeweizen and Nitro Stout show a
   dashed "Coming soon" chip and no Start. The state is in words on the card
@@ -304,7 +305,7 @@ modules) so `index.html` still opens by double-click from disk.
 | `index.html` | The standalone Pilsner station: a stylesheet link, a host element and a three-line boot |
 | `brewery.html`, `js/brewery.js`, `css/brewery.css` | The brewery app (M3): hub, hash router, station mounting |
 | `js/hub-scenes.js` | Hub plates, station anchors (plate pixels) and the pure `layoutScene()` mapping |
-| `assets/hub/`, `tools/make-hub-plates.mjs` | Hub plates (provisional templates, generated from the anchors, until the art arrives) |
+| `assets/hub/`, `tools/make-hub-plates.mjs` | Hub plates: the portrait art, and provisional templates (generated from the station table) where art hasn't arrived |
 | `js/progress.js` | Versioned training progress on this device (`RiversideProgress`) |
 | `css/pilsner-station.css` | The station's styles, scoped to its host (`.pp-st`) |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
