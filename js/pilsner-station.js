@@ -252,6 +252,9 @@
     if (tpl) host.appendChild(tpl.content.cloneNode(true));
     else host.insertAdjacentHTML('beforeend', MARKUP);
     host.classList.add('pp-st');
+    // Host hooks (the brewery shell): onEvent('served' | 'abandoned', detail)
+    // and onExit(), which adds a back button in place of the brand.
+    const emit = (type, detail) => { try { if (opts.onEvent) opts.onEvent(type, detail); } catch (_) { /* host's problem */ } };
     const $ = id => host.querySelector('#' + id);
     const params = new URLSearchParams(opts.search ?? location.search);
     let alive = true, rafId = 0;
@@ -260,6 +263,13 @@
       target.addEventListener(type, fn, options);
       disposers.push(() => target.removeEventListener(type, fn, options));
     };
+    if (opts.onExit) {
+      const brand = host.querySelector('.brand');
+      brand.insertAdjacentHTML('afterend',
+        `<button type="button" id="exitBtn" aria-label="${opts.exitLabel || 'Back to the bar'}">‹ ${opts.exitText || 'Bar'}<small>${opts.exitSub || 'Pilsner station'}</small></button>`);
+      brand.hidden = true;
+      $('exitBtn').addEventListener('click', () => opts.onExit());
+    }
     const DEBUG = params.get('debug') === '1';
     const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
     const cfg = PILSNER, ctl = CONTROL;
@@ -755,7 +765,7 @@
     });
 
     function setMode(m) {
-      if (mode !== 'watch' && sim.opened && !served) Log.record(sim, null, false);
+      if (mode !== 'watch' && sim.opened && !served) Log.record(sim, null, false, 'modeChange');
       sim = initState();
       mode = m;
       host.querySelectorAll('#modes button').forEach(b => {
@@ -782,7 +792,7 @@
 
     function restart() {
       stopPour();
-      if (mode !== 'watch' && sim.opened && !served) Log.record(sim, null, false);
+      if (mode !== 'watch' && sim.opened && !served) Log.record(sim, null, false, 'restart');
       sim = initState();
       served = null;
       ghost.pour = false;
@@ -809,7 +819,7 @@
       const r = evaluate(sim, cfg);
       served = { result: r, text: feedback(r, cfg) };
       if (mode === 'solo') soloFailStreak = r.pass ? 0 : soloFailStreak + 1;
-      if (mode !== 'watch') Log.record(sim, r, true);
+      if (mode !== 'watch') { Log.record(sim, r, true, 'served'); emit('served', { mode, pass: r.pass }); }
       showResult(r, served.text);
     }
     $('serve').addEventListener('click', () => serve(false));
@@ -1056,7 +1066,7 @@
       function write(list) {
         try { localStorage.setItem(KEY, JSON.stringify(list.slice(-CAP))); return true; } catch (_) { return false; }
       }
-      function record(state, result, wasServed) {
+      function record(state, result, wasServed, endedBy) {
         attempt++;
         const m = evaluate(state, cfg).metrics;
         const entry = {
@@ -1064,6 +1074,7 @@
           mode, variant, tapMode, straightenVia,
           orientation: innerWidth > innerHeight ? 'landscape' : 'portrait',
           served: wasServed,
+          endedBy: endedBy || null,      // served | restart | modeChange | navigate (left the station)
           pass: result ? result.pass : null,
           techniqueOk: result ? result.techniqueOk : null,
           pourOk: result ? result.pourOk : null,
@@ -1197,15 +1208,24 @@
     // Leaves no trace: loop stopped, timers cleared, tap closed, every window
     // and document listener removed, markup gone. (Listeners on the station's
     // own elements go with the markup.)
-    function unmount() {
-      if (!alive) return;
+    // Leaving mid-pour (the agreed M3 rule): the tap closes at once and the
+    // attempt is abandoned, never graded. It is logged with endedBy set to
+    // the reason, and the host is told. Returns { abandoned }.
+    function unmount(reason) {
+      if (!alive) return { abandoned: false };
       alive = false;
       cancelAnimationFrame(rafId);
       clearTimeout(flushTimer);
       stopPour();
+      const abandoned = mode !== 'watch' && sim.opened && !served;
+      if (abandoned) {
+        Log.record(sim, null, false, reason || 'navigate');
+        emit('abandoned', { mode, reason: reason || 'navigate' });
+      }
       disposers.splice(0).forEach(off => off());
       host.textContent = '';
       host.classList.remove('pp-st');
+      return { abandoned };
     }
 
     setVariant(variant);
