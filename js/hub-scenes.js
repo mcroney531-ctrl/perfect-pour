@@ -27,15 +27,17 @@
       focus: [585, 1300]                // kept nearest the screen centre when cropping
     },
     desktop: {
-      src: 'assets/hub/hub-desktop-provisional.svg', provisional: true,
-      width: 1920, height: 1080,
+      // Candidate 1 (1672 x 941), installed for critique only: labelled
+      // provisional. The generated template is assets/hub/hub-desktop-provisional.svg.
+      src: 'assets/hub/hub-desktop-candidate1.webp', provisional: true,
+      width: 1672, height: 941,
       stations: {
-        pilsner: { at: [600, 650], card: 'above' },
-        hefeweizen: { at: [960, 480], card: 'above' },
-        stout: { at: [1320, 650], card: 'above' },
-        finalRush: { at: [960, 905] }
+        pilsner: { at: [240, 445], card: 'above' },
+        hefeweizen: { at: [835, 378], card: 'below' },   // above would cover the sign
+        stout: { at: [1445, 445], card: 'above' },
+        finalRush: { at: [837, 718] }
       },
-      focus: [960, 640]
+      focus: [836, 470]
     }
   };
 

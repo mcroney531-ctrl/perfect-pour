@@ -18,6 +18,15 @@ centre aisle; no cards, buttons, labels or glows baked in. Deliver
 otherwise 1920 x 1080; tell me where the four tap/medallion points ended up,
 or I'll measure them from the image.
 
+**Landscape candidate 1** (1672 x 941, `assets/hub/hub-desktop-candidate1.webp`)
+is installed for critique only, labelled provisional. Measured points:
+Pilsner tray (240, 445), Hefeweizen tray (835, 378), Stout tray (1445, 445),
+floor medallion (837, 718). Review findings: mirrored left/right (stations
+look identical), light spread evenly (many candles, glowing tanks; the beer
+would not be the brightest warm element), no calm space for cards, taps small
+and near the edges, stools inside the U (customer viewpoint; the portrait
+plate has the bartender's), ~40% empty foreground, below 1920 x 1080.
+
 ## What the plates are
 
 Two clean environment images of the same Riverside brewery bar: no UI, no
