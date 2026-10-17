@@ -215,7 +215,7 @@ links and the composite page use it); M4 can make the app the front door.
 - **Art status:** 16:9 landscape is the primary format (Storyline Web
   Object). Landscape plate revision 2 (`assets/hub/hub-desktop.webp`) and
   portrait candidate 1 (`assets/hub/hub-portrait.webp`) are live with their
-  stations mapped to the art; a landscape retouch at 2560 x 1440 is pending.
+  stations mapped to the art.
   On landscape the live UI scales with the canvas (1x at 1280 x 720, 1.5x at
   1920 x 1080, never below 1x). Spec:
   [`docs/art-brief-brewery-hub.md`](docs/art-brief-brewery-hub.md).

@@ -7,10 +7,10 @@ format: the app is embedded as a Web Object in Storyline 360.
 
 - **Landscape: revision 2 installed** (`assets/hub/hub-desktop.webp`,
   1672 x 941). All three cards sit below their drip trays, on the calm counter
-  fronts; Final Rush on the floor medallion. Requested retouch (revision 3):
-  same composition, a visibly different (darker, nitro-style) Stout tower,
-  a slightly dimmer tank-room window, exported at 2560 x 1440. If the
-  geometry is unchanged, the points below just scale by 2560 / 1672.
+  fronts; Final Rush on the floor medallion. Chosen as the landscape plate
+  (a retouch was tried; the user preferred revision 2 as it is). A future
+  higher-resolution export of the same image would only need the points
+  below scaled.
 - **Portrait: candidate 1 installed** (`assets/hub/hub-portrait.webp`), the
   secondary layout; no further portrait polish for now.
 - Candidate 1 of the landscape plate was reviewed and superseded (mirrored

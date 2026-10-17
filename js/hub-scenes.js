@@ -27,9 +27,9 @@
       focus: [585, 1300]                // kept nearest the screen centre when cropping
     },
     desktop: {
-      // Landscape revision 2 (1672 x 941). The primary composition (16:9,
-      // Storyline). A retouch at 2560 x 1440 is requested; if its geometry is
-      // unchanged, scale these points by 2560 / 1672.
+      // Landscape revision 2 (1672 x 941), the chosen plate and the primary
+      // composition (16:9, Storyline). A higher-resolution export of the same
+      // image would only need these points scaled.
       src: 'assets/hub/hub-desktop.webp', provisional: false,
       width: 1672, height: 941,
       stations: {
