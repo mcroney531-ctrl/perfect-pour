@@ -149,8 +149,8 @@ glass is.**
 ## Tests
 
 ```
-npm test            # simulation (61) + hub layout (16), Node 18+, no installs
-npm run test:ui     # browser: 41 Playwright tests (npm install first)
+npm test            # simulation (61) + hub layout (8), Node 18+, no installs
+npm run test:ui     # browser: 40 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -199,6 +199,14 @@ pixel-parity checks across refactors.
 
 ## M4: landing, first visit, station intro, transitions (for review)
 
+- **One format: a single 16:9 frame.** The whole app (landing, hub, intro,
+  station) renders in one 16:9 frame scaled to the window, with dark bars
+  around it, exactly as the Storyline Web Object presents it. The portrait
+  layout and plate are retired (in the git history). Upright phones get a
+  dismissable "Turn your phone sideways" prompt. The live UI scales with the
+  frame: 0.7x on small frames (phone held sideways), 1x at 1280 x 720, 1.5x
+  at 1920 x 1080.
+
 - **Landing** (inside the app, so the GitHub Pages version stays complete):
   Riverside emblem, "Perfect Pour", Start Training. First-time learners see
   it; returning learners open straight on the hub. `#/welcome` always shows
@@ -233,12 +241,9 @@ links and the composite page use it); M4 can make the app the front door.
   order, standing on a ring at their anchor; Final Rush is a locked medallion
   in the centre aisle. On very small screens the hub scrolls rather than
   stacking cards.
-- **Art status:** 16:9 landscape is the primary format (Storyline Web
-  Object). Landscape plate revision 2 (`assets/hub/hub-desktop.webp`) and
-  portrait candidate 1 (`assets/hub/hub-portrait.webp`) are live with their
-  stations mapped to the art.
-  On landscape the live UI scales with the canvas (1x at 1280 x 720, 1.5x at
-  1920 x 1080, never below 1x). Spec:
+- **Art status:** one landscape plate (`assets/hub/hub-desktop.webp`,
+  revision 2) with its stations mapped to the art; the portrait plate was
+  retired when the app became a single 16:9 frame. Spec:
   [`docs/art-brief-brewery-hub.md`](docs/art-brief-brewery-hub.md).
 - **Progress states:** new ("Start here", green) → in progress ("Continue",
   blue) → certified ("Replay", M6 only). Hefeweizen and Nitro Stout show a

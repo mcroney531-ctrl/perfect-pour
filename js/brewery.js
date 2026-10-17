@@ -1,7 +1,8 @@
 // Riverside brewery app: the landing (first visit), the hub (an image-based
 // brewery scene with live station hotspots), a first-time station intro, and
 // navigation between them and the stations.
-// - Environment art is a plate per composition (portrait / desktop) with
+// - The whole app is one 16:9 frame (css/brewery.css #app-root), scaled to
+//   the window. Environment art is a landscape plate with
 //   anchors in plate pixels: js/hub-scenes.js. Art carries no UI or state.
 // - Hotspots are real buttons, in teaching order, placed by layoutScene().
 // - Hash routes (#/, #/pilsner, #/welcome) so the browser back button works
@@ -158,9 +159,10 @@
     if (!vw || !vh) return;
     setPlate(pickScene(vw, vh));
     const sc = SCENES[sceneName];
-    // Landscape (the Storyline frame) scales the live UI with the canvas:
-    // 1 at 1280 x 720, 1.5 at 1920 x 1080; never below 1 (touch targets).
-    const ui = sceneName === 'desktop' ? Math.min(1.75, Math.max(1, Math.min(vw / 1280, vh / 720))) : 1;
+    // The live UI scales with the frame: 1 at 1280 x 720, 1.5 at 1920 x 1080,
+    // down to 0.7 on small frames (a phone held sideways), where cards stay
+    // about 44 px tall.
+    const ui = Math.min(1.75, Math.max(0.7, Math.min(vw / 1280, vh / 720)));
     hub.style.setProperty('--ui', ui.toFixed(4));
     const cards = [...hub.querySelectorAll('.hub__card')];
     const card = { w: Math.max(...cards.map(c => c.offsetWidth)) * ui, h: Math.max(...cards.map(c => c.offsetHeight)) * ui };
@@ -348,6 +350,13 @@
       if (card) card.focus({ preventScroll: true });
     }
   }
+
+  // Upright phones: a "turn sideways" prompt (as Storyline does), which can be
+  // dismissed for this visit.
+  const rotate = document.getElementById('rotatePrompt');
+  if (rotate) document.getElementById('rotateDismiss').addEventListener('click', () => {
+    document.documentElement.classList.add('rotate-dismissed');
+  });
 
   addEventListener('hashchange', route);
   route();

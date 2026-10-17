@@ -1,4 +1,4 @@
-# Art brief: brewery hub plates (portrait and desktop)
+# Art brief: brewery hub plate (16:9)
 
 For GPT and the user.
 
@@ -11,8 +11,9 @@ format: the app is embedded as a Web Object in Storyline 360.
   (a retouch was tried; the user preferred revision 2 as it is). A future
   higher-resolution export of the same image would only need the points
   below scaled.
-- **Portrait: candidate 1 installed** (`assets/hub/hub-portrait.webp`), the
-  secondary layout; no further portrait polish for now.
+- **Portrait: retired.** The app is now a single 16:9 frame everywhere (as
+  in Storyline); upright phones are asked to turn sideways. The portrait
+  plate (candidate 1) is in the git history.
 - Candidate 1 of the landscape plate was reviewed and superseded (mirrored
   sides, evenly spread light, no calm card space, customer viewpoint).
 

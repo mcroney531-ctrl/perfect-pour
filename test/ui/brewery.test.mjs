@@ -20,7 +20,7 @@ const RETURNING = () => {
     stations: { pilsner: st(), hefeweizen: st(), stout: st() }, seen: { landing: true, 'intro.pilsner': true } }));
 };
 const _openPage = openPage;
-const openApp = (b, url, opts = {}) => _openPage(b, url, { reducedMotion: 'reduce', ...opts,
+const openApp = (b, url, opts = {}) => _openPage(b, url, { reducedMotion: 'reduce', mobile: false, size: { width: 1280, height: 720 }, ...opts,
   init: opts.init === undefined ? RETURNING : opts.init });
 const chip = (h, id) => h.text('#chip-' + id);
 // With the paused clock, hashchange is delivered after run() returns, so
@@ -57,10 +57,10 @@ test('hub: Pilsner is the place to start, the others are visible but not playabl
   assert.match(await h.text('#rushChip'), /Locked/);
   assert.equal(await h.text('#hubCount'), '0');
   // Coming soon and locked do nothing but say so.
-  await h.page.tap('[data-station=hefeweizen]', { force: true }); await h.run(100);
+  await h.page.click('[data-station=hefeweizen]', { force: true }); await h.run(100);
   assert.ok(await hubVisible(h));
   assert.match(await h.text('#hubNotice'), /Hefeweizen is coming soon/);
-  await h.page.tap('#rushBtn', { force: true }); await h.run(100);
+  await h.page.click('#rushBtn', { force: true }); await h.run(100);
   assert.match(await h.text('#hubNotice'), /Final Rush unlocks/);
   assert.equal(await h.page.evaluate(() => location.hash), '');
   assert.deepEqual(h.errors, []);
@@ -78,7 +78,7 @@ test('deep links: a coming-soon station falls back to the hub; the Pilsner opens
   await d.run(200);
   assert.equal(await d.page.evaluate(() => window.ppBrewery.current()), 'pilsner');
   // Opened directly, "Back to the bar" replaces the entry instead of leaving the app.
-  await d.page.tap('#exitBtn'); await settle(d, 200);
+  await d.page.click('#exitBtn'); await settle(d, 200);
   assert.ok(await hubVisible(d));
   assert.deepEqual(d.errors, []);
   await d.close();
@@ -88,7 +88,7 @@ test('open the Pilsner, come back: In progress is saved, focus returns, nothing 
   const h = await openApp(browser, APP(), { init: `(${RETURNING})();(${INSTRUMENT})();` });
   await h.run(200);
   const atHub = await listeners(h);
-  await h.page.tap('[data-station=pilsner]'); await settle(h, 300);
+  await h.page.click('[data-station=pilsner]'); await settle(h, 300);
   assert.ok(!(await hubVisible(h)));
   assert.equal(await h.page.evaluate(() => location.hash), '#/pilsner');
   assert.equal(await h.page.evaluate(() => document.activeElement.id), 'exitBtn');
@@ -96,7 +96,7 @@ test('open the Pilsner, come back: In progress is saved, focus returns, nothing 
   const p = await progress(h);
   assert.equal(p.version, 1);
   assert.equal(p.stations.pilsner.status, 'inProgress');
-  await h.page.tap('#exitBtn'); await settle(h, 300);
+  await h.page.click('#exitBtn'); await settle(h, 300);
   assert.ok(await hubVisible(h));
   assert.equal(await h.page.evaluate(() => location.hash), '', 'stepped back in history, not forward');
   assert.equal(await chip(h, 'pilsner'), 'Continue');
@@ -181,27 +181,30 @@ test('progress storage: unreadable data starts fresh; data from a newer version 
   const bad = await openApp(browser, APP(), { init: () => localStorage.setItem('riverside.progress', '{not json') });
   await bad.run(200);
   assert.equal(await bad.page.evaluate(() => window.ppBrewery.view()), 'landing');
-  await bad.page.tap('#startBtn'); await settle(bad, 200);
+  await bad.page.click('#startBtn'); await settle(bad, 200);
   assert.equal(await chip(bad, 'pilsner'), 'Start here');
   assert.deepEqual(bad.errors, []);
   await bad.close();
   const NEWER = JSON.stringify({ version: 99, stations: {}, future: true });
   const nw = await openApp(browser, APP(), { init: `localStorage.setItem('riverside.progress', ${JSON.stringify(NEWER)})` });
   await nw.run(200);
-  await nw.page.tap('#startBtn'); await settle(nw, 200);
-  await nw.page.tap('[data-station=pilsner]'); await settle(nw, 200);
-  await nw.page.tap('#introBegin'); await settle(nw, 200);
+  await nw.page.click('#startBtn'); await settle(nw, 200);
+  await nw.page.click('[data-station=pilsner]'); await settle(nw, 200);
+  await nw.page.click('#introBegin'); await settle(nw, 200);
   assert.equal(await nw.page.evaluate(() => localStorage.getItem('riverside.progress')), NEWER);
   await nw.close();
 });
 
-// ---- Hub scene: plates, anchoring, responsive layout ----
+// ---- Hub scene: one 16:9 frame, anchoring, layout ----
+// Coordinates are taken relative to the frame (#app-root), which is
+// letterboxed inside windows of other shapes.
 const geometry = h => h.page.evaluate(() => {
-  const r = el => { const b = el.getBoundingClientRect(); return { x: b.left, y: b.top, w: b.width, h: b.height }; };
+  const f = document.getElementById('app-root').getBoundingClientRect();
+  const r = el => { const b = el.getBoundingClientRect(); return { x: b.left - f.left, y: b.top - f.top, w: b.width, h: b.height }; };
   const hub = document.getElementById('hub');
-  const L = window.ppBrewery.layout();
   return {
-    scene: hub.dataset.scene, L, vw: hub.clientWidth, vh: hub.clientHeight,
+    frame: { x: f.left, y: f.top, w: f.width, h: f.height },
+    scene: hub.dataset.scene, L: window.ppBrewery.layout(), vw: hub.clientWidth, vh: hub.clientHeight,
     scrollW: hub.scrollWidth, docScrollW: document.documentElement.scrollWidth,
     plate: r(document.getElementById('hubPlate')),
     rings: Object.fromEntries([...document.querySelectorAll('.hub__ring')].map(e => [e.dataset.ring, r(e)])),
@@ -211,13 +214,15 @@ const geometry = h => h.page.evaluate(() => {
 });
 const overlap = (a, b) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
 
-for (const [w, hgt, expect] of [[360, 740, 'portrait'], [390, 844, 'portrait'], [412, 915, 'portrait'], [375, 667, 'portrait'],
-  [320, 568, 'portrait'], [768, 1024, 'portrait'], [1440, 900, 'desktop'], [1280, 720, 'desktop'], [1920, 1080, 'desktop']]) {
-  test(`hub ${w}x${hgt}: ${expect} plate, hotspots on their anchors, nothing clipped or overlapping`, async () => {
-    const h = await openApp(browser, APP(), { size: { width: w, height: hgt }, mobile: w < 1000 });
+for (const [w, hgt, mobile] of [[1280, 720], [1920, 1080], [1440, 900], [1024, 768], [2560, 1080], [844, 390, true], [667, 375, true]]) {
+  test(`hub in a ${w}x${hgt} window: 16:9 frame, hotspots on their anchors, nothing clipped or overlapping`, async () => {
+    const h = await openApp(browser, APP(), { size: { width: w, height: hgt }, mobile: !!mobile });
     await h.run(300);
     const g = await geometry(h);
-    assert.equal(g.scene, expect);
+    assert.ok(Math.abs(g.frame.w / g.frame.h - 16 / 9) < 0.01, `frame is 16:9 (${g.frame.w}x${g.frame.h})`);
+    assert.ok(Math.abs(g.frame.w - Math.min(w, hgt * 16 / 9)) < 1, 'frame fills the window as far as 16:9 allows');
+    assert.ok(Math.abs(g.frame.x - (w - g.frame.w) / 2) < 1 && Math.abs(g.frame.y - (hgt - g.frame.h) / 2) < 1, 'frame centred');
+    assert.equal(g.scene, 'desktop');
     // The plate is drawn exactly where the layout says, so anchors line up with the art.
     assert.ok(Math.abs(g.plate.x - g.L.ox) < 1 && Math.abs(g.plate.y - g.L.oy) < 1, 'plate offset');
     for (const [id, ring] of Object.entries(g.rings)) {
@@ -225,9 +230,9 @@ for (const [w, hgt, expect] of [[360, 740, 'portrait'], [390, 844, 'portrait'], 
       assert.ok(Math.abs(ring.x + ring.w / 2 - ax) < 1 && Math.abs(ring.y + ring.h / 2 - ay) < 1, `${id} ring on its anchor`);
     }
     for (const b of g.boxes) {
-      assert.ok(b.x >= 0 && b.x + b.w <= g.vw + 0.5, `${b.id} inside the width`);
+      assert.ok(b.x >= 0 && b.x + b.w <= g.vw + 0.5, `${b.id} inside the frame`);
       assert.ok(b.y >= g.header.y + g.header.h - 1, `${b.id} below the header`);
-      assert.ok(b.w >= 44 && b.h >= 44, `${b.id} touch target`);
+      assert.ok(b.h >= (g.L.ui < 1 ? 42 : 44), `${b.id} touch target (${b.h.toFixed(1)} px)`);
     }
     for (let i = 0; i < g.boxes.length; i++) for (let j = i + 1; j < g.boxes.length; j++)
       assert.ok(!overlap(g.boxes[i], g.boxes[j]), `${g.boxes[i].id} and ${g.boxes[j].id} overlap`);
@@ -237,40 +242,41 @@ for (const [w, hgt, expect] of [[360, 740, 'portrait'], [390, 844, 'portrait'], 
   });
 }
 
-test('hub switches plate when the screen turns, and hotspots follow', async () => {
-  const h = await openApp(browser, APP(), { size: { width: 768, height: 1024 } });
+test('resizing the window keeps the 16:9 frame and the hotspots follow', async () => {
+  const h = await openApp(browser, APP(), { size: { width: 1280, height: 720 } });
   await h.run(200);
-  assert.equal((await geometry(h)).scene, 'portrait');
   await h.page.setViewportSize({ width: 1024, height: 768 });
   // Resize events reach the page on the browser's schedule, not the paused
-  // test clock: wait (bounded) for the switch instead of assuming a delay.
-  for (let i = 0; i < 40 && (await geometry(h)).scene !== 'desktop'; i++) { await h.page.waitForTimeout(25); await h.run(16); }
+  // test clock: wait (bounded) for the new layout instead of assuming a delay.
+  for (let i = 0; i < 40 && Math.abs((await geometry(h)).vw - 1024) > 1; i++) { await h.page.waitForTimeout(25); await h.run(16); }
   await settle(h, 100);
   const g = await geometry(h);
-  assert.equal(g.scene, 'desktop');
-  assert.match(await h.page.getAttribute('#hubPlate', 'src'), /hub-desktop/);
+  assert.ok(Math.abs(g.frame.w - 1024) < 1 && Math.abs(g.frame.h - 576) < 1, 'letterboxed 1024x576');
   const ring = g.rings.pilsner, [ax, ay] = g.L.points.pilsner;
   assert.ok(Math.abs(ring.x + ring.w / 2 - ax) < 1 && Math.abs(ring.y + ring.h / 2 - ay) < 1);
   await h.close();
 });
 
-test('real art loads unlabelled in both layouts, the landscape UI scales with the canvas; missing art is flagged and the hub still works', async () => {
-  // Portrait has its real plate: no label, and the art itself loads at full size.
-  const h = await openApp(browser, APP());
+test('upright phone: a dismissable "turn sideways" prompt over the letterboxed frame', async () => {
+  const h = await openApp(browser, APP(), { size: { width: 390, height: 844 }, mobile: true });
   await h.run(200);
-  assert.equal(await h.page.isVisible('#hubProvisional'), false);
-  assert.match(await h.page.getAttribute('#hubPlate', 'src'), /hub-portrait\.webp$/);
-  let size = null;
-  for (let i = 0; i < 60 && !size; i++) {
-    size = await h.page.evaluate(() => { const im = document.getElementById('hubPlate'); return im.complete && im.naturalWidth ? [im.naturalWidth, im.naturalHeight] : null; });
-    if (!size) await h.page.waitForTimeout(100);
-  }
-  assert.deepEqual(size, [1170, 2532]);
+  assert.equal(await h.page.isVisible('#rotatePrompt'), true);
+  assert.equal(await h.text('#rotateTitle'), 'Turn your phone sideways');
+  const g = await geometry(h);
+  assert.ok(Math.abs(g.frame.w - 390) < 1 && Math.abs(g.frame.h - 219.4) < 1, 'still a 16:9 frame');
+  await h.page.tap('#rotateDismiss'); await h.run(50);
+  assert.equal(await h.page.isVisible('#rotatePrompt'), false);
   await h.close();
-  // Landscape (the primary, Storyline format) has its real plate too, and its
-  // UI scales with the canvas: 1x at 1280x720, 1.5x at 1920x1080.
-  for (const [w, hgt, ui] of [[1280, 720, 1], [1920, 1080, 1.5]]) {
-    const d = await openApp(browser, APP(), { size: { width: w, height: hgt }, mobile: false });
+  // Desktop windows never see it, even narrow ones.
+  const d = await openApp(browser, APP(), { size: { width: 500, height: 800 } });
+  await d.run(200);
+  assert.equal(await d.page.isVisible('#rotatePrompt'), false);
+  await d.close();
+});
+
+test('real art loads unlabelled, the UI scales with the frame; missing art is flagged and the hub still works', async () => {
+  for (const [w, hgt, ui] of [[1280, 720, 1], [1920, 1080, 1.5], [844, 390, 0.7]]) {
+    const d = await openApp(browser, APP(), { size: { width: w, height: hgt }, mobile: w < 1000 });
     await d.run(200);
     assert.equal(await d.page.isVisible('#hubProvisional'), false);
     assert.match(await d.page.getAttribute('#hubPlate', 'src'), /hub-desktop\.webp$/);
@@ -278,6 +284,14 @@ test('real art loads unlabelled in both layouts, the landscape UI scales with th
     assert.ok(Math.abs(L.ui - ui) < 1e-3, `ui scale ${L.ui} at ${w}x${hgt}`);
     const cardW = await d.page.evaluate(() => document.querySelector('[data-station=pilsner]').getBoundingClientRect().width);
     assert.ok(Math.abs(cardW - 176 * ui) < 2, `card ${cardW.toFixed(1)} px wide`);
+    if (w === 1280) {
+      let size = null;
+      for (let i = 0; i < 60 && !size; i++) {
+        size = await d.page.evaluate(() => { const im = document.getElementById('hubPlate'); return im.complete && im.naturalWidth ? [im.naturalWidth, im.naturalHeight] : null; });
+        if (!size) await d.page.waitForTimeout(100);
+      }
+      assert.deepEqual(size, [1672, 941]);
+    }
     await d.close();
   }
   const b = await openApp(browser, APP());
@@ -285,7 +299,7 @@ test('real art loads unlabelled in both layouts, the landscape UI scales with th
   await b.page.reload(); await b.run(300);
   assert.equal(await b.page.evaluate(() => document.getElementById('hub').classList.contains('hub--noart')), true);
   assert.equal(await b.text('#hubProvisional'), 'Hub art failed to load');
-  await b.page.tap('[data-station=pilsner]'); await settle(b, 200);
+  await b.page.click('[data-station=pilsner]'); await settle(b, 200);
   assert.equal(await b.page.evaluate(() => window.ppBrewery.current()), 'pilsner');
   await b.close();
 });

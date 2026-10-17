@@ -1,9 +1,34 @@
-/* Brewery hub. The scene fills the screen; js/brewery.js sizes and places the
-   plate and the hotspots (see js/hub-scenes.js). Everything here is the
-   live layer: header, station cards, rings, Final Rush, notices. */
+/* The app is one 16:9 frame (the Storyline format), centred and scaled to fit
+   the window, with dark bars around it. Sizes inside use the frame (cq units),
+   and fixed-position children are contained by it (it has a transform). */
+html, body { background: #050707; }
+#app-root {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(100vw, calc(100vh * 16 / 9)); width: min(100vw, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9;
+  overflow: hidden; container-type: size;
+}
+#app-root > * { position: absolute; inset: 0; }
+#stationHost #app { height: 100%; }      /* the station fills the frame, not the window */
+#stationHost:empty { display: none; }    /* otherwise it would sit over the landing and hub */
+
+/* Upright phones: suggest rotating (dismissable). Hidden everywhere else. */
+.rotate { display: none; }
+@media (max-aspect-ratio: 1/1) and (pointer: coarse) {
+  html:not(.rotate-dismissed) .rotate {
+    position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; padding: 24px; text-align: center; background: rgba(5, 7, 7, 0.94); color: var(--pp-text); font-family: var(--pp-font-ui);
+  }
+}
+.rotate__icon { width: 72px; height: 72px; color: var(--pp-gold-400); }
+.rotate__title { margin: 0; font: 800 1.6rem/1.1 var(--pp-font-display); text-transform: uppercase; letter-spacing: 0.02em; }
+.rotate__sub { margin: 0 0 8px; color: var(--pp-text-muted); }
+
+/* Brewery hub. js/brewery.js sizes and places the plate and the hotspots
+   (see js/hub-scenes.js). Everything here is the live layer: header, station
+   cards, rings, Final Rush, notices. */
 .hub {
-  --card-w: min(38vw, 176px); --ui: 1;
-  position: relative; height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  --card-w: 176px; --ui: 1;
+  height: 100%; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
   background: var(--pp-charcoal-950); color: var(--pp-text); font-family: var(--pp-font-ui);
 }
 .hub__canvas { position: relative; width: 100%; min-height: 100%; overflow: hidden; }
@@ -29,7 +54,7 @@
 }
 .hub__emblem { width: 36px; height: 36px; color: var(--pp-gold-400); margin-top: 2px; }
 .hub__titles .pp-label { margin: 0; }
-.hub__title { margin: 2px 0 0; font-size: clamp(1.7rem, 6.5vw, 2.4rem); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7); }
+.hub__title { margin: 2px 0 0; font-size: 2.4rem; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7); }
 .hub__title:focus { outline: none; }
 .hub__lede { margin: 4px 0 0; font-size: 0.9rem; color: #d6dbd9; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9); }
 .hub__score { margin: 2px 0 0; text-align: right; font-size: var(--pp-fs-small); color: var(--pp-text-muted); line-height: 1.15; }
@@ -91,7 +116,7 @@
 /* ---- Final Rush: the locked capstone in the centre aisle ---- */
 .hub__rush {
   position: absolute; left: var(--cx, 0); top: var(--cy, 0); transform: translateX(-50%) scale(var(--ui)); transform-origin: 50% 0;
-  width: min(56vw, 230px); min-height: 44px; padding: 6px 12px 9px; cursor: default;
+  width: 230px; min-height: 44px; padding: 6px 12px 9px; cursor: default;
   display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; font: inherit;
   color: var(--pp-gold-400); border-radius: 22px;
   background: radial-gradient(120% 120% at 50% 0%, rgba(40, 30, 14, 0.92), rgba(10, 12, 12, 0.92));
@@ -117,20 +142,12 @@
   background: rgba(12, 15, 16, 0.8); color: var(--pp-gold-300); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap;
 }
 
-/* Very narrow phones: the same card, tighter. */
-@media (max-width: 359px) {
-  .hub__titles .pp-label { letter-spacing: 0.08em; white-space: nowrap; }
-  .hub__card { column-gap: 5px; padding: 6px 6px 7px 5px; }
-  .hub__thumb { width: 20px; height: 34px; }
-  .hub__name { font-size: 0.95rem; }
-  .hub__action { padding: 0 6px; font-size: 0.68rem; }
-}
 
 /* ---- Hub-to-station camera push, and the fade back in (M4) ---- */
 .hub__canvas { transition: transform 0.65s cubic-bezier(0.55, 0, 0.75, 0.3); }
 .hub.is-pushing .hub__canvas { transform: scale(1.9); }
 .hub.is-pushing .hub__spots, .hub.is-pushing .hub__top { opacity: 0; transition: opacity 0.15s ease-out; }
-.hub::after { content: ""; position: fixed; inset: 0; z-index: 5; background: var(--pp-charcoal-950); opacity: 0; pointer-events: none; }
+.hub::after { content: ""; position: absolute; inset: 0; z-index: 5; background: var(--pp-charcoal-950); opacity: 0; pointer-events: none; }
 .hub.is-pushing::after { opacity: 1; transition: opacity 0.3s ease-in 0.35s; }
 .hub.is-arriving { animation: hub-arrive 0.3s ease-out; }
 @keyframes hub-arrive { from { opacity: 0; } }
@@ -141,7 +158,7 @@
 
 /* ---- Landing (first visit): the brewery exterior, title, Start Training ---- */
 .land {
-  position: relative; height: 100vh; height: 100dvh; overflow: hidden;
+  height: 100%; overflow: hidden;
   background: var(--pp-charcoal-950); color: var(--pp-text); font-family: var(--pp-font-ui);
 }
 .land__scene { position: absolute; inset: 0; }
@@ -151,11 +168,11 @@
 .land__shade { position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(90deg, rgba(8, 11, 12, 0.85) 0, rgba(8, 11, 12, 0.55) 38%, rgba(8, 11, 12, 0) 62%),
               linear-gradient(to top, rgba(8, 11, 12, 0.6), rgba(8, 11, 12, 0) 40%); }
-/* Title block: left third on landscape (the art keeps that side calm). */
+/* Title block: the left third (the art keeps that side calm). */
 .land__block {
   position: absolute; left: 6%; top: 50%; transform: translateY(-50%); width: min(40%, 560px);
   display: flex; flex-direction: column; align-items: flex-start; gap: 0.6em;
-  font-size: clamp(14px, 1.25vw, 22px);
+  font-size: clamp(9px, 1.25cqw, 24px);
 }
 .land__emblem { width: 3.4em; height: 3.4em; color: var(--pp-gold-400); }
 .land__block .pp-label { margin: 0; font-size: 0.85em; }
@@ -167,19 +184,12 @@
   margin: 0; padding: 2px 8px; border-radius: var(--pp-pill); border: 1px dashed rgba(240, 189, 74, 0.6);
   background: rgba(12, 15, 16, 0.8); color: var(--pp-gold-300); font-size: 0.7rem; font-weight: 700;
 }
-/* Portrait (secondary): title block at the bottom, centred. */
-@media (max-aspect-ratio: 1/1) {
-  .land__shade { background: linear-gradient(to top, rgba(8, 11, 12, 0.92) 0, rgba(8, 11, 12, 0.5) 45%, rgba(8, 11, 12, 0.1) 75%); }
-  .land__block { left: 50%; top: auto; bottom: max(48px, env(safe-area-inset-bottom)); transform: translateX(-50%);
-    width: calc(100% - 32px); align-items: center; text-align: center; font-size: 15px; }
-  .land__title { font-size: 3.4em; }
-}
 
 /* ---- First-time station intro: one card over the dimmed bar ---- */
-.intro { position: relative; height: 100vh; height: 100dvh; overflow: hidden; display: grid; place-items: center;
+.intro { height: 100%; overflow: hidden; display: grid; place-items: center;
   background: var(--pp-charcoal-950); color: var(--pp-text); font-family: var(--pp-font-ui); }
 .intro__scene { position: absolute; inset: 0; background: center / cover no-repeat; filter: blur(6px) brightness(0.35); transform: scale(1.05); }
-.intro__panel { position: relative; width: min(calc(100% - 32px), 30em); padding: 1.4em 1.6em 1.6em; font-size: clamp(15px, 1.15vw, 20px); }
+.intro__panel { position: relative; width: min(calc(100% - 32px), 30em); padding: 1.4em 1.6em 1.6em; font-size: clamp(13px, 1.15cqw, 22px); }
 .intro__panel .pp-label { margin: 0; }
 .intro__title { margin: 0.15em 0 0.6em; font-size: 2.3em; }
 .intro__title:focus { outline: none; }

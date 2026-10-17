@@ -16,23 +16,20 @@ place with a dimmed, labelled stand-in; this image replaces it.
 - Do not include: buttons, titles, "Perfect Pour" or any text other than the
   Riverside sign, slogans (no "Good Beer, Better People"), other brands, UI.
 
-## Layout (landscape 16:9, the primary format)
+## Layout (16:9)
 
 - **Left ~45% is the title zone** (x 0-45%, y 20-85%): the app places the
   emblem, "PERFECT POUR", a subtitle and the Start Training button there.
   Keep it calm and darker: street, shadow, sky, a plain wall. No bright
   windows, signs or busy detail in that zone.
-- **The building and its sign sit centre-right** (roughly x 50-85%). Put the
-  sign/entrance near x 55-70% so it also survives the portrait crop (below).
+- **The building and its sign sit centre-right** (roughly x 50-85%).
 - Keep the bottom ~10% simple (a small "Provisional art" label sits
   bottom-right during development; it disappears with the real art).
 
-## Portrait (secondary)
+## One format
 
-Phones show the same image cropped to a narrow slice centred at 60% of the
-width (about x 47-73% of the image is visible), with the title block at the
-bottom. If the sign/entrance sits in that slice, no separate portrait plate
-is needed for now.
+The app is a single 16:9 frame everywhere (as in Storyline), so there is no
+portrait version of this image.
 
 ## Format
 

@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>The Bar · Riverside Brewing Co.</title>
-<link rel="stylesheet" href="css/tokens.css?v=m4">
-<link rel="stylesheet" href="css/components.css?v=m4">
-<link rel="stylesheet" href="css/pilsner-station.css?v=m4">
-<link rel="stylesheet" href="css/brewery.css?v=m4">
+<link rel="stylesheet" href="css/tokens.css?v=m4b">
+<link rel="stylesheet" href="css/components.css?v=m4b">
+<link rel="stylesheet" href="css/pilsner-station.css?v=m4b">
+<link rel="stylesheet" href="css/brewery.css?v=m4b">
 </head>
 <body>
 <!-- Brand symbols shared by the hub (same as design/components.html). -->
@@ -40,11 +40,18 @@
   </defs>
 </svg>
 <div id="app-root"></div>
+<div class="rotate" id="rotatePrompt" role="dialog" aria-labelledby="rotateTitle">
+  <svg class="rotate__icon" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="22" y="8" width="20" height="36" rx="3"/><path d="M14 50c6 6 18 8 28 4M38 50l4 4-4 4"/></g></svg>
+  <p class="rotate__title" id="rotateTitle">Turn your phone sideways</p>
+  <p class="rotate__sub">Perfect Pour is made for landscape.</p>
+  <button type="button" class="pp-btn pp-btn--ghost" id="rotateDismiss">Continue anyway</button>
+</div>
 
-<script src="js/sim.js?v=m4"></script>
-<script src="js/pilsner-station.js?v=m4"></script>
-<script src="js/progress.js?v=m4"></script>
-<script src="js/hub-scenes.js?v=m4"></script>
-<script src="js/brewery.js?v=m4"></script>
+<script src="js/sim.js?v=m4b"></script>
+<script src="js/pilsner-station.js?v=m4b"></script>
+<script src="js/progress.js?v=m4b"></script>
+<script src="js/hub-scenes.js?v=m4b"></script>
+<script src="js/brewery.js?v=m4b"></script>
 </body>
 </html>

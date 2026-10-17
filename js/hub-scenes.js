@@ -6,8 +6,9 @@
 (function (global) {
   'use strict';
 
-  // Portrait and desktop are separate camera compositions of the same bar,
-  // each with its own station map:
+  // One composition: the app is a single 16:9 frame (the Storyline format), so
+  // there is one landscape plate. (The retired portrait plate is in the git
+  // history.) Its station map:
   //   at:    the point the station's ring sits on (the tap's drip tray, or the
   //          floor medallion for Final Rush)
   //   card:  'above' or 'below' the ring;  lift: extra plate px between ring
@@ -15,17 +16,6 @@
   //          sideways (clears the sign). Cards are kept on screen regardless.
   // `provisional` plates are labelled on screen and are not production art.
   const SCENES = {
-    portrait: {
-      src: 'assets/hub/hub-portrait.webp', provisional: false,
-      width: 1170, height: 2532,
-      stations: {
-        pilsner: { at: [115, 1095], card: 'below', lift: 40 },              // near-left tap
-        hefeweizen: { at: [587, 935], card: 'above', lift: 250, dx: 170 },  // back counter, card above the tower, right of the sign
-        stout: { at: [1065, 1095], card: 'below', lift: 40 },               // near-right tap
-        finalRush: { at: [584, 1772] }                                      // floor medallion, centre aisle
-      },
-      focus: [585, 1300]                // kept nearest the screen centre when cropping
-    },
     desktop: {
       // Landscape revision 2 (1672 x 941), the chosen plate and the primary
       // composition (16:9, Storyline). A higher-resolution export of the same
@@ -42,8 +32,8 @@
     }
   };
 
-  // Desktop composition from square-ish and wider; portrait otherwise.
-  const pickScene = (vw, vh) => (vw / vh >= 1 ? 'desktop' : 'portrait');
+  // Kept as the single place a scene is chosen, should a second one return.
+  const pickScene = () => 'desktop';
 
   const GAP = 12;        // screen px between a ring and its card
   const SEP = 8;         // minimum screen px between any two cards

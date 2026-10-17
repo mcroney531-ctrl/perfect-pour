@@ -12,40 +12,41 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'hub-scenes.js'
 const { SCENES, pickScene, layoutScene, SEP } = ctx.RiversideHubScenes;
 
 const ROOM = { top: 110, bottom: 52, side: 12, edge: 4, ring: 44 };
-const cardFor = vw => ({ w: Math.min(0.42 * vw, 190), h: 104 });
-const rushFor = vw => ({ w: Math.min(0.72 * vw, 290), h: 100 });
-const fit = (vw, vh, scene = SCENES[pickScene(vw, vh)]) => layoutScene(scene, vw, vh, ROOM, cardFor(vw), rushFor(vw));
-const SIZES = [[320, 568], [360, 740], [375, 667], [390, 844], [412, 915], [768, 1024], [1024, 768], [1440, 900], [1920, 1080], [2560, 1080]];
+const fit = (vw, vh, scene = SCENES.desktop) => layoutScene(scene, vw, vh, ROOM, { w: 176, h: 82 }, { w: 230, h: 90 });
 
-test('portrait screens use the portrait plate, wide screens the desktop plate', () => {
-  assert.equal(pickScene(390, 844), 'portrait');
-  assert.equal(pickScene(768, 1024), 'portrait');
-  assert.equal(pickScene(1024, 768), 'desktop');
-  assert.equal(pickScene(1440, 900), 'desktop');
+test('one composition: every window gets the landscape plate', () => {
+  for (const [w, h] of [[390, 844], [1024, 768], [1920, 1080]]) assert.equal(pickScene(w, h), 'desktop');
+  assert.deepEqual(Object.keys(SCENES), ['desktop']);
 });
 
 test('points map linearly: screen = offset + plate * scale', () => {
-  const sc = SCENES.portrait, L = fit(390, 844, sc);
+  const sc = SCENES.desktop, L = fit(1280, 720, sc);
   for (const [id, p] of Object.entries(sc.stations)) {
     assert.ok(Math.abs(L.points[id][0] - (L.ox + p.at[0] * L.s)) < 1e-9, id);
     assert.ok(Math.abs(L.points[id][1] - (L.oy + p.at[1] * L.s)) < 1e-9, id);
   }
 });
 
-test('the portrait art is shown 1:3 on a 390x844 phone (its native ratio)', () => {
-  const L = fit(390, 844, SCENES.portrait);
-  assert.ok(Math.abs(L.s - 1 / 3) < 1e-6 && L.covers && L.height === 844);
-});
+// The app is a 16:9 frame, so layouts only ever see 16:9 boxes (sizes below
+// are frames: desktop, Storyline's default, and phones held sideways).
+const FRAMES = [[1920, 1080], [1280, 720], [960, 540], [693, 390], [667, 375]];
+const uiFor = vw => Math.min(1.75, Math.max(0.7, vw / 1280));
+const fitFrame = (vw, vh) => {
+  const ui = uiFor(vw);
+  return layoutScene(SCENES.desktop, vw, vh, { ...ROOM, top: 96 * ui + 8 }, { w: 176 * ui, h: 82 * ui }, { w: 230 * ui, h: 90 * ui });
+};
 
-for (const [vw, vh] of SIZES) {
-  test(`${vw}x${vh}: rings and cards on screen, below the header, never overlapping`, () => {
-    const L = fit(vw, vh);
+for (const [vw, vh] of FRAMES) {
+  test(`${vw}x${vh} frame: rings and cards inside, below the header, never overlapping, art fills the frame`, () => {
+    const L = fitFrame(vw, vh), top = 96 * uiFor(vw) + 8;
+    assert.ok(L.covers, 'the plate fills the frame');
+    assert.equal(L.height, vh, 'no scrolling');
     for (const [id, [x]] of Object.entries(L.points))
       assert.ok(x - ROOM.ring / 2 >= ROOM.edge - 0.5 && x + ROOM.ring / 2 <= vw - ROOM.edge + 0.5, `${id} ring x ${x.toFixed(1)}`);
     const boxes = Object.entries(L.cards).map(([id, c]) => ({ id, l: c.cx - c.w / 2, r: c.cx + c.w / 2, t: c.top, b: c.top + c.h }));
     for (const c of boxes) {
       assert.ok(c.l >= ROOM.side - 0.5 && c.r <= vw - ROOM.side + 0.5, `${c.id} inside the width`);
-      assert.ok(c.t >= ROOM.top - 0.5, `${c.id} top ${c.t.toFixed(1)} under the header`);
+      assert.ok(c.t >= top - 0.5, `${c.id} top ${c.t.toFixed(1)} under the header`);
       assert.ok(c.b <= L.height - ROOM.bottom + 0.5, `${c.id} bottom ${c.b.toFixed(1)}`);
     }
     for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
@@ -56,17 +57,7 @@ for (const [vw, vh] of SIZES) {
   });
 }
 
-test('common phones and desktops are fully covered by the plate (no bare edges)', () => {
-  for (const [vw, vh] of [[360, 740], [390, 844], [412, 915], [1440, 900], [1920, 1080]])
-    assert.ok(fit(vw, vh).covers, `${vw}x${vh} covered`);
-});
-
-test('portrait tablet: the phone-shaped plate leaves only a thin edge (known gap until a tablet composition)', () => {
-  const L = fit(768, 1024), bare = (768 - 1170 * L.s) / 2;
-  assert.ok(bare > 0 && bare < 16, `bare edge ${bare.toFixed(1)} px each side`);
-});
-
-test('a small phone scrolls a little rather than stacking cards on each other', () => {
-  const L = fit(320, 568);
-  assert.ok(L.height > 568 && L.height < 700, `scrolls a little (${L.height.toFixed(0)} px tall)`);
+test('at 1280x720 the plate is drawn at its native ratio, filling the frame', () => {
+  const L = fitFrame(1280, 720);
+  assert.ok(Math.abs(L.s - 1280 / 1672) < 0.01 && L.covers);
 });
