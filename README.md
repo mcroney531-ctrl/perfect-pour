@@ -210,8 +210,8 @@ pixel-parity checks across refactors.
 - **Landing** (inside the app, so the GitHub Pages version stays complete):
   Riverside emblem, "Perfect Pour", Start Training. First-time learners see
   it; returning learners open straight on the hub. `#/welcome` always shows
-  it. The exterior plate is not made yet: a dimmed, labelled stand-in is
-  used. Art spec: [`docs/art-brief-landing.md`](docs/art-brief-landing.md).
+  it. Exterior plate: `assets/landing/landing.webp` (Riverside at dusk);
+  spec: [`docs/art-brief-landing.md`](docs/art-brief-landing.md).
 - **Station intro:** the first time a learner opens the Pilsner station, one
   card says how it runs (Watch, Guided, Solo) and its goal; Begin opens the
   station. Never shown again. Entering the station (including the intro)

@@ -28,8 +28,8 @@
     preview: { action: 'Coming soon', status: 'Coming soon. Not playable yet.', ring: 'preview' }
   };
   const ROOM = { top: 0, bottom: 52, side: 12, edge: 4, ring: 44 };   // top is the measured header height
-  // The landing's exterior plate isn't made yet: a dimmed stand-in, labelled.
-  const LANDING = { src: 'assets/hub/hub-desktop.webp', provisional: true };
+  // The landing's exterior plate (Riverside at dusk, 2560 x 1440).
+  const LANDING = { src: 'assets/landing/landing.webp', provisional: false };
   const PUSH_MS = 650;          // hub-to-station camera push (agreed 0.5-0.8 s)
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const INTRO = {
@@ -47,7 +47,7 @@
         <svg class="land__emblem" aria-hidden="true"><use href="#pp-emblem"/></svg>
         <p class="pp-label">Riverside Brewing Co.</p>
         <h1 class="pp-display land__title" id="landTitle" tabindex="-1">Perfect Pour</h1>
-        <p class="land__sub">Staff training at the taproom</p>
+        <p class="land__sub">Staff Training Experience</p>
         <button type="button" class="pp-btn pp-btn--primary pp-btn--lg" id="startBtn">Start Training <span class="pp-arrow" aria-hidden="true">›</span></button>
       </div>
       <p class="land__provisional" id="landProvisional" hidden>Provisional art</p>

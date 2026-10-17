@@ -1,8 +1,12 @@
 # Art brief: landing plate (Riverside exterior)
 
 For GPT and the user. The landing is the first screen a new learner sees,
-inside the web app (and so inside the Storyline Web Object). The code is in
-place with a dimmed, labelled stand-in; this image replaces it.
+inside the web app (and so inside the Storyline Web Object).
+
+**Status:** candidate 1 installed (`assets/landing/landing.webp`, 2560 x 1440,
+scaled up from 1672 x 941). Its left side (sunset, skyline) is brighter than
+this brief asked; a light left-side scrim plus text shadows keep the title and
+Start Training readable without editing the image.
 
 ## The scene
 

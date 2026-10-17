@@ -331,7 +331,9 @@ test('first visit: landing, Start Training to the hub; a returning learner skips
   await h.run(200);
   assert.equal(await view(h), 'landing');
   assert.equal(await h.page.title(), 'Perfect Pour · Riverside Brewing Co.');
-  assert.equal(await h.page.isVisible('#landProvisional'), true, 'stand-in art is labelled');
+  assert.equal(await h.page.isVisible('#landProvisional'), false, 'real landing art, no stand-in label');
+  assert.match(await h.page.getAttribute('#landPlate', 'src'), /assets\/landing\/landing\.webp$/);
+  assert.equal(await h.text('.land__sub'), 'Staff Training Experience');
   await h.page.click('#startBtn'); await settle(h, 200);
   assert.equal(await view(h), 'hub');
   assert.equal(await h.page.evaluate(() => location.hash), '#/');
