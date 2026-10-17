@@ -96,3 +96,28 @@ The game art stays vector. Page-side blends (warm grade, contact shadows,
 backdrop blur/dim/vignette, a softer glass edge) are being tested, but the
 backdrop should do most of the matching. If a requirement conflicts with the
 brand look, say so instead of quietly working around it.
+
+## Revision 3: light retouch of revision 2
+
+Revision 2 (`design/backdrops/pilsner-r2.png`) met most of the brief: quiet
+dark zone behind the glass, beer the brightest amber, soft room, faucet
+anchored on the pillar. The stage now sits 26 px lower in the frame so the
+upright glass rests on revision 2's tray, so **keep the composition exactly
+as it is** (same camera, tray, pillar, sign size) and retouch only:
+
+1. **Drip tray:** dim the copper highlights across the tray and its front
+   edge; keep a soft warm pool only under the glass (centred x 241). No
+   bright full-width strip.
+2. **Head gauge corner** (x 0-75, y 131-391): remove or darken the hanging
+   plant there, and move the Riverside sign right so its left edge is past
+   x 85 (or darken its left third). The gauge's labels must read cleanly.
+3. **Behind the faucet** (x 200-360, y 80-220): dim the bright copper tank
+   highlights and bokeh so the faucet head has a calm, darker field.
+4. **Pendant bulb:** slightly less hot, so it isn't brighter than the beer
+   reads.
+
+Current coordinates (390 x 844 frame, after the 26 px move): nozzle (241,
+200); faucet zone x 195-390, y 81-216; shank exits the right edge at y
+149-169; quiet zone x 40-320, y 206-516; upright glass base y 506, resting
+on the tray's top face; controls below y 560. Same size and format as
+revision 2.

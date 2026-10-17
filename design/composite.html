@@ -117,8 +117,10 @@
   'use strict';
   const W = 390, H = 844;
   // Fixed frame layout (a proposal for M5, not the current station layout):
-  // the scene spans the full width; the bar top sits at y 494, the pad below 560.
-  const LAYOUT = { stageTop: 64, stageHeight: 487, barY: 494, controlsTop: 560 };
+  // the scene spans the full width, the pad sits below 560. Round 2: the
+  // stage moved down 26 px so the upright glass (base at y 506) rests on the
+  // revision 2 drip tray's top face; barY is that resting plane.
+  const LAYOUT = { stageTop: 90, stageHeight: 487, barY: 507, controlsTop: 560 };
   const BACKDROPS = { r2: 'backdrops/pilsner-r2.png', temp: 'backdrops/temp-pilsner.svg', flat: null, checker: null };
   // Warm grade: pulls the cool white glass highlights and the cream foam
   // toward the amber room light, without touching the training overlays.

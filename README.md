@@ -223,7 +223,8 @@ Nothing in the game changed. These are review pages:
   stand-in. `design/backdrops/pilsner-portrait-template.png` (1170 x 2532,
   3x of the frame) marks what the real one must respect: no tap hardware in
   the live faucet zone (the shank runs off the right edge), a low-contrast
-  glass sweep, the bar top / drip tray at y 494 (the shadow plane), and a dark,
+  glass sweep, the bar top / drip tray at y 507 (the shadow plane; was 494
+  before the round-2 move), and a dark,
   even area below y 560 for the controls.
 - **Frame layout** is a proposal for M5, not the current station layout: the
   scene spans the full width, the caption sits on top and the pad below the
