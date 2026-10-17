@@ -26,6 +26,10 @@
     border-radius: 28px; box-shadow: 0 0 0 1px #2a3336, 0 18px 50px rgba(0,0,0,0.6); }
   body.embed #frame { border-radius: 0; box-shadow: none; }
   #bg { position: absolute; inset: 0; background: var(--bg-color, #13181a) center / cover no-repeat; }
+  /* Blur/dim act on the backdrop only; the slight scale hides the blurred edge. */
+  #bg { filter: blur(var(--bg-blur, 0px)) brightness(var(--bg-bright, 1)); transform: scale(var(--bg-scale, 1)); }
+  #vig { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 62% 48% at 55% 39%, transparent 35%, rgba(0, 0, 0, var(--vig, 0)) 100%); }
   #bg.checker { background: repeating-conic-gradient(#3a3f42 0% 25%, #24292b 0% 50%) 0 0 / 24px 24px; }
   #game { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
   #zones { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -38,6 +42,9 @@
   legend { padding: 0 6px; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pp-text-muted); }
   label { display: flex; gap: 8px; align-items: center; min-height: 32px; cursor: pointer; }
   input[type=radio], input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--pp-gold-400); }
+  input[type=range] { width: 100%; accent-color: var(--pp-gold-400); }
+  .slider { display: grid; grid-template-columns: 70px 1fr 42px; gap: 8px; align-items: center; min-height: 32px; font-size: 0.9rem; }
+  .slider output { text-align: right; color: var(--pp-text-muted); font-variant-numeric: tabular-nums; }
   input[type=file] { font-size: 0.8rem; max-width: 100%; }
   button { min-height: 44px; border-radius: 12px; border: 1px solid #3a4447; background: #1b2224; color: inherit; font: 600 0.95rem var(--pp-font-ui); cursor: pointer; }
   :focus-visible { outline: 3px solid var(--pp-gold-400); outline-offset: 2px; }
@@ -49,6 +56,7 @@
   <div id="fit">
     <div id="frame">
       <div id="bg"></div>
+      <div id="vig"></div>
       <iframe id="game" title="Pilsner station, live"></iframe>
       <svg id="zones" viewBox="0 0 390 844" aria-hidden="true" hidden></svg>
     </div>
@@ -73,6 +81,19 @@
       <label><input type="radio" name="bg" value="checker"> Checker (shows transparency)</label>
       <label><input type="radio" name="bg" value="file" disabled> Your file</label>
       <input type="file" id="bgFile" accept="image/*" aria-label="Choose a backdrop image">
+    </fieldset>
+    <fieldset>
+      <legend>Backdrop focus</legend>
+      <label class="slider" for="blur">Blur <input type="range" id="blur" min="0" max="8" step="0.5"><output for="blur"></output></label>
+      <label class="slider" for="dim">Dim <input type="range" id="dim" min="0" max="60" step="5"><output for="dim"></output></label>
+      <label class="slider" for="vigR">Vignette <input type="range" id="vigR" min="0" max="90" step="5"><output for="vigR"></output></label>
+      <button type="button" id="focusPreset">Try: blur 3, dim 20%, vignette 50%</button>
+      <button type="button" id="focusReset">Reset focus</button>
+    </fieldset>
+    <fieldset>
+      <legend>Glass edge (visual only)</legend>
+      <label><input type="radio" name="edge" value="current"> Current (crisp white outline)</label>
+      <label><input type="radio" name="edge" value="subtle"> Subtle (thin, warm, lit from the left)</label>
     </fieldset>
     <fieldset>
       <legend>Show</legend>
@@ -109,9 +130,12 @@
     ui: pick(params.get('ui'), ['stage', 'play'], 'stage'),
     mode: pick(params.get('mode'), ['watch', 'guided', 'solo'], 'watch'),
     zones: params.get('zones') === '1',
+    blur: num(params.get('blur'), 0, 8), dim: num(params.get('dim'), 0, 60), vig: num(params.get('vig'), 0, 90),
+    edge: pick(params.get('edge'), ['current', 'subtle'], 'current'),
     game: params.get('game') || ''    // passed through to the station (e.g. angle=staged)
   };
   function pick(v, list, dflt) { return list.includes(v) ? v : dflt; }
+  function num(v, lo, hi) { const n = parseFloat(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : 0; }
   if (params.get('embed') === '1') document.body.classList.add('embed');
 
   const frame = document.getElementById('frame'), fit = document.getElementById('fit');
@@ -139,6 +163,15 @@
     else if (S.bg !== 'checker') src = S.bg;       // ?bg=<url>, relative to design/
     bgEl.style.backgroundImage = src ? `url("${src}")` : 'none';
   }
+  function applyFocus() {
+    const st = frame.style;
+    st.setProperty('--bg-blur', S.blur + 'px');
+    st.setProperty('--bg-scale', 1 + S.blur * 0.012);
+    st.setProperty('--bg-bright', 1 - S.dim / 100);
+    st.setProperty('--vig', S.vig / 100);
+    const out = (id, txt) => { document.querySelector(`output[for=${id}]`).textContent = txt; };
+    out('blur', S.blur + 'px'); out('dim', S.dim + '%'); out('vigR', S.vig + '%');
+  }
   document.getElementById('bgFile').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     if (fileUrl) URL.revokeObjectURL(fileUrl);
@@ -164,7 +197,8 @@
     const contact = doc.createElementNS(NS, 'ellipse'); contact.id = 'pp-contact';
     contact.setAttribute('fill', '#030504'); contact.setAttribute('filter', 'url(#pp-soft)');
     doc.getElementById('scene').insertBefore(contact, doc.getElementById('glassBack'));
-    applyMode(); applyUi(); applyFx(); startLoop();
+    const edge = doc.createElement('style'); edge.id = 'pp-edge-css'; doc.head.appendChild(edge);
+    applyMode(); applyUi(); applyFx(); applyEdge(); startLoop();
   });
 
   function applyUi() {
@@ -216,7 +250,10 @@
       filter('pp-fx-tap', { wrap: grade, drop: shadow }) +
       filter('pp-fx-glass', { wrap: grade, drop: false }) +
       filter('pp-fx-beer', { wrap: false, drop: false }) +
-      '<filter id="pp-soft" x="-50%" y="-200%" width="200%" height="500%"><feGaussianBlur stdDeviation="3"/></filter>';
+      '<filter id="pp-soft" x="-50%" y="-200%" width="200%" height="500%"><feGaussianBlur stdDeviation="3"/></filter>' +
+      '<linearGradient id="pp-edge" x1="0" y1="0" x2="1" y2="0">' +
+      '<stop offset="0" stop-color="#fff1d6" stop-opacity="0.85"/><stop offset="0.5" stop-color="#ffe8c4" stop-opacity="0.45"/>' +
+      '<stop offset="1" stop-color="#ffe0b0" stop-opacity="0.22"/></linearGradient>';
     const on = grade || shadow;
     const set = (sel, id) => doc.querySelectorAll(sel).forEach(el => {
       if (on) el.setAttribute('filter', `url(#${id})`); else el.removeAttribute('filter');
@@ -226,6 +263,22 @@
     set('#glassArt, #glassBackArt', 'pp-fx-glass');
     set('#scene > g[clip-path], #stream, #streamCore, #splash, #spill', 'pp-fx-beer');
     doc.getElementById('pp-contact').style.display = shadow ? '' : 'none';
+  }
+
+  // Subtle glass edge: restyles glass A's own outline from outside. A thin
+  // warm stroke, brighter on the lit (left) side, fading on the right, so
+  // the glass reads as glass rather than a white diagram. Geometry, beer
+  // and overlays are untouched.
+  function applyEdge() {
+    const doc = game.contentDocument; if (!doc) return;
+    const css = doc.getElementById('pp-edge-css'); if (!css) return;
+    css.textContent = S.edge !== 'subtle' ? '' : `
+      #glassArt > path:nth-of-type(1) { stroke: url(#pp-edge); stroke-width: 1.1px; fill: rgba(255, 238, 210, 0.05); }
+      #glassArt > path:nth-of-type(2) { stroke: url(#pp-edge); stroke-width: 1px; fill: rgba(255, 236, 205, 0.16); }
+      #glassArt > line { stroke: rgba(255, 236, 205, 0.55); stroke-width: 1.5px; }
+      #glassArt > polygon:nth-of-type(1) { fill: rgba(255, 236, 200, 0.2); }
+      #glassArt > polygon:nth-of-type(2) { fill: rgba(255, 236, 200, 0.08); }
+      #glassBackArt polygon { fill: rgba(255, 230, 190, 0.03); }`;
   }
 
   // The contact shadow follows the glass: it reads the transform the
@@ -288,12 +341,16 @@
     for (const k of ['fx', 'ui', 'mode']) { const r = form.querySelector(`[name=${k}][value="${S[k]}"]`); if (r) r.checked = true; }
     const r = form.querySelector(`[name=bg][value="${S.bg}"]`); if (r) r.checked = true;
     document.getElementById('zonesOn').checked = S.zones;
+    const e = form.querySelector(`[name=edge][value="${S.edge}"]`); if (e) e.checked = true;
+    document.getElementById('blur').value = S.blur; document.getElementById('dim').value = S.dim; document.getElementById('vigR').value = S.vig;
   }
   function saveUrl() {
     const p = new URLSearchParams(location.search);
     for (const k of ['fx', 'ui', 'mode']) p.set(k, S[k]);
     if (S.bg !== 'file') p.set('bg', S.bg);
     if (S.zones) p.set('zones', '1'); else p.delete('zones');
+    for (const k of ['blur', 'dim', 'vig']) { if (S[k]) p.set(k, S[k]); else p.delete(k); }
+    if (S.edge !== 'current') p.set('edge', S.edge); else p.delete('edge');
     history.replaceState(null, '', '?' + p);
   }
   form.addEventListener('change', e => {
@@ -303,11 +360,20 @@
     else if (t.name === 'ui') { S.ui = t.value; applyUi(); }
     else if (t.name === 'mode') { S.mode = t.value; applyMode(); }
     else if (t.id === 'zonesOn') { S.zones = t.checked; zonesDrawn = ''; }
+    else if (t.name === 'edge') { S.edge = t.value; applyEdge(); }
     saveUrl();
   });
   document.getElementById('reload').addEventListener('click', loadGame);
+  // Sliders update live while dragging.
+  form.addEventListener('input', e => {
+    const k = { blur: 'blur', dim: 'dim', vigR: 'vig' }[e.target.id]; if (!k) return;
+    S[k] = +e.target.value; applyFocus(); saveUrl();
+  });
+  const setFocus = (b, d, v) => { S.blur = b; S.dim = d; S.vig = v; syncForm(); applyFocus(); saveUrl(); };
+  document.getElementById('focusPreset').addEventListener('click', () => setFocus(3, 20, 50));
+  document.getElementById('focusReset').addEventListener('click', () => setFocus(0, 0, 0));
 
-  syncForm(); applyBg(); loadGame();
+  syncForm(); applyBg(); applyFocus(); loadGame();
   // For tests and the compare page.
   window.ppComposite = { state: S, game, layout: LAYOUT, zones: ZONES };
 })();

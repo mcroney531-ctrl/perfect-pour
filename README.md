@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation: 61 tests, Node 18+, no installs
-npm run test:ui     # browser: 17 Playwright tests (npm install first)
+npm run test:ui     # browser: 18 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -213,6 +213,12 @@ Nothing in the game changed. These are review pages:
   and faucet); *contact shadows* (faucet drop shadow on the wall, a soft
   shadow on the bar top that follows the glass and fades as it lifts);
   *grade + shadows*.
+- **Backdrop focus** (review round 1): blur, dim and a vignette centred on
+  the pour, applied to the backdrop only, to test separating the flat live
+  art from a sharp photographic backdrop. `?blur=3&dim=20&vig=50`.
+- **Glass edge** `?edge=subtle`: glass A's outline restyled from the page as
+  a thin warm stroke, brighter on the lit left side, instead of the crisp
+  white outline. Visual only; same geometry, beer and overlays.
 - **Backdrop** `design/backdrops/temp-pilsner.svg` is a labelled temporary
   stand-in. `design/backdrops/pilsner-portrait-template.png` (1170 x 2532,
   3x of the frame) marks what the real one must respect: no tap hardware in

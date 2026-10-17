@@ -55,3 +55,17 @@ test('composite treatments: art is filtered, training overlays never are, shadow
   assert.deepEqual(h.errors, []);
   await h.close();
 });
+
+test('composite focus and glass edge: backdrop-only blur/dim/vignette, edge restyle leaves the game pouring', async () => {
+  const h = await openPage(browser, URL0 + '/design/composite.html?embed=1&blur=3&dim=20&vig=50&edge=subtle');
+  await h.run(300);
+  const f = gameFrame(h);
+  const bgFilter = await h.page.evaluate(() => getComputedStyle(document.getElementById('bg')).filter);
+  assert.match(bgFilter, /blur\(3px\).*brightness\(0\.8\)/);
+  assert.equal(await h.page.evaluate(() => getComputedStyle(document.getElementById('game')).filter), 'none', 'game layer never blurred');
+  assert.match(await f.evaluate(() => getComputedStyle(document.querySelector('#glassArt > path')).stroke), /url\(.*pp-edge/);
+  await h.run(12000);
+  assert.equal(await f.locator('#resultTitle').textContent(), 'Demo pour: clean');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});

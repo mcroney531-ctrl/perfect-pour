@@ -43,6 +43,8 @@
   const FX = [['original', 'Original SVG'], ['grade', 'Warm grade + light wrap'], ['shadow', 'Contact shadows'], ['all', 'Grade + shadows']];
   const grid = document.getElementById('grid'), bg = document.getElementById('bg'), ui = document.getElementById('ui');
   const q = new URLSearchParams(location.search);
+  // Backdrop focus and glass edge pass straight through, e.g. ?blur=3&dim=20&vig=50&edge=subtle
+  const extra = ['blur', 'dim', 'vig', 'edge'].filter(k => q.get(k)).map(k => `&${k}=${encodeURIComponent(q.get(k))}`).join('');
   if (q.get('bg')) bg.value = q.get('bg');
   if (q.get('ui')) ui.value = q.get('ui');
   function build() {
@@ -50,7 +52,7 @@
     for (const [fx, name] of FX) {
       const fig = document.createElement('figure');
       fig.innerHTML = `<figcaption>${name}</figcaption><div class="tile"><iframe title="${name}"></iframe></div>`;
-      fig.querySelector('iframe').src = `composite.html?embed=1&fx=${fx}&bg=${bg.value}&ui=${ui.value}`;
+      fig.querySelector('iframe').src = `composite.html?embed=1&fx=${fx}&bg=${bg.value}&ui=${ui.value}${extra}`;
       grid.appendChild(fig);
     }
     fit();
@@ -59,7 +61,7 @@
     grid.querySelectorAll('.tile').forEach(t => { t.firstElementChild.style.transform = `scale(${t.clientWidth / 390})`; });
   }
   addEventListener('resize', fit);
-  for (const el of [bg, ui]) el.addEventListener('change', () => { history.replaceState(null, '', `?bg=${bg.value}&ui=${ui.value}`); build(); });
+  for (const el of [bg, ui]) el.addEventListener('change', () => { history.replaceState(null, '', `?bg=${bg.value}&ui=${ui.value}${extra}`); build(); });
   document.getElementById('restart').addEventListener('click', build);
   build();
 </script>
