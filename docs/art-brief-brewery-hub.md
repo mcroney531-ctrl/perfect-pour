@@ -2,11 +2,21 @@
 
 For GPT and the user.
 
-**Status:** portrait plate delivered (candidate 1, `assets/hub/hub-portrait.webp`)
-and live in the app with its stations mapped to the art (table below).
-Desktop plate still to come; the app shows a labelled provisional template
-for it. Templates: `design/hub-templates/hub-portrait-template.jpg` (the
-delivered art with the station points marked) and `hub-desktop-template.png`.
+**Status:** 16:9 landscape (1920 x 1080 design reference) is now the
+primary format: the app is embedded as a Web Object in Storyline 360, and the
+next hub review is the wide landscape plate with working station buttons. The
+portrait plate (candidate 1, `assets/hub/hub-portrait.webp`) stays live as the
+secondary layout; no further portrait polish for now. The landscape plate is
+still to come; the app shows a labelled provisional template for it
+(`design/hub-templates/hub-desktop-template.png`, anchors marked).
+
+**Landscape plate, in short:** a wide, cinematic view of the same U-shaped
+bar, modelled on the original storyboard; three clearly separated tap
+stations (left arm, back counter, right arm) and a Final Rush spot in the
+centre aisle; no cards, buttons, labels or glows baked in. Deliver
+2560 x 1440 if possible (sharper when the Storyline player scales up),
+otherwise 1920 x 1080; tell me where the four tap/medallion points ended up,
+or I'll measure them from the image.
 
 ## What the plates are
 
