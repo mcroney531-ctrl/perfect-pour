@@ -10,6 +10,18 @@ test.before(async () => { ({ server, url: URL0 } = await startServer()); browser
 test.after(async () => { await browser?.close(); server?.close(); });
 
 const APP = () => URL0 + '/brewery.html';
+// Most hub tests are about a returning learner: landing and intro already
+// seen, and reduced motion so stations open without the camera push. The M4
+// tests at the end cover first visits and the push itself.
+const RETURNING = () => {
+  if (localStorage.getItem('riverside.progress')) return;
+  const st = () => ({ status: 'new', attempts: 0, passes: 0, abandoned: 0, lastPlayed: null });
+  localStorage.setItem('riverside.progress', JSON.stringify({ version: 1,
+    stations: { pilsner: st(), hefeweizen: st(), stout: st() }, seen: { landing: true, 'intro.pilsner': true } }));
+};
+const _openPage = openPage;
+const openApp = (b, url, opts = {}) => _openPage(b, url, { reducedMotion: 'reduce', ...opts,
+  init: opts.init === undefined ? RETURNING : opts.init });
 const chip = (h, id) => h.text('#chip-' + id);
 // With the paused clock, hashchange is delivered after run() returns, so
 // navigation needs a beat before time is advanced.
@@ -32,7 +44,7 @@ const INSTRUMENT = () => {
 const listeners = h => h.page.evaluate(() => [...window.__pp.live.values()].reduce((n, s) => n + s.size, 0));
 
 test('hub: Pilsner is the place to start, the others are visible but not playable, Final Rush is locked', async () => {
-  const h = await openPage(browser, APP());
+  const h = await openApp(browser, APP());
   await h.run(200);
   assert.equal(await h.page.title(), 'The Bar · Riverside Brewing Co.');
   assert.equal(await chip(h, 'pilsner'), 'Start here');
@@ -56,13 +68,13 @@ test('hub: Pilsner is the place to start, the others are visible but not playabl
 });
 
 test('deep links: a coming-soon station falls back to the hub; the Pilsner opens directly', async () => {
-  const h = await openPage(browser, APP() + '#/stout');
+  const h = await openApp(browser, APP() + '#/stout');
   await h.run(200);
   assert.ok(await hubVisible(h));
   assert.equal(await h.page.evaluate(() => location.hash), '#/');
   assert.match(await h.text('#hubNotice'), /Nitro Stout is coming soon/);
   await h.close();
-  const d = await openPage(browser, APP() + '#/pilsner');
+  const d = await openApp(browser, APP() + '#/pilsner');
   await d.run(200);
   assert.equal(await d.page.evaluate(() => window.ppBrewery.current()), 'pilsner');
   // Opened directly, "Back to the bar" replaces the entry instead of leaving the app.
@@ -73,7 +85,7 @@ test('deep links: a coming-soon station falls back to the hub; the Pilsner opens
 });
 
 test('open the Pilsner, come back: In progress is saved, focus returns, nothing leaks', async () => {
-  const h = await openPage(browser, APP(), { init: INSTRUMENT });
+  const h = await openApp(browser, APP(), { init: `(${RETURNING})();(${INSTRUMENT})();` });
   await h.run(200);
   const atHub = await listeners(h);
   await h.page.tap('[data-station=pilsner]'); await settle(h, 300);
@@ -104,7 +116,7 @@ test('open the Pilsner, come back: In progress is saved, focus returns, nothing 
 });
 
 test('browser back mid-pour: tap closes, attempt abandoned and logged, ungraded; return starts fresh', async () => {
-  const h = await openPage(browser, APP(), { mobile: false });
+  const h = await openApp(browser, APP(), { mobile: false });
   await h.run(200);
   await h.page.click('[data-station=pilsner]'); await settle(h, 200);
   await h.page.click('#modes [data-mode=guided]'); await h.run(100);
@@ -116,7 +128,7 @@ test('browser back mid-pour: tap closes, attempt abandoned and logged, ungraded;
   await h.page.goBack(); await settle(h, 300);
   await h.page.keyboard.up(' ');
   assert.ok(await hubVisible(h));
-  assert.match(await h.text('#hubNotice'), /Pour stopped\. That attempt wasn't scored/);
+  assert.equal(await h.text('#hubNotice'), 'Pour stopped. Attempt not scored. Return to Pilsner to try again.');
   const log = await lastLog(h);
   assert.equal(log.served, false);
   assert.equal(log.endedBy, 'navigate');
@@ -135,7 +147,7 @@ test('browser back mid-pour: tap closes, attempt abandoned and logged, ungraded;
 });
 
 test('leaving between pours abandons nothing; a served pour counts as an attempt', async () => {
-  const h = await openPage(browser, APP(), { mobile: false });
+  const h = await openApp(browser, APP(), { mobile: false });
   await h.run(200);
   await h.page.click('[data-station=pilsner]'); await settle(h, 200);
   // Watching the demo is not an attempt.
@@ -165,15 +177,20 @@ test('leaving between pours abandons nothing; a served pour counts as an attempt
 });
 
 test('progress storage: unreadable data starts fresh; data from a newer version is never overwritten', async () => {
-  const bad = await openPage(browser, APP(), { init: () => localStorage.setItem('riverside.progress', '{not json') });
+  // Fresh start means a first visit again: the landing, then the hub.
+  const bad = await openApp(browser, APP(), { init: () => localStorage.setItem('riverside.progress', '{not json') });
   await bad.run(200);
+  assert.equal(await bad.page.evaluate(() => window.ppBrewery.view()), 'landing');
+  await bad.page.tap('#startBtn'); await settle(bad, 200);
   assert.equal(await chip(bad, 'pilsner'), 'Start here');
   assert.deepEqual(bad.errors, []);
   await bad.close();
   const NEWER = JSON.stringify({ version: 99, stations: {}, future: true });
-  const nw = await openPage(browser, APP(), { init: `localStorage.setItem('riverside.progress', ${JSON.stringify(NEWER)})` });
+  const nw = await openApp(browser, APP(), { init: `localStorage.setItem('riverside.progress', ${JSON.stringify(NEWER)})` });
   await nw.run(200);
+  await nw.page.tap('#startBtn'); await settle(nw, 200);
   await nw.page.tap('[data-station=pilsner]'); await settle(nw, 200);
+  await nw.page.tap('#introBegin'); await settle(nw, 200);
   assert.equal(await nw.page.evaluate(() => localStorage.getItem('riverside.progress')), NEWER);
   await nw.close();
 });
@@ -197,7 +214,7 @@ const overlap = (a, b) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y 
 for (const [w, hgt, expect] of [[360, 740, 'portrait'], [390, 844, 'portrait'], [412, 915, 'portrait'], [375, 667, 'portrait'],
   [320, 568, 'portrait'], [768, 1024, 'portrait'], [1440, 900, 'desktop'], [1280, 720, 'desktop'], [1920, 1080, 'desktop']]) {
   test(`hub ${w}x${hgt}: ${expect} plate, hotspots on their anchors, nothing clipped or overlapping`, async () => {
-    const h = await openPage(browser, APP(), { size: { width: w, height: hgt }, mobile: w < 1000 });
+    const h = await openApp(browser, APP(), { size: { width: w, height: hgt }, mobile: w < 1000 });
     await h.run(300);
     const g = await geometry(h);
     assert.equal(g.scene, expect);
@@ -221,10 +238,14 @@ for (const [w, hgt, expect] of [[360, 740, 'portrait'], [390, 844, 'portrait'], 
 }
 
 test('hub switches plate when the screen turns, and hotspots follow', async () => {
-  const h = await openPage(browser, APP(), { size: { width: 768, height: 1024 } });
+  const h = await openApp(browser, APP(), { size: { width: 768, height: 1024 } });
   await h.run(200);
   assert.equal((await geometry(h)).scene, 'portrait');
-  await h.page.setViewportSize({ width: 1024, height: 768 }); await settle(h, 200);
+  await h.page.setViewportSize({ width: 1024, height: 768 });
+  // Resize events reach the page on the browser's schedule, not the paused
+  // test clock: wait (bounded) for the switch instead of assuming a delay.
+  for (let i = 0; i < 40 && (await geometry(h)).scene !== 'desktop'; i++) { await h.page.waitForTimeout(25); await h.run(16); }
+  await settle(h, 100);
   const g = await geometry(h);
   assert.equal(g.scene, 'desktop');
   assert.match(await h.page.getAttribute('#hubPlate', 'src'), /hub-desktop/);
@@ -235,7 +256,7 @@ test('hub switches plate when the screen turns, and hotspots follow', async () =
 
 test('real art loads unlabelled in both layouts, the landscape UI scales with the canvas; missing art is flagged and the hub still works', async () => {
   // Portrait has its real plate: no label, and the art itself loads at full size.
-  const h = await openPage(browser, APP());
+  const h = await openApp(browser, APP());
   await h.run(200);
   assert.equal(await h.page.isVisible('#hubProvisional'), false);
   assert.match(await h.page.getAttribute('#hubPlate', 'src'), /hub-portrait\.webp$/);
@@ -249,7 +270,7 @@ test('real art loads unlabelled in both layouts, the landscape UI scales with th
   // Landscape (the primary, Storyline format) has its real plate too, and its
   // UI scales with the canvas: 1x at 1280x720, 1.5x at 1920x1080.
   for (const [w, hgt, ui] of [[1280, 720, 1], [1920, 1080, 1.5]]) {
-    const d = await openPage(browser, APP(), { size: { width: w, height: hgt }, mobile: false });
+    const d = await openApp(browser, APP(), { size: { width: w, height: hgt }, mobile: false });
     await d.run(200);
     assert.equal(await d.page.isVisible('#hubProvisional'), false);
     assert.match(await d.page.getAttribute('#hubPlate', 'src'), /hub-desktop\.webp$/);
@@ -259,7 +280,7 @@ test('real art loads unlabelled in both layouts, the landscape UI scales with th
     assert.ok(Math.abs(cardW - 176 * ui) < 2, `card ${cardW.toFixed(1)} px wide`);
     await d.close();
   }
-  const b = await openPage(browser, APP());
+  const b = await openApp(browser, APP());
   await b.page.route('**/assets/hub/**', r => r.abort());
   await b.page.reload(); await b.run(300);
   assert.equal(await b.page.evaluate(() => document.getElementById('hub').classList.contains('hub--noart')), true);
@@ -270,7 +291,7 @@ test('real art loads unlabelled in both layouts, the landscape UI scales with th
 });
 
 test('truthful hub: nothing certified, no rejected slogan, coming-soon cards offer no Start', async () => {
-  const h = await openPage(browser, APP());
+  const h = await openApp(browser, APP());
   await h.run(200);
   const text = await h.page.evaluate(() => document.body.innerText);
   assert.doesNotMatch(text, /good beer|better people/i);
@@ -285,5 +306,100 @@ test('truthful hub: nothing certified, no rejected slogan, coming-soon cards off
     const svg = await h.page.evaluate(async u => (await fetch(u)).text(), f);
     assert.doesNotMatch(svg, /good beer|better people/i, f);
   }
+  await h.close();
+});
+
+// ---- M4: landing, first visit vs returning, station intro, camera push ----
+const view = h => h.page.evaluate(() => window.ppBrewery.view());
+
+test('first visit: landing, Start Training to the hub; a returning learner skips the landing', async () => {
+  const h = await openApp(browser, APP(), { init: null, size: { width: 1280, height: 720 }, mobile: false });
+  await h.run(200);
+  assert.equal(await view(h), 'landing');
+  assert.equal(await h.page.title(), 'Perfect Pour · Riverside Brewing Co.');
+  assert.equal(await h.page.isVisible('#landProvisional'), true, 'stand-in art is labelled');
+  await h.page.click('#startBtn'); await settle(h, 200);
+  assert.equal(await view(h), 'hub');
+  assert.equal(await h.page.evaluate(() => location.hash), '#/');
+  assert.equal((await progress(h)).seen.landing, true);
+  await h.page.reload(); await h.run(200);
+  assert.equal(await view(h), 'hub', 'returning learner goes straight to the hub');
+  // The landing can still be reached on purpose.
+  await h.page.evaluate(() => { location.hash = '#/welcome'; }); await settle(h, 200);
+  assert.equal(await view(h), 'landing');
+  await h.page.click('#startBtn'); await settle(h, 200);
+  assert.equal(await view(h), 'hub');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('station intro: shown on the first visit only, Begin opens the station; leaving from it abandons nothing', async () => {
+  const h = await openApp(browser, APP(), { init: null, mobile: false, size: { width: 1280, height: 720 } });
+  await h.run(200);
+  await h.page.click('#startBtn'); await settle(h, 200);
+  await h.page.click('[data-station=pilsner]'); await settle(h, 200);
+  assert.equal(await view(h), 'intro');
+  assert.equal(await h.page.evaluate(() => document.activeElement.id), 'introBegin');
+  assert.equal((await progress(h)).stations.pilsner.status, 'inProgress', 'entering the station starts training');
+  // Back out from the intro: nothing to abandon, and it shows again next time.
+  await h.page.goBack(); await settle(h, 200);
+  assert.equal(await view(h), 'hub');
+  assert.equal(await h.text('#hubNotice'), '');
+  await h.page.click('[data-station=pilsner]'); await settle(h, 200);
+  assert.equal(await view(h), 'intro');
+  await h.page.click('#introBegin'); await settle(h, 200);
+  assert.equal(await view(h), 'station');
+  assert.equal(await h.page.evaluate(() => document.activeElement.id), 'exitBtn');
+  await h.page.click('#exitBtn'); await settle(h, 200);
+  await h.page.click('[data-station=pilsner]'); await settle(h, 200);
+  assert.equal(await view(h), 'station', 'second visit goes straight in');
+  assert.equal((await progress(h)).stations.pilsner.abandoned, 0);
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('camera push: the hub zooms toward the station for ~0.65 s before it opens', async () => {
+  const h = await openApp(browser, APP(), { reducedMotion: 'no-preference', mobile: false, size: { width: 1280, height: 720 } });
+  await h.run(200);
+  await h.page.click('[data-station=pilsner]'); await h.run(0); await h.page.evaluate(() => 0);
+  await h.run(300);
+  assert.equal(await view(h), 'pushing');
+  assert.equal(await h.page.evaluate(() => document.getElementById('hub').classList.contains('is-pushing')), true);
+  assert.equal(await h.page.evaluate(() => window.ppBrewery.current()), null, 'not mounted mid-push');
+  const origin = await h.page.evaluate(() => document.getElementById('hubCanvas').style.transformOrigin);
+  const [ax, ay] = await h.page.evaluate(() => window.ppBrewery.layout().points.pilsner);
+  assert.equal(origin, `${ax.toFixed(1)}px ${ay.toFixed(1)}px`, 'zooms toward the Pilsner station');
+  await h.run(400);
+  assert.equal(await view(h), 'station');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('camera push is cancellable: back mid-push returns to an intact hub and nothing opens later', async () => {
+  const h = await openApp(browser, APP(), { reducedMotion: 'no-preference', mobile: false, size: { width: 1280, height: 720 } });
+  await h.run(200);
+  await h.page.click('[data-station=pilsner]'); await h.run(0); await h.page.evaluate(() => 0);
+  await h.run(200);
+  assert.equal(await view(h), 'pushing');
+  await h.page.goBack(); await settle(h, 100);
+  assert.equal(await view(h), 'hub');
+  assert.equal(await h.page.evaluate(() => document.getElementById('hub').classList.contains('is-pushing')), false);
+  await h.run(1500);
+  assert.equal(await view(h), 'hub', 'the cancelled push never completes');
+  assert.equal(await h.page.evaluate(() => window.ppBrewery.current()), null);
+  assert.equal((await progress(h)).stations.pilsner.status, 'new', 'not entered, so not started');
+  // The hub still works normally afterwards.
+  await h.page.click('[data-station=pilsner]'); await h.run(0); await h.page.evaluate(() => 0); await h.run(800);
+  assert.equal(await view(h), 'station');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('reduced motion: no camera push, the station opens at once', async () => {
+  const h = await openApp(browser, APP(), { mobile: false, size: { width: 1280, height: 720 } });
+  await h.run(200);
+  await h.page.click('[data-station=pilsner]'); await settle(h, 16);
+  assert.equal(await view(h), 'station');
+  assert.equal(await h.page.evaluate(() => document.getElementById('hub').classList.contains('is-pushing')), false);
   await h.close();
 });

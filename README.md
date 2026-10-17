@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation (61) + hub layout (16), Node 18+, no installs
-npm run test:ui     # browser: 36 Playwright tests (npm install first)
+npm run test:ui     # browser: 41 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -197,7 +197,28 @@ pixel-parity checks across refactors.
   the renderer: back-wall art behind the beer, wall/rim/base/highlights in
   front, training overlays always on top.
 
-## M3: brewery hub and navigation (for review)
+## M4: landing, first visit, station intro, transitions (for review)
+
+- **Landing** (inside the app, so the GitHub Pages version stays complete):
+  Riverside emblem, "Perfect Pour", Start Training. First-time learners see
+  it; returning learners open straight on the hub. `#/welcome` always shows
+  it. The exterior plate is not made yet: a dimmed, labelled stand-in is
+  used. Art spec: [`docs/art-brief-landing.md`](docs/art-brief-landing.md).
+- **Station intro:** the first time a learner opens the Pilsner station, one
+  card says how it runs (Watch, Guided, Solo) and its goal; Begin opens the
+  station. Never shown again. Entering the station (including the intro)
+  starts "In progress"; backing out of the intro abandons nothing.
+- **Camera push:** choosing a station zooms the hub toward it and fades to
+  dark over 0.65 s, then the station (or its intro) opens; returning fades
+  the hub back in over 0.3 s. Any navigation during the push (browser back)
+  cancels it cleanly. Reduced motion: no push, no fade.
+- **Mid-pour exit message:** "Pour stopped. Attempt not scored. Return to
+  Pilsner to try again."
+- **Progress:** one-time screens are recorded in `seen` (`landing`,
+  `intro.pilsner`), added without a version bump (older saved data simply
+  has none yet).
+
+## M3: brewery hub and navigation (approved)
 
 **`/brewery.html`** is the brewery app: a U-shaped bar hub, and the Pilsner
 station opened from it. `index.html` stays the standalone station (the test

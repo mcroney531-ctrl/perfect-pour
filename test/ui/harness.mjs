@@ -34,10 +34,10 @@ export function startServer() {
 }
 
 // One fresh page per test: phone-sized, touch-capable, fake clock.
-export async function openPage(browser, url, { mobile = true, size, init } = {}) {
-  const ctx = await browser.newContext(mobile
+export async function openPage(browser, url, { mobile = true, size, init, reducedMotion } = {}) {
+  const ctx = await browser.newContext(Object.assign(mobile
     ? { viewport: size || { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }
-    : { viewport: size || { width: 1280, height: 800 } });
+    : { viewport: size || { width: 1280, height: 800 } }, reducedMotion ? { reducedMotion } : {}));
   const page = await ctx.newPage();
   if (init) await page.addInitScript(init);
   const errors = [];

@@ -6,11 +6,13 @@
   const VERSION = 1;
   const IDS = ['pilsner', 'hefeweizen', 'stout'];
   // status: new -> inProgress (first time the station is opened) -> certified (M6)
+  // seen: one-time screens already shown (the landing, each station's intro).
+  // Added in M4 without a version bump: older saved data simply has none yet.
 
   function blank() {
     const stations = {};
     IDS.forEach(id => { stations[id] = { status: 'new', attempts: 0, passes: 0, abandoned: 0, lastPlayed: null }; });
-    return { version: VERSION, stations };
+    return { version: VERSION, stations, seen: {} };
   }
 
   // Unreadable or wrong-shaped data starts fresh. Data from a newer version
@@ -20,7 +22,10 @@
     let d = null;
     try { d = JSON.parse(localStorage.getItem(KEY)); } catch (_) { d = null; }
     if (d && typeof d.version === 'number' && d.version > VERSION) { readOnly = true; return blank(); }
-    if (d && d.version === VERSION && d.stations && IDS.every(id => d.stations[id] && d.stations[id].status)) return d;
+    if (d && d.version === VERSION && d.stations && IDS.every(id => d.stations[id] && d.stations[id].status)) {
+      if (!d.seen || typeof d.seen !== 'object') d.seen = {};
+      return d;
+    }
     return blank();
   }
   let data = load();
@@ -44,6 +49,8 @@
     markEntered: id => touch(id, s => { if (s.status === 'new') s.status = 'inProgress'; }),
     recordServed: (id, pass) => touch(id, s => { s.attempts++; if (pass) s.passes++; }),
     recordAbandoned: id => touch(id, s => { s.abandoned++; }),
+    seen: key => !!data.seen[key],
+    markSeen: key => { if (!data.seen[key]) { data.seen[key] = true; save(); } },
     reload: () => { readOnly = false; data = load(); },
     reset: () => { data = blank(); save(); }
   };
