@@ -233,7 +233,7 @@ station opened from it. `index.html` stays the standalone station (the test
 links and the composite page use it); M4 can make the app the front door.
 
 - **Hub (visual pass, in review):** an image-based brewery scene with live
-  hotspots. Each composition (portrait, desktop) is a plate with station
+  hotspots. The composition (one 16:9 landscape plate) has station
   anchors in the plate's own pixels (`js/hub-scenes.js`); `layoutScene()`
   fits the plate like `object-fit: cover` but never at the cost of a
   station, and maps the anchors to the screen (unit-tested in
@@ -332,7 +332,7 @@ modules) so `index.html` still opens by double-click from disk.
 | `index.html` | The standalone Pilsner station: a stylesheet link, a host element and a three-line boot |
 | `brewery.html`, `js/brewery.js`, `css/brewery.css` | The brewery app (M3): hub, hash router, station mounting |
 | `js/hub-scenes.js` | Hub plates, station anchors (plate pixels) and the pure `layoutScene()` mapping |
-| `assets/hub/`, `tools/make-hub-plates.mjs` | Hub plates: the portrait art, and provisional templates (generated from the station table) where art hasn't arrived |
+| `assets/hub/`, `tools/make-hub-plates.mjs` | The hub plate, and a provisional-template generator (from the station table) for future plates |
 | `js/progress.js` | Versioned training progress on this device (`RiversideProgress`) |
 | `css/pilsner-station.css` | The station's styles, scoped to its host (`.pp-st`) |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
