@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation: 61 tests, Node 18+, no installs
-npm run test:ui     # browser: 18 Playwright tests (npm install first)
+npm run test:ui     # browser: 24 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -197,7 +197,45 @@ pixel-parity checks across refactors.
   the renderer: back-wall art behind the beer, wall/rim/base/highlights in
   front, training overlays always on top.
 
-## M2: visual system and compositing test (for review)
+## M3: brewery hub and navigation (for review)
+
+**`/brewery.html`** is the brewery app: a U-shaped bar hub, and the Pilsner
+station opened from it. `index.html` stays the standalone station (the test
+links and the composite page use it); M4 can make the app the front door.
+
+- **Hub:** portrait first. The bar is drawn from its open end: Pilsner on
+  the left arm, Hefeweizen on the back bar, Nitro Stout on the right arm,
+  Final Rush in the middle where the bartender stands. Station cards are
+  real buttons in teaching order, laid over the illustration (placeholder
+  art; final art needs approval). Hefeweizen and Nitro Stout show
+  "Coming soon" and do nothing but say so; Final Rush shows "Locked: earn
+  all 3". The stage scales to fit the screen's height as well as width.
+- **Progress states:** Start here (new) → In progress (first time the
+  station is opened) → Certified (M6). Each state has a chip with an icon and
+  words, and a matching hotspot ring on the counter (colour plus line style).
+- **Navigation:** hash routes (`#/`, `#/pilsner`), so the browser's back
+  button works and the page still opens from disk. The station's brand is
+  replaced by "‹ Bar", which steps back in history (or returns to the hub if
+  the station was opened from a link). Focus goes to "‹ Bar" on entering and
+  back to the station's card on return; coming-soon deep links fall back to
+  the hub.
+- **Interrupted pour (agreed rule):** leaving a station by any route closes
+  the tap at once and abandons an unserved attempt: never graded, logged with
+  `endedBy: "navigate"`, counted as abandoned in progress, and the station
+  stays In progress. The hub says "Pour stopped. That attempt wasn't
+  scored; you'll start fresh next time." Coming back starts fresh (Watch,
+  empty glass). Watching the demo or leaving after serving abandons nothing.
+- **Progress storage:** `localStorage["riverside.progress"]`, versioned
+  (`version: 1`): per station `status`, `attempts` (served pours), `passes`,
+  `abandoned`, `lastPlayed`. Unreadable data starts fresh; data written by a
+  newer version is left untouched.
+- The simulation (`js/sim.js`) is unchanged. The station gained only host
+  hooks: `onExit`, `onEvent('served' | 'abandoned')`, and
+  `unmount(reason)` returning `{ abandoned }`.
+- The station inside the app still uses its current layout; the brewery
+  look for the station is M5.
+
+## M2: visual system and compositing test (approved)
 
 Nothing in the game changed. These are review pages:
 
@@ -244,6 +282,7 @@ All levels are shares of the glass height, upright.
 | `straightenBegan` | Level when the glass **started** coming up (first 5° below the angle the tap opened at). This is the decision moment, and what the feedback and the "in range / early / late" verdict use. |
 | `straightenFill` | Level when the glass **reached upright** (≤ 15°) while pouring. Not a decision; the end of the movement. |
 | `bringUpSeconds` / `bringUpStyle` | Time between those two moments, and "gradual" (≥ 0.5 s) or "allAtOnce". Information only. |
+| `endedBy` | How the pour ended: `served`, `restart`, `modeChange`, or `navigate` (left the station mid-pour; M3). |
 | `events` | Each action as it happened: `straighten` (= `straightenBegan`) and every full tap close (`stop`), with the verdict shown. |
 | `finalLevel` / `finalHead` | What was scored. |
 
@@ -254,21 +293,30 @@ modules) so `index.html` still opens by double-click from disk.
 
 | File | What it is |
 |---|---|
-| `index.html` | Shell: shared CSS, the station's markup as a `<template>`, and a three-line boot |
+| `index.html` | The standalone Pilsner station: a stylesheet link, a host element and a three-line boot |
+| `brewery.html`, `js/brewery.js`, `css/brewery.css` | The brewery app (M3): hub, hash router, station mounting |
+| `js/progress.js` | Versioned training progress on this device (`RiversideProgress`) |
+| `css/pilsner-station.css` | The station's styles, scoped to its host (`.pp-st`) |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
-| `css/tokens.css`, `css/components.css` | M2 visual system: colour, type, spacing tokens and the shared components (not yet used by the game) |
+| `css/tokens.css`, `css/components.css` | M2 visual system: colour, type, spacing tokens and the shared components (used by the hub; the station adopts them in M5) |
 | `design/` | M2 review pages and backdrops (see above) |
-| `js/pilsner-station.js` | The Pilsner station: renderer (`Renderer.render(state, view)`, inline SVG, read-only on sim state), pad input, Watch/Guided/Solo, result sheet and debrief, live region, pour log (`perfectPour.log.v2.3`), debug panel. |
+| `js/pilsner-station.js` | The Pilsner station (markup included): renderer (`Renderer.render(state, view)`, inline SVG, read-only on sim state), pad input, Watch/Guided/Solo, result sheet and debrief, live region, pour log (`perfectPour.log.v2.3`), debug panel. |
 
 The station is a component:
 
 ```js
-const station = PilsnerStation.mount(hostElement, { search: '?angle=staged' });
-station.unmount();   // removes its markup, loop, timers and every window/document listener
+const station = PilsnerStation.mount(hostElement, {
+  search: '?angle=staged',                 // optional: URL-style options
+  onExit: () => { /* "‹ Bar" pressed */ }, // optional: adds the back button
+  onEvent: (type, detail) => {}            // 'served' {mode, pass} | 'abandoned' {mode, reason}
+});
+station.unmount('navigate');  // closes the tap, abandons an unserved pour, removes its
+                              // markup, loop, timers and every window/document listener;
+                              // returns { abandoned }
 ```
 
-The brewery shell (later milestones) mounts and unmounts stations; the
-station never needs to know about it.
+The brewery app (`js/brewery.js`) mounts and unmounts stations; the station
+knows nothing about the hub.
 
 ## Still open
 

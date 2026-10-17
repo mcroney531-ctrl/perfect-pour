@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>The Bar · Riverside Brewing Co.</title>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pilsner-station.css">
+<link rel="stylesheet" href="css/brewery.css">
+</head>
+<body>
+<!-- Brand symbols shared by the hub (same as design/components.html). -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="pp-emblem" viewBox="0 0 64 64">
+      <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M32 6v6M32 9c4-3 9-3 12-1-3 3-8 4-12 1"/>
+        <path d="M32 12C46 18 48 38 32 58 16 38 18 18 32 12Z"/>
+        <path d="M23 21l9-7 9 7M20 29l12-8 12 8M21 37l11-8 11 8M24 45l8-7 8 7M28 52l4-4 4 4"/>
+      </g>
+    </symbol>
+    <linearGradient id="pp-gold-metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe39a"/><stop offset="0.45" stop-color="#e7b143"/><stop offset="1" stop-color="#9a6a17"/>
+    </linearGradient>
+    <!-- Mini glasses for station cards. Pilsner matches the game's glass A shape. -->
+    <symbol id="pp-glass-pils" viewBox="0 0 46 72">
+      <path d="M8 4 L38 4 L33 64 L13 64 Z" fill="#f2b232"/><path d="M8 4 L38 4 L37.2 14 L8.8 14 Z" fill="#fbf2dd"/>
+      <path d="M6 2 L40 2 L34 66 L12 66 Z" fill="none" stroke="#e8f1ff" stroke-width="1.6"/><rect x="11" y="66" width="24" height="4" rx="1.5" fill="#cfd8e3"/>
+    </symbol>
+    <symbol id="pp-glass-hefe" viewBox="0 0 46 72">
+      <path d="M12 4 C6 20 18 30 14 44 C11 54 14 62 16 64 L30 64 C32 62 35 54 32 44 C28 30 40 20 34 4 Z" fill="#e9a74a" opacity="0.55"/>
+      <path d="M12 4 C6 20 18 30 14 44 C11 54 14 62 16 64 L30 64 C32 62 35 54 32 44 C28 30 40 20 34 4 Z" fill="none" stroke="#dfe4e6" stroke-width="1.6" stroke-dasharray="3 3"/>
+    </symbol>
+    <symbol id="pp-glass-stout" viewBox="0 0 46 72">
+      <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="#2a160c" opacity="0.6"/><path d="M9 4 L37 4 L36.6 10 L9.4 10 Z" fill="#e8d6b4" opacity="0.6"/>
+      <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="none" stroke="#dfe4e6" stroke-width="1.6" stroke-dasharray="3 3"/>
+    </symbol>
+  </defs>
+</svg>
+<div id="app-root"></div>
+
+<script src="js/sim.js"></script>
+<script src="js/pilsner-station.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/brewery.js"></script>
+</body>
+</html>

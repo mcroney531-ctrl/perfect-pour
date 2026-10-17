@@ -1,0 +1,54 @@
+/* Brewery hub (M3). Portrait first: a stage at the illustration's aspect
+   ratio, sized to fit the screen's height as well as its width, with the
+   station cards placed over it in percentages. */
+.hub {
+  height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
+  background: radial-gradient(120% 70% at 50% 0%, #1b2326, var(--pp-charcoal-950));
+  color: var(--pp-text); font-family: var(--pp-font-ui);
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+           max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.hub__top { width: min(100%, 460px); display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+.hub__emblem { width: 40px; height: 40px; color: var(--pp-gold-400); }
+.hub__titles .pp-label { margin: 0; }
+.hub__title { margin: 2px 0 0; font-size: var(--pp-fs-h1); }
+.hub__title:focus { outline: none; }
+.hub__score { margin: 0; text-align: right; font-size: var(--pp-fs-small); color: var(--pp-text-muted); line-height: 1.15; }
+.hub__score b { font: 800 1.6rem/1 var(--pp-font-display); color: var(--pp-text); margin-right: 3px; }
+.hub__score span { display: block; }
+.hub__lede { width: min(100%, 460px); margin: 0; color: var(--pp-text-muted); font-size: 0.95rem; }
+
+.hub__stage {
+  position: relative; flex: none;
+  width: min(100%, 460px, calc((100dvh - 150px) * 390 / 560)); min-width: min(100%, 300px);
+  aspect-ratio: 390 / 560; border-radius: var(--pp-radius-lg); overflow: hidden;
+  box-shadow: 0 0 0 1px #243033, var(--pp-shadow);
+}
+.hub__art { position: absolute; inset: 0; pointer-events: none; width: 100%; height: 100%; display: block; }
+.hub__stations { list-style: none; margin: 0; padding: 0; }
+.hub__stations li { position: absolute; width: 47%; }
+.hub__card { width: 100%; min-width: 0; padding: 8px 10px 10px 8px; gap: 3px 10px; }
+.hub__card .pp-station__art { width: 34px; height: 54px; }
+.hub__card .pp-station__name { font-size: 1.15rem; }
+.hub__card .pp-chip { justify-self: start; }
+.hub__card.is-preview { opacity: 0.78; }
+.hub__card.is-preview, .hub__rush { cursor: default; }
+.hub__rush-item { left: 50%; bottom: 3%; transform: translateX(-50%); width: 56% !important; }
+.hub__rush { width: 100%; min-height: 56px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 10px;
+  color: var(--pp-text-muted); font: inherit; border-style: dashed; }
+.hub__rush-name { font: 800 1.2rem/1 var(--pp-font-display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--pp-steel-200); }
+.hub__rush:focus-visible { outline: 3px solid #8fd0ff; outline-offset: 3px; }
+
+/* Counter hotspots under each card: colour plus line style, never colour alone. */
+.hub-ring { fill: none; stroke-width: 2; }
+.hub-ring--new { stroke: var(--pp-gold-400); }
+.hub-ring--inProgress { stroke: var(--pp-progress); }
+.hub-ring--certified { stroke: var(--pp-ok); }
+.hub-ring--preview { stroke: var(--pp-steel-600); stroke-dasharray: 4 4; }
+@media (prefers-reduced-motion: no-preference) {
+  .hub-ring.is-recommended { animation: hub-breathe 3.2s ease-in-out infinite; }
+}
+@keyframes hub-breathe { 50% { stroke-width: 3.5; stroke-opacity: 0.6; } }
+
+.hub__notice { width: min(100%, 460px); min-height: 1.4em; margin: 2px 0 0; text-align: center; color: var(--pp-gold-300); font-weight: 600; font-size: 0.92rem; }
