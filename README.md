@@ -229,7 +229,8 @@ Nothing in the game changed. These are review pages:
 - **Frame layout** is a proposal for M5, not the current station layout: the
   scene spans the full width, the caption sits on top and the pad below the
   bar. The station's own layout is untouched.
-- `design/backdrops/pilsner-r2.png`: revision 2 from the brief, now the composite's default backdrop.
+- `design/backdrops/pilsner-r2.png`: revision 2 from the brief; `pilsner-r3.png`: its retouch (tray dimmed,
+  gauge corner cleared, calmer field behind the faucet), now the composite's default backdrop.
 - Backdrop art brief (revision 2, agreed): [`docs/art-brief-pilsner-backdrop.md`](docs/art-brief-pilsner-backdrop.md).
 - Carried to M3 unchanged: what happens if the player leaves mid-pour (close
   the tap, then record or deliberately discard the attempt).
