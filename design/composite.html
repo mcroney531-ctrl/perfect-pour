@@ -76,6 +76,7 @@
     </fieldset>
     <fieldset>
       <legend>Backdrop</legend>
+      <label><input type="radio" name="bg" value="r2"> Revision 2 (art brief)</label>
       <label><input type="radio" name="bg" value="temp"> Temporary (M2)</label>
       <label><input type="radio" name="bg" value="flat"> Flat charcoal</label>
       <label><input type="radio" name="bg" value="checker"> Checker (shows transparency)</label>
@@ -118,7 +119,7 @@
   // Fixed frame layout (a proposal for M5, not the current station layout):
   // the scene spans the full width; the bar top sits at y 494, the pad below 560.
   const LAYOUT = { stageTop: 64, stageHeight: 487, barY: 494, controlsTop: 560 };
-  const BACKDROPS = { temp: 'backdrops/temp-pilsner.svg', flat: null, checker: null };
+  const BACKDROPS = { r2: 'backdrops/pilsner-r2.png', temp: 'backdrops/temp-pilsner.svg', flat: null, checker: null };
   // Warm grade: pulls the cool white glass highlights and the cream foam
   // toward the amber room light, without touching the training overlays.
   const GRADE = '1.03 0.03 0 0 0  0 0.98 0.02 0 0  -0.02 0.03 0.84 0 0  0 0 0 1 0';
@@ -126,7 +127,7 @@
   const params = new URLSearchParams(location.search);
   const S = {
     fx: pick(params.get('fx'), ['original', 'grade', 'shadow', 'all'], 'original'),
-    bg: params.get('bg') || 'temp',
+    bg: params.get('bg') || 'r2',
     ui: pick(params.get('ui'), ['stage', 'play'], 'stage'),
     mode: pick(params.get('mode'), ['watch', 'guided', 'solo'], 'watch'),
     zones: params.get('zones') === '1',

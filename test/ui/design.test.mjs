@@ -23,7 +23,7 @@ test('component sheet loads with its fonts and no errors', async () => {
 });
 
 test('composite: the live game runs over the backdrop, unmodified, and the demo still passes', async () => {
-  const h = await openPage(browser, URL0 + '/design/composite.html?embed=1&fx=original');
+  const h = await openPage(browser, URL0 + '/design/composite.html?embed=1&fx=original&bg=temp');
   await h.run(300);
   const f = gameFrame(h);
   assert.ok(f, 'game iframe loaded');
