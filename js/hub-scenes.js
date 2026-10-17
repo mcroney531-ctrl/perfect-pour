@@ -27,17 +27,18 @@
       focus: [585, 1300]                // kept nearest the screen centre when cropping
     },
     desktop: {
-      // Candidate 1 (1672 x 941), installed for critique only: labelled
-      // provisional. The generated template is assets/hub/hub-desktop-provisional.svg.
-      src: 'assets/hub/hub-desktop-candidate1.webp', provisional: true,
+      // Landscape revision 2 (1672 x 941). The primary composition (16:9,
+      // Storyline). A retouch at 2560 x 1440 is requested; if its geometry is
+      // unchanged, scale these points by 2560 / 1672.
+      src: 'assets/hub/hub-desktop.webp', provisional: false,
       width: 1672, height: 941,
       stations: {
-        pilsner: { at: [240, 445], card: 'above' },
-        hefeweizen: { at: [835, 378], card: 'below' },   // above would cover the sign
-        stout: { at: [1445, 445], card: 'above' },
-        finalRush: { at: [837, 718] }
+        pilsner: { at: [265, 462], card: 'below', lift: 30 },     // left counter; cards sit on the calm counter fronts
+        hefeweizen: { at: [825, 398], card: 'below', lift: 20 },  // back counter, below the sign
+        stout: { at: [1410, 466], card: 'below', lift: 30 },      // right counter
+        finalRush: { at: [838, 738] }                             // floor medallion
       },
-      focus: [836, 470]
+      focus: [836, 520]
     }
   };
 

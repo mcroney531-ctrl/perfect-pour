@@ -2,7 +2,7 @@
    plate and the hotspots (see js/hub-scenes.js). Everything here is the
    live layer: header, station cards, rings, Final Rush, notices. */
 .hub {
-  --card-w: min(38vw, 176px);
+  --card-w: min(38vw, 176px); --ui: 1;
   position: relative; height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
   background: var(--pp-charcoal-950); color: var(--pp-text); font-family: var(--pp-font-ui);
 }
@@ -21,6 +21,11 @@
   display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start;
   padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 6px max(16px, env(safe-area-inset-left));
   max-width: 980px; margin: 0 auto;
+}
+/* Landscape: the header scales with the canvas like the cards. */
+.hub[data-scene="desktop"] .hub__top {
+  right: auto; width: calc(100% / var(--ui)); max-width: none; transform: scale(var(--ui)); transform-origin: 0 0;
+  padding-left: 28px; padding-right: 28px;
 }
 .hub__emblem { width: 36px; height: 36px; color: var(--pp-gold-400); margin-top: 2px; }
 .hub__titles .pp-label { margin: 0; }
@@ -52,7 +57,7 @@
 /* Station card: compact, dark and translucent, standing just above its ring. */
 .hub__card {
   position: absolute; left: var(--cx, 0); top: var(--cy, 0); width: var(--card-w); min-height: 44px;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(var(--ui)); transform-origin: 50% 0;
   display: grid; grid-template-columns: auto 1fr; column-gap: 7px; row-gap: 0; align-items: center;
   padding: 6px 8px 7px 6px; text-align: left; cursor: pointer; color: var(--pp-text); font: inherit;
   background: linear-gradient(180deg, rgba(21, 52, 44, 0.9), rgba(10, 26, 22, 0.92));
@@ -85,7 +90,7 @@
 
 /* ---- Final Rush: the locked capstone in the centre aisle ---- */
 .hub__rush {
-  position: absolute; left: var(--cx, 0); top: var(--cy, 0); transform: translateX(-50%);
+  position: absolute; left: var(--cx, 0); top: var(--cy, 0); transform: translateX(-50%) scale(var(--ui)); transform-origin: 50% 0;
   width: min(56vw, 230px); min-height: 44px; padding: 6px 12px 9px; cursor: default;
   display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; font: inherit;
   color: var(--pp-gold-400); border-radius: 22px;

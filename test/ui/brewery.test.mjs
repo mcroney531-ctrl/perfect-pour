@@ -195,7 +195,7 @@ const geometry = h => h.page.evaluate(() => {
 const overlap = (a, b) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
 
 for (const [w, hgt, expect] of [[360, 740, 'portrait'], [390, 844, 'portrait'], [412, 915, 'portrait'], [375, 667, 'portrait'],
-  [320, 568, 'portrait'], [768, 1024, 'portrait'], [1440, 900, 'desktop']]) {
+  [320, 568, 'portrait'], [768, 1024, 'portrait'], [1440, 900, 'desktop'], [1280, 720, 'desktop'], [1920, 1080, 'desktop']]) {
   test(`hub ${w}x${hgt}: ${expect} plate, hotspots on their anchors, nothing clipped or overlapping`, async () => {
     const h = await openPage(browser, APP(), { size: { width: w, height: hgt }, mobile: w < 1000 });
     await h.run(300);
@@ -233,7 +233,7 @@ test('hub switches plate when the screen turns, and hotspots follow', async () =
   await h.close();
 });
 
-test('portrait art loads unlabelled; provisional art is labelled; missing art is flagged and the hub still works', async () => {
+test('real art loads unlabelled in both layouts, the landscape UI scales with the canvas; missing art is flagged and the hub still works', async () => {
   // Portrait has its real plate: no label, and the art itself loads at full size.
   const h = await openPage(browser, APP());
   await h.run(200);
@@ -246,12 +246,19 @@ test('portrait art loads unlabelled; provisional art is labelled; missing art is
   }
   assert.deepEqual(size, [1170, 2532]);
   await h.close();
-  // Desktop is still a provisional template, and says so.
-  const d = await openPage(browser, APP(), { size: { width: 1440, height: 900 }, mobile: false });
-  await d.run(200);
-  assert.equal(await d.page.isVisible('#hubProvisional'), true);
-  assert.equal(await d.text('#hubProvisional'), 'Provisional art');
-  await d.close();
+  // Landscape (the primary, Storyline format) has its real plate too, and its
+  // UI scales with the canvas: 1x at 1280x720, 1.5x at 1920x1080.
+  for (const [w, hgt, ui] of [[1280, 720, 1], [1920, 1080, 1.5]]) {
+    const d = await openPage(browser, APP(), { size: { width: w, height: hgt }, mobile: false });
+    await d.run(200);
+    assert.equal(await d.page.isVisible('#hubProvisional'), false);
+    assert.match(await d.page.getAttribute('#hubPlate', 'src'), /hub-desktop\.webp$/);
+    const L = await d.page.evaluate(() => window.ppBrewery.layout());
+    assert.ok(Math.abs(L.ui - ui) < 1e-3, `ui scale ${L.ui} at ${w}x${hgt}`);
+    const cardW = await d.page.evaluate(() => document.querySelector('[data-station=pilsner]').getBoundingClientRect().width);
+    assert.ok(Math.abs(cardW - 176 * ui) < 2, `card ${cardW.toFixed(1)} px wide`);
+    await d.close();
+  }
   const b = await openPage(browser, APP());
   await b.page.route('**/assets/hub/**', r => r.abort());
   await b.page.reload(); await b.run(300);

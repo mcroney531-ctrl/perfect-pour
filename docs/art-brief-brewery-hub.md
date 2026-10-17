@@ -2,30 +2,19 @@
 
 For GPT and the user.
 
-**Status:** 16:9 landscape (1920 x 1080 design reference) is now the
-primary format: the app is embedded as a Web Object in Storyline 360, and the
-next hub review is the wide landscape plate with working station buttons. The
-portrait plate (candidate 1, `assets/hub/hub-portrait.webp`) stays live as the
-secondary layout; no further portrait polish for now. The landscape plate is
-still to come; the app shows a labelled provisional template for it
-(`design/hub-templates/hub-desktop-template.png`, anchors marked).
+**Status:** 16:9 landscape (1920 x 1080 design reference) is the primary
+format: the app is embedded as a Web Object in Storyline 360.
 
-**Landscape plate, in short:** a wide, cinematic view of the same U-shaped
-bar, modelled on the original storyboard; three clearly separated tap
-stations (left arm, back counter, right arm) and a Final Rush spot in the
-centre aisle; no cards, buttons, labels or glows baked in. Deliver
-2560 x 1440 if possible (sharper when the Storyline player scales up),
-otherwise 1920 x 1080; tell me where the four tap/medallion points ended up,
-or I'll measure them from the image.
-
-**Landscape candidate 1** (1672 x 941, `assets/hub/hub-desktop-candidate1.webp`)
-is installed for critique only, labelled provisional. Measured points:
-Pilsner tray (240, 445), Hefeweizen tray (835, 378), Stout tray (1445, 445),
-floor medallion (837, 718). Review findings: mirrored left/right (stations
-look identical), light spread evenly (many candles, glowing tanks; the beer
-would not be the brightest warm element), no calm space for cards, taps small
-and near the edges, stools inside the U (customer viewpoint; the portrait
-plate has the bartender's), ~40% empty foreground, below 1920 x 1080.
+- **Landscape: revision 2 installed** (`assets/hub/hub-desktop.webp`,
+  1672 x 941). All three cards sit below their drip trays, on the calm counter
+  fronts; Final Rush on the floor medallion. Requested retouch (revision 3):
+  same composition, a visibly different (darker, nitro-style) Stout tower,
+  a slightly dimmer tank-room window, exported at 2560 x 1440. If the
+  geometry is unchanged, the points below just scale by 2560 / 1672.
+- **Portrait: candidate 1 installed** (`assets/hub/hub-portrait.webp`), the
+  secondary layout; no further portrait polish for now.
+- Candidate 1 of the landscape plate was reviewed and superseded (mirrored
+  sides, evenly spread light, no calm card space, customer viewpoint).
 
 ## What the plates are
 
@@ -67,20 +56,20 @@ the cards are staggered: the Hefeweizen card floats above its tap tower
 (slid right to clear the sign) and the Pilsner and Nitro Stout cards sit just
 below their drip trays, on the counter. Final Rush sits on the floor medallion.
 
-| | Portrait 1170 x 2532 (delivered) | Card | Desktop 1920 x 1080 (requested) |
-|---|---|---|---|
-| 1 Pilsner tap (near left) | (115, 1095) | below the tray | (600, 650) |
-| 2 Hefeweizen tap (back centre) | (587, 935) | above the tower, slid right | (960, 480) |
-| 3 Nitro Stout tap (near right) | (1065, 1095) | below the tray | (1320, 650) |
-| 4 Final Rush medallion (centre aisle) | (584, 1772) | centred | (960, 905) |
+| | Portrait 1170 x 2532 | Portrait card | Landscape 1672 x 941 (revision 2) | Landscape card |
+|---|---|---|---|---|
+| 1 Pilsner tap | (115, 1095) | below the tray | (265, 462) | below the tray |
+| 2 Hefeweizen tap | (587, 935) | above the tower, slid right | (825, 398) | below the tray |
+| 3 Nitro Stout tap | (1065, 1095) | below the tray | (1410, 466) | below the tray |
+| 4 Final Rush medallion | (584, 1772) | centred | (838, 738) | centred |
 
 For a future portrait revision, keep these four points (or say where they
 moved). What to keep calm: the counter tops just below the side trays and
 the area right of the sign above the back tower (cards sit there), and the
 floor medallion (Final Rush sits on it).
 
-Desktop zones: cards cover about 230 x 120 px above each anchor; keep the
-anchor points visible and the space above them calm.
+Landscape: cards (about 264 x 120 px at 1920 x 1080) sit just below each
+drip tray, on the counter fronts; keep those calm.
 
 If the composition works better with an anchor moved, move it and say where:
 the stations are one table in `js/hub-scenes.js`, and the app re-maps them

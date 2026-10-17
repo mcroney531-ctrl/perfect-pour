@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation (61) + hub layout (16), Node 18+, no installs
-npm run test:ui     # browser: 34 Playwright tests (npm install first)
+npm run test:ui     # browser: 36 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -212,12 +212,13 @@ links and the composite page use it); M4 can make the app the front door.
   order, standing on a ring at their anchor; Final Rush is a locked medallion
   in the centre aisle. On very small screens the hub scrolls rather than
   stacking cards.
-- **Art status:** portrait plate delivered (`assets/hub/hub-portrait.webp`,
-  candidate 1, in review) with its stations mapped to the art. The desktop
-  plate is still a provisional template generated from the station table
-  (`node tools/make-hub-plates.mjs`), labelled "Provisional art" on screen.
-  Spec: [`docs/art-brief-brewery-hub.md`](docs/art-brief-brewery-hub.md);
-  templates in `design/hub-templates/`.
+- **Art status:** 16:9 landscape is the primary format (Storyline Web
+  Object). Landscape plate revision 2 (`assets/hub/hub-desktop.webp`) and
+  portrait candidate 1 (`assets/hub/hub-portrait.webp`) are live with their
+  stations mapped to the art; a landscape retouch at 2560 x 1440 is pending.
+  On landscape the live UI scales with the canvas (1x at 1280 x 720, 1.5x at
+  1920 x 1080, never below 1x). Spec:
+  [`docs/art-brief-brewery-hub.md`](docs/art-brief-brewery-hub.md).
 - **Progress states:** new ("Start here", green) → in progress ("Continue",
   blue) → certified ("Replay", M6 only). Hefeweizen and Nitro Stout show a
   dashed "Coming soon" chip and no Start. The state is in words on the card

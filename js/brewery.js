@@ -121,12 +121,16 @@
     if (!vw || !vh) return;
     setPlate(pickScene(vw, vh));
     const sc = SCENES[sceneName];
+    // Landscape (the Storyline frame) scales the live UI with the canvas:
+    // 1 at 1280 x 720, 1.5 at 1920 x 1080; never below 1 (touch targets).
+    const ui = sceneName === 'desktop' ? Math.min(1.75, Math.max(1, Math.min(vw / 1280, vh / 720))) : 1;
+    hub.style.setProperty('--ui', ui.toFixed(4));
     const cards = [...hub.querySelectorAll('.hub__card')];
-    const card = { w: Math.max(...cards.map(c => c.offsetWidth)), h: Math.max(...cards.map(c => c.offsetHeight)) };
+    const card = { w: Math.max(...cards.map(c => c.offsetWidth)) * ui, h: Math.max(...cards.map(c => c.offsetHeight)) * ui };
     const rushEl = document.getElementById('rushBtn');
-    const rush = { w: rushEl.offsetWidth, h: rushEl.offsetHeight };
-    const L = layoutScene(sc, vw, vh, { ...ROOM, top: top.offsetHeight + 8 }, card, rush);
-    lastLayout = { scene: sceneName, ...L, card };
+    const rush = { w: rushEl.offsetWidth * ui, h: rushEl.offsetHeight * ui };
+    const L = layoutScene(sc, vw, vh, { ...ROOM, top: top.offsetHeight * ui + 8 }, card, rush);
+    lastLayout = { scene: sceneName, ...L, card, ui };
     canvas.style.height = L.height + 'px';
     const img = plate.style;
     img.left = L.ox + 'px'; img.top = L.oy + 'px';
