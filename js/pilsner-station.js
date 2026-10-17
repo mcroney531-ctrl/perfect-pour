@@ -9,6 +9,237 @@
 (function (global) {
   'use strict';
 
+  // The station's markup. Lives here (not in a <template> on one page) so any
+  // page can mount the station; styles are in css/pilsner-station.css.
+  const MARKUP = `
+<div id="app">
+  <header>
+    <div class="brand">Perfect Pour<small>Pilsner · v2.3</small></div>
+    <button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" aria-label="Debug panel" hidden>⚙</button>
+    <nav id="modes" aria-label="Mode">
+      <button type="button" data-mode="watch">Watch</button>
+      <button type="button" data-mode="guided">Guided</button>
+      <button type="button" data-mode="solo">Solo</button>
+    </nav>
+  </header>
+
+  <p id="caption"></p>
+
+  <div id="stage">
+    <svg id="scene" viewBox="0 -24 340 424" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="sceneTitle sceneDesc">
+      <title id="sceneTitle">Pilsner glass under the tap.</title>
+      <desc id="sceneDesc">Level and head are announced as you pour.</desc>
+      <defs>
+        <clipPath id="glassClip" clipPathUnits="userSpaceOnUse"><polygon id="clipPoly" points="0,0"/></clipPath>
+        <linearGradient id="beerGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f7c948"/>
+          <stop offset="0.6" stop-color="#e7a526"/>
+          <stop offset="1" stop-color="#c9811a"/>
+        </linearGradient>
+        <pattern id="foamPat" width="9" height="8" patternUnits="userSpaceOnUse">
+          <circle cx="2.5" cy="2.5" r="1.7" fill="#e9dcbd"/>
+          <circle cx="7" cy="6" r="1.2" fill="#ece1c6"/>
+        </pattern>
+        <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#f6eedf" stroke-width="1.4"/>
+        </pattern>
+        <!-- Faucet materials: warm brushed metal, not cold chrome. -->
+        <linearGradient id="metalH" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f3ead9"/><stop offset="0.45" stop-color="#cdc2ae"/><stop offset="1" stop-color="#857b6c"/>
+        </linearGradient>
+        <linearGradient id="metalV" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#8a8072"/><stop offset="0.3" stop-color="#efe5d2"/><stop offset="0.62" stop-color="#cbbfab"/><stop offset="1" stop-color="#7d7466"/>
+        </linearGradient>
+        <linearGradient id="handleWood" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#2e1a0d"/><stop offset="0.38" stop-color="#6e4325"/><stop offset="0.7" stop-color="#57331b"/><stop offset="1" stop-color="#2a170b"/>
+        </linearGradient>
+        <radialGradient id="nozzleGlow">
+          <stop offset="0" stop-color="#ffd877" stop-opacity="0.85"/><stop offset="1" stop-color="#ffd877" stop-opacity="0"/>
+        </radialGradient>
+        <!-- Foam shading for the candidate glasses; y1/y2 follow the head each frame. -->
+        <linearGradient id="foamGrad" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="10">
+          <stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#ecdcb8"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Tap: illustrated brewery faucet in named parts (shank, nut, body,
+           spout, handle with a swappable badge). The handle follows sim
+           flow, so the 150 ms ramp is visible; the nozzle glows while the
+           tap is open. Stream starts at the nozzle, (210, 72). -->
+      <g id="tap" stroke="#24170d" stroke-width="1.6" stroke-linejoin="round">
+        <rect id="tapShank" x="224" y="28" width="130" height="17" rx="8.5" fill="url(#metalH)"/>
+        <path d="M232,32 L340,32" stroke="#fffaf0" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+        <rect id="tapNut" x="219" y="23" width="12" height="27" rx="3" fill="url(#metalV)"/>
+        <path id="tapBody" d="M195,31 Q195,22 204,22 L216,22 Q225,22 225,31 L225,49 Q225,57 218,59 L216,62 L204,62 L202,59 Q195,57 195,49 Z" fill="url(#metalV)"/>
+        <path d="M200,30 L200,50" stroke="#fffaf0" stroke-opacity="0.7" stroke-width="2.2" stroke-linecap="round"/>
+        <path id="tapSpout" d="M203.5,61 L216.5,61 L214.5,70 Q210,73.5 205.5,70 Z" fill="url(#metalV)"/>
+        <ellipse cx="210" cy="71" rx="3.4" ry="1.4" fill="#120b06" stroke="none"/>
+        <circle id="tapGlow" cx="210" cy="74" r="7" fill="url(#nozzleGlow)" stroke="none" opacity="0"/>
+        <g id="handle">
+          <rect x="206" y="12" width="8" height="12" rx="2" fill="url(#metalV)"/>
+          <path id="tapHandle" d="M203.5,13 L201,-11 Q201,-20 210,-21 Q219,-20 219,-11 L216.5,13 Z" fill="url(#handleWood)"/>
+          <rect id="tapBadge" x="204" y="-12.5" width="12" height="20" rx="3" fill="#a5392b" stroke="#f2d9a6" stroke-width="1"/>
+          <text id="tapLabel" x="210" y="0" text-anchor="middle" font-size="6.5" font-weight="800" stroke="none"
+                transform="rotate(-90 210 -2.5)" style="fill:#f8e6c0; letter-spacing:0.04em">PILS</text>
+          <ellipse cx="210" cy="-20" rx="6.5" ry="2" fill="#8a5a33" stroke-width="1.2"/>
+        </g>
+      </g>
+
+      <!-- Glass art that sits behind the beer (back wall), same transform as #glass. -->
+      <g id="glassBack"><g id="glassBackArt"></g></g>
+
+      <g clip-path="url(#glassClip)">
+        <path id="foamFill" fill="#fbf4e2"/>
+        <path id="foamTex" fill="url(#foamPat)"/>
+        <path id="beerFill" fill="url(#beerGrad)"/>
+        <path id="beerShine" fill="none" stroke="#fff0bf" stroke-opacity="0.6" stroke-width="1.3"/>
+        <g id="bubbles" fill="#fff6d2" fill-opacity="0.7"></g>
+      </g>
+      <path id="stream" fill="none" stroke="#eaa72c" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="streamCore" fill="none" stroke="#fde6a0" stroke-opacity="0.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <g id="splash" fill="#fbf4e2"></g>
+      <path id="spill" fill="none" stroke="#fbf4e2" stroke-width="4" stroke-linecap="round"/>
+
+      <g id="glass">
+        <!-- Glass artwork. Swapped by the glass treatment (?glass=a|b); the
+             training overlays below always draw on top of it. -->
+        <g id="glassArt">
+          <path id="glassBody" fill="rgba(210,228,255,0.07)" stroke="rgba(230,240,255,0.8)" stroke-width="2.5" stroke-linejoin="round"/>
+          <path id="glassInner" fill="none" stroke="rgba(230,240,255,0.35)" stroke-width="1"/>
+          <path d="M-33,-205 L-21,-34" stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <!-- Target zone: hatched band plus a dashed line plus a label, so it
+             does not rely on colour (spec §6). -->
+        <polygon id="zoneBand" fill="url(#hatch)" fill-opacity="0.45" stroke="#f6eedf" stroke-width="0.8" stroke-dasharray="2 2"/>
+        <line id="fillLine" stroke="#f6eedf" stroke-width="1.6" stroke-dasharray="5 3"/>
+        <text id="fillLabel" font-size="10" font-weight="700" text-anchor="end">LINE</text>
+        <text id="stopLabel" font-size="9" font-weight="700" style="fill:#f6eedf">STOP</text>
+        <!-- Training mark only: real glassware has no such line. Shown in Watch
+             and Guided so the learner links "about half to two-thirds" to what
+             they see; gone in Solo, where they judge it by eye. -->
+        <g id="bringMark">
+          <polygon id="bringBand" fill="rgba(159,220,138,0.18)" stroke="#9fdc8a" stroke-width="1.4" stroke-dasharray="1 2.5"/>
+          <text id="bringLabel" font-size="9" font-weight="700" style="fill:#9fdc8a">▲ BRING UP</text>
+        </g>
+        <!-- Where the player acted, drawn at the level they acted at. Watch and
+             Guided only; Solo sees the same marks in the debrief instead. -->
+        <g id="actMarks">
+          <g id="markStraighten" style="display:none">
+            <line id="markStraightenLine" stroke="#9fdc8a" stroke-width="3" stroke-linecap="round"/>
+            <text id="markStraightenText" font-size="8.5" font-weight="700" style="fill:#9fdc8a"></text>
+          </g>
+          <g id="markStop" style="display:none">
+            <line id="markStopLine" stroke="#f6eedf" stroke-width="3" stroke-linecap="round"/>
+            <text id="markStopText" font-size="8.5" font-weight="700" style="fill:#f6eedf"></text>
+          </g>
+        </g>
+      </g>
+
+      <!-- Head gauge: the head band is a thickness, not a place on the glass,
+           so it gets its own scale. Top-left is the one corner the glass never
+           reaches at any tilt. -->
+      <g id="gauge">
+        <text x="23" y="30" text-anchor="middle" font-size="10" font-weight="700">HEAD</text>
+        <rect x="14" y="38" width="18" height="140" rx="3" fill="rgba(255,255,255,0.04)" stroke="#5c4a37" stroke-width="1.5"/>
+        <rect id="gaugeBar" x="16" width="14" rx="2" fill="#fbf4e2"/>
+        <rect id="gaugeBarTex" x="16" width="14" fill="url(#foamPat)"/>
+        <rect id="gaugeBand" x="10" width="26" fill="url(#hatch)" fill-opacity="0.55" stroke="#f6eedf" stroke-width="1.2"/>
+        <text id="gaugeHi" x="40" font-size="9"></text>
+        <text id="gaugeLo" x="40" font-size="9"></text>
+        <text id="gaugeVal" x="10" y="196" font-size="12" font-weight="700" style="fill:#f6eedf"></text>
+        <text id="gaugeState" x="10" y="209" font-size="9"></text>
+      </g>
+      <text id="levelText" x="10" y="228" font-size="11"></text>
+    </svg>
+  </div>
+
+  <section id="controls" aria-label="Pour controls">
+    <div id="angleCtl">
+      <div id="sliderWrap">
+        <div class="ctl-head"><label for="angleSlider">Glass angle</label><output id="angleOut" for="angleSlider">0°</output></div>
+        <input type="range" id="angleSlider" min="0" max="60" step="1" value="0" aria-valuetext="0 degrees, upright">
+        <div class="ticks" aria-hidden="true"><span style="left:0">Upright 0°</span><span style="left:75%">45°</span><span style="left:100%;transform:translateX(-100%)">60°</span></div>
+      </div>
+      <div id="toggleWrap" hidden>
+        <button type="button" id="angleToggle" role="switch" aria-checked="false" aria-label="Tilt the glass to 45 degrees">
+          <span class="opt opt-up" aria-hidden="true">Upright</span>
+          <span class="opt opt-tilt" aria-hidden="true">Tilted ~45°</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="pourRow">
+      <button type="button" id="pour" aria-pressed="false" aria-describedby="pourHelp">
+        <span class="padText"><span id="pourText">Hold to pour</span><span class="sub" id="pourSub"></span></span>
+        <span id="padTrack" aria-hidden="true"><span id="padThumb"></span></span>
+        <span id="padFinger" aria-hidden="true" hidden></span>
+      </button>
+      <label class="tapmode"><input type="checkbox" id="tapMode"><span>Tap to start/stop pouring</span></label>
+    </div>
+    <p id="pourHelp" class="sr-only">Hold the button, or hold Space or Enter, to pour. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass and to bring it upright.</p>
+
+    <div id="actions">
+      <button type="button" id="serve" disabled>Serve<kbd>S</kbd></button>
+      <button type="button" id="restart">Restart<kbd>R</kbd></button>
+    </div>
+
+    <div id="ghostActions" hidden>
+      <button type="button" id="replay">Replay</button>
+      <button type="button" id="skip">Skip to Guided</button>
+    </div>
+    <div id="transcriptBox" hidden>
+      <span id="transcriptTitle">Steps in this demo</span>
+      <ol id="transcript" aria-labelledby="transcriptTitle"></ol>
+      <p class="fineprint">Two bands on the training glass: <b>BRING UP</b> (start bringing the glass upright when the beer gets there) and <b>LINE</b> (stop). BRING UP is a training mark that real glasses don't have; on the job, judge it by eye: about half to two-thirds full. Keep holding the pad the whole time: slide up and the glass comes up; stop sliding and it holds its angle while the beer keeps flowing.</p>
+    </div>
+  </section>
+</div>
+
+<section id="result" aria-labelledby="resultTitle" hidden>
+  <h2 id="resultTitle"></h2>
+  <h3 class="chk-head">Technique</h3>
+  <ul id="checksTech" class="checks two"></ul>
+  <h3 class="chk-head">The pour</h3>
+  <ul id="checks" class="checks"></ul>
+  <div id="debrief">
+    <svg id="debriefGlass" viewBox="0 0 120 150" aria-hidden="true"></svg>
+    <p id="debriefText"></p>
+  </div>
+  <p id="fbPrimary"></p>
+  <p id="fbSecondary" hidden></p>
+  <p id="suggest" hidden></p>
+  <p class="fineprint">Prototype: the steps follow common beer-service guidance (see docs/pour-procedure.md); the exact numbers are placeholders, not yet checked first-hand.</p>
+  <div id="resultActions"></div>
+</section>
+
+<div id="live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<aside id="debug" aria-label="Debug panel" hidden>
+  <div class="warn">verified: false · all constants are placeholders</div>
+  <h3>Angle control</h3>
+  <select id="dbgVariant" aria-label="Angle control variant">
+    <option value="staged">A: staged (swipe up to straighten)</option>
+    <option value="continuous">B: continuous (slide to tilt)</option>
+    <option value="slider">v1 fallback: slider</option>
+    <option value="toggle">v1 fallback: switch only</option>
+  </select>
+  <h3>Live state</h3>
+  <pre id="dbgState"></pre>
+  <h3>Pilsner constants</h3>
+  <div class="grid" id="dbgCfg"></div>
+  <h3>Control feel</h3>
+  <div class="grid" id="dbgCtl"></div>
+  <button type="button" id="dbgReset">Reset constants</button>
+  <button type="button" id="dbgGhost">Run ghost check</button>
+  <pre id="dbgGhostOut"></pre>
+  <h3>Pour log</h3>
+  <div id="dbgLogCount"></div>
+  <button type="button" id="dbgDownload">Download JSON</button>
+  <button type="button" id="dbgCopy">Copy JSON</button>
+  <button type="button" id="dbgClear">Clear log</button>
+</aside>
+`;
+
   function mount(host, opts = {}) {
     const { STEP, PILSNER, CONTROL, GLASS, initState, step, total, canServe, evaluate, feedback,
       GHOST, GHOST_STEPS, inputAt, HINTS, guidedHints, surfaceAt, zoneAt, levelOf, headOf, VERDICT_TEXT,
@@ -17,8 +248,10 @@
     // is scoped to the host, and everything registered outside it (window and
     // document listeners, the animation loop, timers) is tracked so unmount()
     // can take it all back out.
-    const tpl = document.getElementById(opts.template || 'pp-pilsner-station');
-    host.appendChild(tpl.content.cloneNode(true));
+    const tpl = opts.template && document.getElementById(opts.template);
+    if (tpl) host.appendChild(tpl.content.cloneNode(true));
+    else host.insertAdjacentHTML('beforeend', MARKUP);
+    host.classList.add('pp-st');
     const $ = id => host.querySelector('#' + id);
     const params = new URLSearchParams(opts.search ?? location.search);
     let alive = true, rafId = 0;
@@ -972,6 +1205,7 @@
       stopPour();
       disposers.splice(0).forEach(off => off());
       host.textContent = '';
+      host.classList.remove('pp-st');
     }
 
     setVariant(variant);

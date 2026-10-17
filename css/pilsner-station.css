@@ -1,0 +1,223 @@
+/* Pilsner station styles. Moved out of index.html in M3 so the brewery
+   shell can mount the station too. Every rule is scoped to .pp-st (the
+   class mount() puts on its host), except the page-level basics. */
+:root {
+  --bg: #1b1510; --panel: #2a2119; --panel-2: #33281e; --ink: #f6eedf; --muted: #c9b89c;
+  --line: #5c4a37; --accent: #f2b632; --accent-ink: #1b1510; --focus: #8fd0ff;
+  --good: #9fdc8a; --bad: #ff9b85;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* No page scroll and no rubber-band: every pixel of a phone in portrait is
+   spoken for, and a bounce mid-pour reads as the glass jumping. Scrolling is
+   re-allowed only inside the panels that need it (result sheet, debug). */
+html, body {
+  margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none; user-select: none; -webkit-text-size-adjust: 100%;
+}
+[hidden] { display: none !important; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.pp-st button, .pp-st input, .pp-st select { font: inherit; color: inherit; }
+/* 44 px floor on every target (spec §6). manipulation kills double-tap zoom,
+   which otherwise eats the second of two quick taps on Restart or the toggle. */
+.pp-st button {
+  min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 12px;
+  border: 2px solid var(--line); background: var(--panel); cursor: pointer;
+  touch-action: manipulation;
+}
+.pp-st button:disabled, .pp-st button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+.pp-st :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.pp-st kbd {
+  font: 600 0.75em/1 ui-monospace, monospace; padding: 2px 5px; margin-left: 6px;
+  border: 1px solid currentColor; border-radius: 4px; opacity: 0.7;
+}
+/* Key hints are clutter on a phone, where there is no keyboard to press. */
+@media (hover: none) { .pp-st kbd { display: none; } }
+
+.pp-st #app {
+  height: 100vh; height: 100dvh;
+  max-width: 520px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+           max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+.pp-st header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pp-st .brand { font-weight: 800; letter-spacing: 0.01em; line-height: 1.1; }
+.pp-st .brand small { display: block; font-weight: 500; color: var(--muted); font-size: 0.75rem; }
+/* The mode switcher doubles as the always-visible mode label (spec §1). */
+.pp-st #modes { display: flex; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pp-st #modes button { border: 0; border-radius: 0; background: transparent; padding: 0 12px; font-weight: 600; }
+.pp-st #modes button + button { border-left: 2px solid var(--line); }
+.pp-st #modes button[aria-current="true"] { background: var(--ink); color: var(--bg); }
+
+.pp-st #caption {
+  min-height: 2.8em; margin: 0; display: flex; align-items: center; justify-content: center;
+  text-align: center; font-weight: 700; font-size: 1.08rem;
+}
+.pp-st #caption.hint { color: var(--accent); }
+
+/* The pour button and the scene never scroll or zoom under a finger; a slip
+   sideways while holding must not turn into a pan (lesson from Dine-O Dash). */
+.pp-st #stage { position: relative; flex: 1 1 auto; min-height: 170px; touch-action: none; }
+.pp-st #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pp-st #scene text { font-family: system-ui, sans-serif; fill: var(--muted); }
+
+.pp-st #controls { display: flex; flex-direction: column; gap: 12px; }
+/* Space between the angle control and the pour button: a thumb heading for
+   one must not clip the other (spec §6, prototype question 3). */
+.pp-st #angleCtl { padding: 4px 8px; border-radius: 14px; border: 2px solid transparent; touch-action: none; }
+.pp-st #angleCtl.pulse { animation: pulse 0.9s ease-in-out infinite; border-color: var(--accent); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(242, 182, 50, 0.35); } }
+.pp-st .ctl-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; }
+.pp-st .ctl-head output { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+.pp-st input[type="range"] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin: 0;
+  background: transparent; touch-action: none; cursor: pointer;
+}
+.pp-st input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px; border-radius: 5px; background: var(--panel-2); border: 1px solid var(--line);
+}
+.pp-st input[type="range"]::-moz-range-track {
+  height: 10px; border-radius: 5px; background: var(--panel-2); border: 1px solid var(--line);
+}
+.pp-st input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 40px; height: 40px; margin-top: -16px; border-radius: 50%;
+  background: var(--ink); border: 4px solid var(--accent);
+}
+.pp-st input[type="range"]::-moz-range-thumb {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--ink); border: 4px solid var(--accent);
+}
+.pp-st .ticks { position: relative; height: 1.1em; font-size: 0.75rem; color: var(--muted); }
+.pp-st .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.pp-st .ticks span:first-child { transform: none; }
+
+.pp-st #angleToggle {
+  width: 100%; min-height: 52px; padding: 0; display: flex; overflow: hidden; border-radius: 14px;
+}
+.pp-st #angleToggle .opt {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-weight: 700; color: var(--muted);
+}
+/* The selected side is marked by fill, a tick and bold text, not hue alone. */
+.pp-st #angleToggle .opt::before { content: "○"; font-weight: 400; }
+.pp-st #angleToggle[aria-checked="false"] .opt-up,
+.pp-st #angleToggle[aria-checked="true"] .opt-tilt { background: var(--ink); color: var(--bg); }
+.pp-st #angleToggle[aria-checked="false"] .opt-up::before,
+.pp-st #angleToggle[aria-checked="true"] .opt-tilt::before { content: "●"; }
+
+.pp-st #pourRow { display: flex; gap: 10px; align-items: stretch; }
+.pp-st #pour {
+  flex: 1; min-height: 76px; font-size: 1.25rem; font-weight: 800;
+  background: var(--accent); color: var(--accent-ink); border-color: transparent;
+  touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.pp-st #pour[aria-pressed="true"] { background: #ffd877; box-shadow: inset 0 5px 0 rgba(0, 0, 0, 0.28); }
+.pp-st #pour .sub { display: block; font-size: 0.78rem; font-weight: 600; opacity: 0.8; }
+/* The pour pad: big enough for a thumb to rest on and slide. The track at
+   its right edge shows the glass angle (top = upright), so the thumb and the
+   glass report the same thing. */
+.pp-st #pour { position: relative; min-height: 112px; display: flex; align-items: center; justify-content: center; padding: 0 56px 0 16px; }
+.pp-st #pour.cue { box-shadow: 0 0 0 4px var(--ink); }
+.pp-st #pour:has(#padTrack[hidden]) { padding: 0 16px; }
+/* The demo thumb (Watch only). Its travel matches CONTROL.padTravel. */
+.pp-st #padFinger {
+  position: absolute; left: 18%; width: 38px; height: 46px; margin: -23px 0 0 -19px;
+  border-radius: 50% 50% 45% 45%; background: rgba(27, 21, 16, 0.22);
+  border: 2px solid rgba(27, 21, 16, 0.55); pointer-events: none; z-index: 0;
+}
+.pp-st #pour .padText { position: relative; z-index: 1; }
+.pp-st #padTrack { position: absolute; right: 16px; top: 14px; bottom: 14px; width: 8px; border-radius: 4px; background: rgba(27, 21, 16, 0.25); }
+.pp-st #padThumb { position: absolute; left: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--accent-ink); border: 3px solid #fff6dc; }
+.pp-st #padTrack::before { content: "▲"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); font-size: 9px; opacity: 0.6; }
+.pp-st .tapmode {
+  width: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; text-align: center; font-size: 0.72rem; line-height: 1.15; color: var(--muted);
+  border: 2px solid var(--line); border-radius: 12px; padding: 4px; cursor: pointer;
+}
+.pp-st .tapmode input { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); }
+
+.pp-st #actions, .pp-st #ghostActions { display: flex; gap: 10px; }
+.pp-st #actions button, .pp-st #ghostActions button { flex: 1; min-height: 48px; font-weight: 700; }
+/* During the demo the controls are locked but must stay fully visible: the
+   point is to watch them move. */
+.pp-st #controls.demo #pour, .pp-st #controls.demo #angleToggle, .pp-st #controls.demo #angleSlider { opacity: 1; pointer-events: none; }
+.pp-st #serve:not(:disabled) { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.pp-st #transcriptBox { font-size: 0.85rem; color: var(--muted); }
+.pp-st #transcript { margin: 4px 0 0; padding-left: 1.4em; }
+.pp-st #transcript li[aria-current="step"] { color: var(--ink); font-weight: 700; }
+.pp-st #transcript li[aria-current="step"]::marker { content: "▶ "; }
+.pp-st .fineprint { font-size: 0.72rem; color: var(--muted); margin: 4px 0 0; }
+
+/* Result sheet: slides over the controls, leaves the glass in view. */
+/* z-index: the sheet must sit above the pour pad, whose text is lifted
+   over the demo thumb (playtest: pad text showed through the sheet). */
+.pp-st #result {
+  position: fixed; z-index: 15; left: 50%; bottom: 0; transform: translateX(-50%);
+  width: min(520px, 100%); max-height: 72dvh; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--panel); border: 2px solid var(--line); border-bottom: 0;
+  border-radius: 18px 18px 0 0; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.5);
+  padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  -webkit-user-select: text; user-select: text;
+}
+.pp-st #result h2 { margin: 0 0 8px; font-size: 1.35rem; }
+.pp-st .chk-head { margin: 4px 0 4px; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.pp-st .checks { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pp-st .checks.two { grid-template-columns: repeat(2, 1fr); }
+.pp-st .checks li { border: 2px solid var(--line); border-radius: 10px; padding: 6px; font-size: 0.82rem; text-align: center; }
+.pp-st .checks li b { display: block; font-size: 1.0rem; }
+.pp-st .checks li.ok { border-color: var(--good); }
+.pp-st .checks li.miss { border-color: var(--bad); border-style: dashed; }
+.pp-st #fbPrimary { margin: 0 0 6px; font-size: 1.02rem; }
+/* Debrief: a little training glass with the two bands and where you acted. */
+.pp-st #debrief { display: flex; gap: 12px; align-items: center; margin: 2px 0 8px; }
+.pp-st #debriefGlass { width: 84px; height: 105px; flex: none; }
+.pp-st #debriefText { margin: 0; font-size: 0.9rem; color: var(--muted); min-width: 0; }
+.pp-st #debriefText b { color: var(--ink); }
+.pp-st #caption.verdict { color: var(--good); }
+.pp-st #fbSecondary { margin: 0 0 6px; color: var(--muted); font-size: 0.92rem; }
+.pp-st #suggest { margin: 0 0 6px; color: var(--accent); font-weight: 600; }
+.pp-st #resultActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pp-st #resultActions button { flex: 1 1 30%; min-height: 48px; font-weight: 700; }
+.pp-st #resultActions button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+
+/* Debug panel (?debug=1). Plain and dense on purpose. */
+.pp-st #debugToggle { position: relative; z-index: 20; padding: 0; margin-right: auto; }
+.pp-st #debug {
+  position: fixed; z-index: 19; top: 0; left: 0; width: min(380px, 100vw); max-height: 85dvh;
+  overflow-y: auto; overscroll-behavior: contain; padding: 64px 12px 12px;
+  background: rgba(15, 11, 8, 0.94); border: 1px solid var(--line); border-radius: 0 0 12px 0;
+  font: 12px/1.35 ui-monospace, Menlo, monospace; -webkit-user-select: text; user-select: text;
+}
+.pp-st #debug h3 { font: 700 12px/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 12px 0 6px; }
+.pp-st #debug pre { margin: 0; white-space: pre-wrap; }
+.pp-st #debug .grid { display: grid; grid-template-columns: 1fr 88px; gap: 4px 8px; align-items: center; }
+.pp-st #debug input, .pp-st #debug select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; width: 100%; -webkit-user-select: text; user-select: text; }
+.pp-st #debug button { min-height: 36px; font-size: 12px; padding: 0 10px; margin: 4px 4px 0 0; }
+.pp-st #debug .warn { color: var(--accent); }
+
+/* Landscape on a phone: glass on the left, everything you touch on the right. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .pp-st #app {
+    max-width: none; display: grid; column-gap: 20px; row-gap: 4px;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  .pp-st header { grid-column: 1 / -1; }
+  .pp-st #stage { grid-column: 1; grid-row: 2 / 4; }
+  .pp-st #caption { grid-column: 2; grid-row: 2; min-height: 2.4em; }
+  .pp-st #controls { grid-column: 2; grid-row: 3; overflow-y: auto; gap: 8px; }
+  .pp-st #pour { min-height: 84px; }
+}
+
+/* Reduced motion: no pulse, no bubbles, no wobble (the renderer checks the
+   same query). The pulse becomes a static dashed ring so the cue survives. */
+@media (prefers-reduced-motion: reduce) {
+  .pp-st #angleCtl.pulse, .pp-st #pour.cue { animation: none; border-style: dashed; box-shadow: none; }
+  .pp-st #pour.cue { outline: 4px dashed var(--ink); outline-offset: 2px; }
+}
