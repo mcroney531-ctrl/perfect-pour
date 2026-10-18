@@ -198,3 +198,52 @@ html, body { background: #050707; }
 .intro__steps { margin: 0 0 0.8em; padding-left: 1.3em; display: grid; gap: 0.35em; }
 .intro__steps b { color: var(--pp-gold-300); }
 .intro__goal { margin: 0 0 1.1em; color: var(--pp-text-muted); }
+
+/* ---- Pilsner station inside the 16:9 frame (M5A layout) ----
+   Stage (faucet, glass, head gauge) large on the left; caption, controls and
+   the result sheet in a panel on the right. Proportions are in frame units,
+   so the live faucet and glass sit at the same place in the frame at every
+   size (the backdrop template is measured from this). The panel's contents
+   scale with the frame (--st-ui), floor 0.8 for touch targets. Standalone
+   index.html keeps the original layout. */
+#stationHost { --st-ui: 1; }
+#stationHost .st-backdrop { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat var(--pp-charcoal-950); }
+#stationHost .st-backdrop__label {
+  position: absolute; left: 1.2cqw; bottom: 1.2cqw; margin: 0; padding: 2px 8px; border-radius: var(--pp-pill);
+  border: 1px dashed rgba(240, 189, 74, 0.6); background: rgba(12, 15, 16, 0.8); color: var(--pp-gold-300);
+  font: 700 0.7rem var(--pp-font-ui);
+}
+#stationHost #app {
+  position: relative; z-index: 1; max-width: none; height: 100%; margin: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) 31cqw; grid-template-rows: auto auto minmax(0, 1fr);
+  column-gap: 2cqw; row-gap: 0.8cqw; padding: 1.2cqw 1.8cqw 1.4cqw;
+}
+#stationHost #app > header { grid-column: 1 / -1; zoom: var(--st-ui); }
+#stationHost #stage { grid-column: 1; grid-row: 2 / 4; min-height: 0; }
+#stationHost #caption {
+  grid-column: 2; grid-row: 2; zoom: var(--st-ui); min-height: 3.2em; padding: 10px 14px; border-radius: 14px;
+  background: rgba(10, 14, 14, 0.82); border: 1px solid rgba(166, 175, 179, 0.25); text-align: left; justify-content: flex-start;
+}
+#stationHost #controls {
+  grid-column: 2; grid-row: 3; zoom: var(--st-ui); min-height: 0; overflow-y: auto; gap: 10px; padding: 12px 14px;
+  border-radius: 14px; background: rgba(10, 14, 14, 0.82); border: 1px solid rgba(166, 175, 179, 0.25);
+}
+#stationHost #pour { min-height: 120px; }
+/* The result sheet opens in the panel, beside the glass, not over it. */
+#stationHost #result {
+  left: auto; right: 1.8cqw; bottom: 1.4cqw; transform: none; zoom: var(--st-ui);
+  width: calc(31cqw / var(--st-ui)); max-height: calc(80cqh / var(--st-ui)); border-radius: 18px; border-bottom: 2px solid var(--line);
+}
+/* Tap mode as a compact row under the pad, so the pad gets the full panel width. */
+#stationHost #pourRow { flex-direction: column; gap: 8px; }
+#stationHost .tapmode { width: auto; min-height: 44px; flex-direction: row; justify-content: flex-start; gap: 10px;
+  padding: 4px 10px; text-align: left; font-size: 0.85rem; }
+/* Short frames (a phone held sideways): tighter spacing so Serve and Restart
+   stay in view without scrolling the panel. */
+@container (max-height: 440px) {
+  #stationHost #app { row-gap: 6px; padding-top: 8px; padding-bottom: 8px; }
+  #stationHost #caption { min-height: 0; padding: 6px 10px; }
+  #stationHost #controls { gap: 6px; padding: 8px 10px; }
+  #stationHost #pour { min-height: 104px; }
+  #stationHost #pourRow { gap: 6px; }
+}

@@ -35,7 +35,7 @@
   const INTRO = {
     pilsner: { label: 'Pilsner station', title: 'Foundation pour',
       steps: ['<b>Watch</b> a demo pour.', '<b>Guided:</b> pour it yourself, with hints.', '<b>Solo:</b> pour it on your own.'],
-      goal: 'The goal: the right head, poured to the line.' }
+      goal: 'Your goal: tilt first, bring the glass upright gradually, and stop at the line with the right amount of foam.' }
   };
 
   const root = document.getElementById('app-root');
@@ -281,7 +281,16 @@
     mountStation(current.id);
   });
 
+  // The station's backdrop (16:9, same frame coordinates as the live scene).
+  const STATION_BACKDROP = { src: 'assets/station/pilsner-provisional.svg', provisional: true };
+  function frameUi() {                       // panel scale for the station, from the frame size
+    const w = root.clientWidth;
+    stationHost.style.setProperty('--st-ui', Math.min(1.75, Math.max(0.8, w / 1280)).toFixed(4));
+  }
+  new ResizeObserver(frameUi).observe(root);
+
   function mountStation(id) {
+    frameUi();
     const station = PilsnerStation.mount(stationHost, {
       onExit: leaveStation,
       onEvent(type, d) {
@@ -290,6 +299,8 @@
       }
     });
     current = { id, station };
+    stationHost.insertAdjacentHTML('afterbegin', `<div class="st-backdrop" aria-hidden="true"
+      style="background-image:url('${STATION_BACKDROP.src}')">${STATION_BACKDROP.provisional ? '<p class="st-backdrop__label">Provisional backdrop</p>' : ''}</div>`);
     const exit = document.getElementById('exitBtn');
     if (exit) exit.focus({ preventScroll: true });
   }

@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation (61) + hub layout (8), Node 18+, no installs
-npm run test:ui     # browser: 40 Playwright tests (npm install first)
+npm run test:ui     # browser: 42 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -197,7 +197,23 @@ pixel-parity checks across refactors.
   the renderer: back-wall art behind the beer, wall/rim/base/highlights in
   front, training overlays always on top.
 
-## M4: landing, first visit, station intro, transitions (for review)
+## M5A: Pilsner station layout in the 16:9 frame (for review)
+
+- Inside the brewery app the station now uses the frame: the stage (faucet,
+  glass, head gauge) large on the left; caption, controls and the result
+  sheet in a dark panel on the right; tap mode as a row under the pour pad.
+  The panel scales with the frame (0.8x on a phone held sideways, 1x at
+  1280 x 720, 1.5x at 1920 x 1080); short frames tighten spacing so tilt,
+  pad, Serve and Restart stay reachable without scrolling.
+- Provisional, labelled backdrop generated from the measured layout.
+  Template, zones and brief for the real one:
+  [`docs/art-brief-pilsner-station-16x9.md`](docs/art-brief-pilsner-station-16x9.md)
+  (`node tools/make-station-template.mjs` regenerates them).
+- Simulation, scoring, controls and timing unchanged; standalone
+  `index.html` keeps the original layout, so its regression and pixel
+  tests still guard the mechanics. Intro goal copy updated.
+
+## M4: landing, first visit, station intro, transitions (approved)
 
 - **One format: a single 16:9 frame.** The whole app (landing, hub, intro,
   station) renders in one 16:9 frame scaled to the window, with dark bars

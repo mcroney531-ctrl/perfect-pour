@@ -419,3 +419,52 @@ test('reduced motion: no camera push, the station opens at once', async () => {
   assert.equal(await h.page.evaluate(() => document.getElementById('hub').classList.contains('is-pushing')), false);
   await h.close();
 });
+
+// ---- M5A: the Pilsner station inside the 16:9 frame ----
+test('station in the frame: stage left, panel right, faucet where the template says, pour still works', async () => {
+  const zones = JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../../design/station-templates/pilsner-zones.json', import.meta.url), 'utf8'));
+  for (const [w, hgt] of [[1280, 720], [1920, 1080]]) {
+    const h = await openApp(browser, APP() + '#/pilsner', { size: { width: w, height: hgt } });
+    await h.run(300);
+    const g = await h.page.evaluate(() => {
+      const f = document.getElementById('app-root').getBoundingClientRect();
+      const m = document.getElementById('scene').getScreenCTM();
+      const p = new DOMPoint(210, 72).matrixTransform(m);
+      const r = id => { const b = document.getElementById(id).getBoundingClientRect(); return [b.left - f.left, b.top - f.top, b.right - f.left, b.bottom - f.top]; };
+      return { fw: f.width, nozzle: [p.x - f.left, p.y - f.top], stage: r('stage'), controls: r('controls'), pour: r('pour'),
+        backdrop: getComputedStyle(document.querySelector('.st-backdrop')).backgroundImage };
+    });
+    const k = 2560 / g.fw;
+    assert.ok(Math.abs(g.nozzle[0] * k - zones.nozzle[0]) < 6 && Math.abs(g.nozzle[1] * k - zones.nozzle[1]) < 6,
+      `nozzle at template point (${(g.nozzle[0] * k).toFixed(0)}, ${(g.nozzle[1] * k).toFixed(0)}) at ${w}x${hgt}`);
+    assert.ok(g.controls[0] > g.stage[2], 'controls panel to the right of the stage');
+    assert.ok(g.pour[3] - g.pour[1] >= 100 && g.pour[3] <= hgt, 'pour pad large and on screen');
+    assert.match(g.backdrop, /pilsner-provisional\.svg/);
+    assert.equal(await h.page.isVisible('.st-backdrop__label'), true, 'provisional backdrop is labelled');
+    await h.close();
+  }
+  // The mechanics are unchanged: the demo still pours a clean pilsner in the frame.
+  const d = await openApp(browser, APP() + '#/pilsner');
+  await d.run(12000);
+  assert.equal(await d.text('#resultTitle'), 'Demo pour: clean');
+  assert.deepEqual(d.errors, []);
+  await d.close();
+});
+
+test('station on a phone held sideways: tilt, pour pad, Serve and Restart all reachable without scrolling', async () => {
+  for (const [w, hgt] of [[844, 390], [667, 375]]) {
+    const h = await openApp(browser, APP() + '#/pilsner', { size: { width: w, height: hgt }, mobile: true });
+    await h.run(300);
+    await h.page.click('#modes [data-mode=guided]'); await h.run(200);
+    const g = await h.page.evaluate(() => {
+      const f = document.getElementById('app-root').getBoundingClientRect();
+      const r = id => { const b = document.getElementById(id).getBoundingClientRect(); return { top: b.top - f.top, bottom: b.bottom - f.top, h: b.height }; };
+      return { fh: f.height, panel: r('controls'), items: ['angleToggle', 'pour', 'serve', 'restart'].map(id => ({ id, ...r(id) })) };
+    });
+    for (const it of g.items) {
+      assert.ok(it.top >= 0 && it.bottom <= Math.min(g.fh, g.panel.bottom) + 0.5, `${it.id} visible at ${w}x${hgt} (${it.top.toFixed(0)}-${it.bottom.toFixed(0)})`);
+      assert.ok(it.h >= 36, `${it.id} tall enough to tap (${it.h.toFixed(0)} px)`);
+    }
+    await h.close();
+  }
+});
