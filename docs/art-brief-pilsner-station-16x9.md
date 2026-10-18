@@ -1,7 +1,8 @@
 # Art brief: Pilsner station backdrop, 16:9 (M5)
 
-For GPT and the user. **Status: template ready; art not yet requested.**
-Review the provisional layout first (M5A gate); then this brief goes to GPT.
+For GPT and the user. **Status: M5A layout approved; art requested.** The
+layout is frozen while the art is made (any geometry change means
+regenerating the templates).
 
 ## What it is
 
@@ -27,7 +28,7 @@ Regenerate after any layout change: `node tools/make-station-template.mjs`.
 | Zone | Box | Rule |
 |---|---|---|
 | Live faucet | 864, 135 - 1362, 473 | No tap, spout, handle or tower here. Plain dark wall. |
-| Shank mount | 1358, 218 - 1456, 1241 | The live shank ends at x ~1360: a dark steel or matte wall/tower edge from here rightwards, so the tap reads as mounted. Nothing shiny. |
+| Shank mount | 1358, 218 - 1456, 1241 | The live shank ends at x ~1360: a restrained dark steel or matte architectural support there, so the tap reads as installed. Not a giant dividing wall, not a second tap tower, nothing shiny. |
 | Glass sweep | 413, 467 - 1207, 1256 | Every glass position from 45 degrees to upright. Calm, dark, low contrast; no highlights, hard edges, strong verticals, text. |
 | Drip tray surface | 739, 1223 - 1213, 1262 | The upright glass base rests at (976, 1223): the tray's top face at y ~1223, centred on x 976. |
 | Head gauge | 365, 272 - 549, 918 | Calm and dark (labels read here). |

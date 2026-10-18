@@ -247,3 +247,8 @@ html, body { background: #050707; }
   #stationHost #pour { min-height: 104px; }
   #stationHost #pourRow { gap: 6px; }
 }
+/* Watch steps: folded by default in the app (the caption shows the current step). */
+#stationHost #transcriptBox.is-folded #transcriptTitle,
+#stationHost #transcriptBox.is-folded #transcript,
+#stationHost #transcriptBox.is-folded .fineprint { display: none; }
+#stationHost .st-steps-toggle { min-height: 40px; width: 100%; margin-bottom: 6px; font-size: 0.9rem; font-weight: 700; color: var(--muted); }

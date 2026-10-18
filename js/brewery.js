@@ -299,6 +299,19 @@
       }
     });
     current = { id, station };
+    // Watch: the caption carries the current step; the full step list and the
+    // explanation fold away behind a toggle (panel only; the stage is untouched).
+    const tbox = document.getElementById('transcriptBox');
+    if (tbox) {
+      tbox.classList.add('is-folded');
+      tbox.insertAdjacentHTML('afterbegin', '<button type="button" class="st-steps-toggle" aria-expanded="false" aria-controls="transcript">Show all steps</button>');
+      const tg = tbox.querySelector('.st-steps-toggle');
+      tg.addEventListener('click', () => {
+        const open = tbox.classList.toggle('is-folded') === false;
+        tg.setAttribute('aria-expanded', String(open));
+        tg.textContent = open ? 'Hide steps' : 'Show all steps';
+      });
+    }
     stationHost.insertAdjacentHTML('afterbegin', `<div class="st-backdrop" aria-hidden="true"
       style="background-image:url('${STATION_BACKDROP.src}')">${STATION_BACKDROP.provisional ? '<p class="st-backdrop__label">Provisional backdrop</p>' : ''}</div>`);
     const exit = document.getElementById('exitBtn');

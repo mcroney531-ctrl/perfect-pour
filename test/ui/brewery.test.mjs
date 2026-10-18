@@ -468,3 +468,15 @@ test('station on a phone held sideways: tilt, pour pad, Serve and Restart all re
     await h.close();
   }
 });
+
+test('Watch steps fold away in the app: current step in the caption, full list behind a toggle', async () => {
+  const h = await openApp(browser, APP() + '#/pilsner');
+  await h.run(300);
+  assert.equal(await h.page.isVisible('#transcript'), false);
+  assert.equal(await h.page.getAttribute('.st-steps-toggle', 'aria-expanded'), 'false');
+  await h.page.click('.st-steps-toggle'); await h.run(50);
+  assert.equal(await h.page.isVisible('#transcript'), true);
+  assert.equal(await h.text('.st-steps-toggle'), 'Hide steps');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
