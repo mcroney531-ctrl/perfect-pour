@@ -282,7 +282,7 @@
   });
 
   // The station's backdrop (16:9, same frame coordinates as the live scene).
-  const STATION_BACKDROP = { src: 'assets/station/pilsner-provisional.svg', provisional: true };
+  const STATION_BACKDROP = { src: 'assets/station/pilsner.webp', provisional: true };   // candidate 1: still under review
   function frameUi() {                       // panel scale for the station, from the frame size
     const w = root.clientWidth;
     stationHost.style.setProperty('--st-ui', Math.min(1.75, Math.max(0.8, w / 1280)).toFixed(4));
@@ -298,7 +298,7 @@
         if (type === 'abandoned') P.recordAbandoned(id);
       }
     });
-    current = { id, station };
+    current = { id, station, look: window.RiversideStationLook ? RiversideStationLook.apply(stationHost) : null };
     // Watch: the caption carries the current step; the full step list and the
     // explanation fold away behind a toggle (panel only; the stage is untouched).
     const tbox = document.getElementById('transcriptBox');
@@ -313,7 +313,7 @@
       });
     }
     stationHost.insertAdjacentHTML('afterbegin', `<div class="st-backdrop" aria-hidden="true"
-      style="background-image:url('${STATION_BACKDROP.src}')">${STATION_BACKDROP.provisional ? '<p class="st-backdrop__label">Provisional backdrop</p>' : ''}</div>`);
+      style="background-image:url('${STATION_BACKDROP.src}')">${STATION_BACKDROP.provisional ? '<p class="st-backdrop__label">Backdrop candidate</p>' : ''}</div>`);
     const exit = document.getElementById('exitBtn');
     if (exit) exit.focus({ preventScroll: true });
   }
@@ -328,8 +328,9 @@
   // attempt is abandoned, ungraded. Progress stays In progress.
   function closeStation() {
     if (!current) return null;
-    const { id, station } = current;
+    const { id, station, look } = current;
     current = null;
+    if (look) look.stop();
     intro.hidden = true;
     if (!station) return { id, abandoned: false };          // left from the intro
     const { abandoned } = station.unmount('navigate');

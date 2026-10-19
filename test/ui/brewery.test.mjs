@@ -439,8 +439,8 @@ test('station in the frame: stage left, panel right, faucet where the template s
       `nozzle at template point (${(g.nozzle[0] * k).toFixed(0)}, ${(g.nozzle[1] * k).toFixed(0)}) at ${w}x${hgt}`);
     assert.ok(g.controls[0] > g.stage[2], 'controls panel to the right of the stage');
     assert.ok(g.pour[3] - g.pour[1] >= 100 && g.pour[3] <= hgt, 'pour pad large and on screen');
-    assert.match(g.backdrop, /pilsner-provisional\.svg/);
-    assert.equal(await h.page.isVisible('.st-backdrop__label'), true, 'provisional backdrop is labelled');
+    assert.match(g.backdrop, /station\/pilsner\.webp/);
+    assert.equal(await h.page.isVisible('.st-backdrop__label'), true, 'candidate backdrop is labelled');
     await h.close();
   }
   // The mechanics are unchanged: the demo still pours a clean pilsner in the frame.

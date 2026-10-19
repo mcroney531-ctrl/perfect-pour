@@ -1,6 +1,14 @@
 # Art brief: Pilsner station backdrop, 16:9 (M5)
 
-For GPT and the user. **Status: M5A layout approved; art requested.** The
+For GPT and the user. **Status: candidate 1 installed for review**
+(`assets/station/pilsner.webp`, labelled "Backdrop candidate"; a controlled
+adaptation of the R3 look after generated versions kept adding a faucet).
+Findings from the live composite: no faucet (good), steel support at the
+shank end (good), but the drip tray sits low (its top face spans y ~1256-1360,
+so the upright glass at 1223 floats ~30 px above it) and the Riverside sign
+sits directly behind the live faucet body.
+
+**Earlier status: M5A layout approved; art requested.** The
 layout is frozen while the art is made (any geometry change means
 regenerating the templates).
 

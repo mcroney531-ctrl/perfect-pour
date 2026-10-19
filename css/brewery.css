@@ -252,3 +252,12 @@ html, body { background: #050707; }
 #stationHost #transcriptBox.is-folded #transcript,
 #stationHost #transcriptBox.is-folded .fineprint { display: none; }
 #stationHost .st-steps-toggle { min-height: 40px; width: 100%; margin-bottom: 6px; font-size: 0.9rem; font-weight: 700; color: var(--muted); }
+/* Subtle glass edge (approved in M2): thin, warm, lit from the left. */
+#stationHost.st-look #glassArt > path:nth-of-type(1) { stroke: url(#st-edge); stroke-width: 1.1px; fill: rgba(255, 238, 210, 0.05); }
+#stationHost.st-look #glassArt > path:nth-of-type(2) { stroke: url(#st-edge); stroke-width: 1px; fill: rgba(255, 236, 205, 0.16); }
+#stationHost.st-look #glassArt > line { stroke: rgba(255, 236, 205, 0.55); stroke-width: 1.5px; }
+#stationHost.st-look #glassArt > polygon:nth-of-type(1) { fill: rgba(255, 236, 200, 0.2); }
+#stationHost.st-look #glassArt > polygon:nth-of-type(2) { fill: rgba(255, 236, 200, 0.08); }
+#stationHost.st-look #glassBackArt polygon { fill: rgba(255, 230, 190, 0.03); }
+/* Over the backdrop the page itself is transparent; scene labels get a shadow. */
+#stationHost.st-look #scene text { paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 3px; }
