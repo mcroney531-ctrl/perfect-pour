@@ -282,7 +282,7 @@
   });
 
   // The station's backdrop (16:9, same frame coordinates as the live scene).
-  const STATION_BACKDROP = { src: 'assets/station/pilsner.webp', provisional: true };   // candidate 1: still under review
+  const STATION_BACKDROP = { src: 'assets/station/pilsner.webp', provisional: false };  // revision 2, approved
   function frameUi() {                       // panel scale for the station, from the frame size
     const w = root.clientWidth;
     stationHost.style.setProperty('--st-ui', Math.min(1.75, Math.max(0.8, w / 1280)).toFixed(4));
@@ -298,7 +298,14 @@
         if (type === 'abandoned') P.recordAbandoned(id);
       }
     });
-    current = { id, station, look: window.RiversideStationLook ? RiversideStationLook.apply(stationHost) : null };
+    current = { id, station, look: window.RiversideStationLook ? RiversideStationLook.apply(stationHost) : null,
+      cues: window.RiversideStationCues ? RiversideStationCues.apply(stationHost) : null };
+    // Mark the station while the pad is held (the cue layer styles from this).
+    const padEl = document.getElementById('pour'), ctlEl = document.getElementById('controls');
+    if (padEl && ctlEl) {
+      current.padObs = new MutationObserver(() => ctlEl.classList.toggle('st-pouring', padEl.getAttribute('aria-pressed') === 'true'));
+      current.padObs.observe(padEl, { attributes: true, attributeFilter: ['aria-pressed'] });
+    }
     // Watch: the caption carries the current step; the full step list and the
     // explanation fold away behind a toggle (panel only; the stage is untouched).
     const tbox = document.getElementById('transcriptBox');
@@ -328,9 +335,11 @@
   // attempt is abandoned, ungraded. Progress stays In progress.
   function closeStation() {
     if (!current) return null;
-    const { id, station, look } = current;
+    const { id, station, look, cues, padObs } = current;
     current = null;
     if (look) look.stop();
+    if (cues) cues.stop();
+    if (padObs) padObs.disconnect();
     intro.hidden = true;
     if (!station) return { id, abandoned: false };          // left from the intro
     const { abandoned } = station.unmount('navigate');

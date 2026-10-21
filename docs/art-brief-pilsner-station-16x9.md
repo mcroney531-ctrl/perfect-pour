@@ -1,6 +1,8 @@
 # Art brief: Pilsner station backdrop, 16:9 (M5)
 
-For GPT and the user. **Status: revision 2 installed for review** (tray
+For GPT and the user. **Status: revision 2 APPROVED and live** (label removed).
+
+**Earlier: revision 2 installed for review** (tray
 raised to y ~1223, so the upright glass rests on its back edge; Riverside sign
 moved upper-left, clear of the faucet and gauge). Still labelled "Backdrop
 candidate" until approved.

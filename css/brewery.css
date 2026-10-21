@@ -261,3 +261,25 @@ html, body { background: #050707; }
 #stationHost.st-look #glassBackArt polygon { fill: rgba(255, 230, 190, 0.03); }
 /* Over the backdrop the page itself is transparent; scene labels get a shadow. */
 #stationHost.st-look #scene text { paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 3px; }
+
+/* ---- Straighten-gesture cues on the pour pad (js/station-cues.js) ---- */
+#stationHost .st-cue { display: none; position: absolute; right: 36px; top: 10px; bottom: 10px; z-index: 2; pointer-events: none;
+  flex-direction: column; align-items: flex-end; justify-content: space-between; color: var(--accent-ink); }
+#stationHost .st-cue.is-on { display: flex; }
+#stationHost .st-cue__chev { font-size: 1.1rem; line-height: 0.6; letter-spacing: -0.1em; writing-mode: vertical-rl; }
+#stationHost .st-cue__text { display: none; }
+#stationHost .st-cue--guided { left: 10px; right: 36px; justify-content: flex-start; align-items: stretch; }
+#stationHost .st-cue--guided .st-cue__text {
+  display: block; align-self: center; margin-top: auto; padding: 3px 10px; border-radius: var(--pp-pill);
+  background: var(--accent-ink); color: #ffd877; font-size: 0.85rem; font-weight: 800; text-align: center;
+}
+#stationHost .st-cue--guided .st-cue__chev { position: absolute; right: 0; top: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  #stationHost .st-cue.is-on .st-cue__chev { animation: st-rise 0.9s ease-in-out infinite; }
+}
+@keyframes st-rise { from { transform: translateY(10px); opacity: 0.3; } to { transform: translateY(-6px); opacity: 1; } }
+/* While a pour is under way the Tilted/Upright switch steps back, so it
+   doesn't read as the way to bring the glass up (the pad is). Still works. */
+#stationHost .st-pouring #angleCtl { opacity: 0.45; transition: opacity 0.2s; }
+/* The pill says it more plainly; hide the pad's own subtitle while it shows. */
+#stationHost #pour:has(.st-cue--guided.is-on) #pourSub { visibility: hidden; }

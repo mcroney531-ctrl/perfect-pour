@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation (61) + hub layout (8), Node 18+, no installs
-npm run test:ui     # browser: 42 Playwright tests (npm install first)
+npm run test:ui     # browser: 47 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -197,7 +197,24 @@ pixel-parity checks across refactors.
   the renderer: back-wall art behind the beer, wall/rim/base/highlights in
   front, training overlays always on top.
 
-## M5A: Pilsner station layout in the 16:9 frame (for review)
+## M5: Pilsner station in the brewery look (for review)
+
+- **Backdrop:** revision 2 approved (`assets/station/pilsner.webp`), with the
+  M2 treatment applied from outside the station (`js/station-look.js`: warm
+  grade + light wrap, faucet and contact shadows, subtle glass edge).
+- **Straighten-gesture cues** (`js/station-cues.js`, presentation only; reads
+  what the station shows, sends no input): Watch shows rising chevrons by the
+  demo thumb while it brings the glass up; Guided shows "Keep holding · slide
+  up slowly" on the pad from the BRING UP band until the glass starts coming
+  up; Solo shows nothing. While a pour is held, the Tilted/Upright switch
+  dims so it doesn't read as the way to straighten (it still works).
+- **Panel:** Watch steps fold behind "Show all steps"; the caption carries
+  the current step.
+- **Reachability** tested at 1920 x 1080, 1280 x 720, 844 x 390 and 667 x 375:
+  modes, tilt, pad, Serve, Restart and the result buttons. Not yet checked
+  inside a real Storyline Web Object.
+
+## M5A: Pilsner station layout in the 16:9 frame (approved)
 
 - Inside the brewery app the station now uses the frame: the stage (faucet,
   glass, head gauge) large on the left; caption, controls and the result

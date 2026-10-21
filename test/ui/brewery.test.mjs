@@ -440,7 +440,7 @@ test('station in the frame: stage left, panel right, faucet where the template s
     assert.ok(g.controls[0] > g.stage[2], 'controls panel to the right of the stage');
     assert.ok(g.pour[3] - g.pour[1] >= 100 && g.pour[3] <= hgt, 'pour pad large and on screen');
     assert.match(g.backdrop, /station\/pilsner\.webp/);
-    assert.equal(await h.page.isVisible('.st-backdrop__label'), true, 'candidate backdrop is labelled');
+    assert.equal(await h.page.isVisible('.st-backdrop__label'), false, 'approved backdrop carries no label');
     await h.close();
   }
   // The mechanics are unchanged: the demo still pours a clean pilsner in the frame.
@@ -479,4 +479,80 @@ test('Watch steps fold away in the app: current step in the caption, full list b
   assert.equal(await h.text('.st-steps-toggle'), 'Hide steps');
   assert.deepEqual(h.errors, []);
   await h.close();
+});
+
+// ---- M5: straighten-gesture cues (presentation only) ----
+const cueState = h => h.page.evaluate(() => { const c = document.querySelector('.st-cue'); return c ? c.className : null; });
+const lvl = h => h.page.evaluate(() => parseInt(document.getElementById('levelText').textContent.replace(/\D/g, ''), 10));
+async function pourTo(h, mode, { straightenAt = 58 } = {}) {
+  const seen = new Set();
+  await h.page.click(`#modes [data-mode=${mode}]`); await h.run(200);
+  await h.page.keyboard.press('t'); await h.run(400);
+  await h.page.keyboard.down(' ');
+  for (let i = 0; i < 1500 && (await lvl(h)) < straightenAt; i++) { await h.run(16); seen.add(await cueState(h)); }
+  const before = await cueState(h);
+  for (let i = 0; i < 9; i++) { await h.page.keyboard.press('ArrowUp'); await h.run(120); seen.add(await cueState(h)); }
+  const after = await cueState(h);
+  for (let i = 0; i < 1500 && (await lvl(h)) < 95; i++) await h.run(16);
+  await h.page.keyboard.up(' '); await h.run(600);
+  return { seen, before, after };
+}
+
+test('Guided: "keep holding, slide up slowly" appears at the BRING UP band and clears once the glass comes up', async () => {
+  const h = await openApp(browser, APP() + '#/pilsner');
+  await h.run(300);
+  const { seen, before, after } = await pourTo(h, 'guided');
+  assert.match(before, /is-on st-cue--guided/, 'cue showing at ~58% before straightening');
+  assert.equal(await h.page.evaluate(() => getComputedStyle(document.querySelector('.st-cue__text')).display), 'none', 'text hidden once cleared');
+  assert.equal(after, 'st-cue', 'cue gone once straightening began');
+  assert.ok([...seen].every(c => c === null || !/watch/.test(c)));
+  await h.page.keyboard.press('s'); await h.run(300);
+  assert.equal(await h.text('#resultTitle'), 'Clean pour', 'the cue changes nothing about the pour');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('Solo: no gesture cue at any point of the pour', async () => {
+  const h = await openApp(browser, APP() + '#/pilsner');
+  await h.run(300);
+  const { seen } = await pourTo(h, 'solo');
+  assert.deepEqual([...seen].filter(c => c && /is-on/.test(c)), [], 'never shown in Solo');
+  await h.close();
+});
+
+test('Watch: rising chevrons accompany the demo thumb while it brings the glass up', async () => {
+  const h = await openApp(browser, APP() + '#/pilsner');
+  await h.run(300);
+  const states = [];
+  for (let t = 0; t < 9000; t += 100) { await h.run(100); states.push(await cueState(h)); }
+  assert.ok(states.some(c => /is-on st-cue--watch/.test(c)), 'shown during the demo bring-up');
+  assert.ok(/^st-cue$/.test(states[10]), 'not shown before (1 s in)');
+  assert.ok(/^st-cue$/.test(states[states.length - 1]), 'gone after the demo finishes');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('reachability at 1920x1080, 1280x720, 844x390, 667x375: modes, tilt, pad, Serve, Restart, and the result buttons', async () => {
+  for (const [w, hgt] of [[1920, 1080], [1280, 720], [844, 390], [667, 375]]) {
+    const h = await openApp(browser, APP() + '#/pilsner', { size: { width: w, height: hgt }, mobile: w < 1000 });
+    await h.run(300);
+    const box = sel => h.page.evaluate(sel => {
+      const f = document.getElementById('app-root').getBoundingClientRect();
+      const b = document.querySelector(sel).getBoundingClientRect();
+      return { t: b.top - f.top, b: b.bottom - f.top, l: b.left - f.left, r: b.right - f.left, h: b.height, fw: f.width, fh: f.height };
+    }, sel);
+    const inFrame = (b, name) => assert.ok(b.t >= -0.5 && b.b <= b.fh + 0.5 && b.l >= -0.5 && b.r <= b.fw + 0.5 && b.h >= 34,
+      `${name} reachable at ${w}x${hgt} (${b.t.toFixed(0)}-${b.b.toFixed(0)}, ${b.h.toFixed(0)} px)`);
+    for (const m of ['watch', 'guided', 'solo']) inFrame(await box(`#modes [data-mode=${m}]`), `mode ${m}`);
+    await pourTo(h, 'solo');
+    for (const sel of ['#angleToggle', '#pour', '#serve', '#restart']) inFrame(await box(sel), sel);
+    await h.page.keyboard.press('s'); await h.run(400);
+    assert.equal(await h.page.isVisible('#result'), true);
+    // The result sheet may scroll inside itself on a phone; its actions must be reachable by doing so.
+    await h.page.evaluate(() => { const r = document.getElementById('result'); r.scrollTop = r.scrollHeight; });
+    const btns = await h.page.locator('#resultActions button').count();
+    assert.ok(btns >= 2);
+    for (let i = 0; i < btns; i++) inFrame(await box(`#resultActions button:nth-child(${i + 1})`), `result action ${i + 1}`);
+    await h.close();
+  }
 });
