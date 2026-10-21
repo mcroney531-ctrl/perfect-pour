@@ -20,6 +20,11 @@
       '<span class="st-cue" aria-hidden="true"><span class="st-cue__chev">⌃⌃⌃</span>' +
       '<span class="st-cue__text">Keep holding · slide up slowly</span></span>');
     const cue = pad.querySelector('.st-cue');
+    // The visual cue is aria-hidden; its spoken equivalent goes to a polite
+    // live region once per pour, at the same moment.
+    host.insertAdjacentHTML('beforeend', '<div class="sr-only st-cue-live" aria-live="polite" aria-atomic="true"></div>');
+    const live = host.querySelector('.st-cue-live');
+    let spoken = false;
     const glass = host.querySelector('#glass'), levelEl = host.querySelector('#levelText');
     let raf = 0, steepest = 0, shown = '';
 
@@ -36,19 +41,24 @@
     function show(kind) {
       if (kind === shown) return;
       shown = kind;
+      if (kind === 'guided' && !spoken) {
+        spoken = true;
+        live.textContent = 'The beer is at the BRING UP band. Keep holding and bring the glass up slowly: slide up on the pad, or press the Up arrow.';
+      }
       cue.className = 'st-cue' + (kind ? ' is-on st-cue--' + kind : '');
     }
     (function tick() {
       raf = requestAnimationFrame(tick);
       const s = read();
       if (!s.held || s.level < 3) steepest = 0;
+      if (s.level < 3) { spoken = false; live.textContent = ''; }
       if (s.held) steepest = Math.max(steepest, s.angle);
       const tilted = steepest >= TILTED, begun = tilted && s.angle <= steepest - STARTED;
       if (s.mode === 'watch') show(s.held && begun && s.angle > 15 ? 'watch' : '');
       else if (s.mode === 'guided') show(s.held && tilted && !begun && s.level >= BRING_UP ? 'guided' : '');
       else show('');
     })();
-    return { stop() { cancelAnimationFrame(raf); cue.remove(); } };
+    return { stop() { cancelAnimationFrame(raf); cue.remove(); live.remove(); } };
   }
 
   global.RiversideStationCues = { apply };

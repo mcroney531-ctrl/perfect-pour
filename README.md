@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation (61) + hub layout (8), Node 18+, no installs
-npm run test:ui     # browser: 47 Playwright tests (npm install first)
+npm run test:ui     # browser: 49 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 

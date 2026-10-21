@@ -556,3 +556,38 @@ test('reachability at 1920x1080, 1280x720, 844x390, 667x375: modes, tilt, pad, S
     await h.close();
   }
 });
+
+test('accessibility: the Guided cue is spoken once via a live region; the pad text stays readable to assistive tech', async () => {
+  const h = await openApp(browser, APP() + '#/pilsner');
+  await h.run(300);
+  await h.page.click('#modes [data-mode=guided]'); await h.run(200);
+  await h.page.keyboard.press('t'); await h.run(400);
+  await h.page.keyboard.down(' ');
+  for (let i = 0; i < 1500 && (await lvl(h)) < 56; i++) await h.run(16);
+  assert.match(await h.text('.st-cue-live'), /BRING UP band\. Keep holding and bring the glass up slowly/);
+  const snap = await h.page.locator('#pour').ariaSnapshot();
+  assert.match(snap, /Slide up slowly to bring the glass upright/, 'pad subtitle still in the accessibility tree');
+  await h.page.keyboard.up(' '); await h.run(300);
+  await h.close();
+});
+
+test('Storyline-style embed: releasing the pointer outside the iframe closes the tap', async () => {
+  const h = await openApp(browser, URL0 + '/brewery.html#/pilsner', { init: null });
+  await h.page.setContent(`<body style="margin:0;background:#333"><iframe id="wo" src="${URL0}/brewery.html#/pilsner"
+    style="position:absolute;left:100px;top:60px;width:960px;height:540px;border:0"></iframe></body>`);
+  await h.run(500);
+  const f = h.page.frames().find(x => x.url().includes('/brewery.html'));
+  await f.evaluate(() => { const st = () => ({ status: 'new', attempts: 0, passes: 0, abandoned: 0, lastPlayed: null });
+    localStorage.setItem('riverside.progress', JSON.stringify({ version: 1, stations: { pilsner: st(), hefeweizen: st(), stout: st() }, seen: { landing: true, 'intro.pilsner': true } })); location.reload(); });
+  await h.run(600);
+  const g = h.page.frames().find(x => x.url().includes('/brewery.html'));
+  await g.click('#modes [data-mode=guided]'); await h.run(200);
+  const b = await g.locator('#pour').boundingBox();
+  await h.page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await h.page.mouse.down(); await h.run(800);
+  assert.equal(await g.getAttribute('#pour', 'aria-pressed'), 'true', 'pouring while held');
+  await h.page.mouse.move(20, 20, { steps: 5 }); await h.run(100);      // drag out of the Web Object
+  await h.page.mouse.up(); await h.run(300);
+  assert.equal(await g.getAttribute('#pour', 'aria-pressed'), 'false', 'tap closed after releasing outside');
+  await h.close();
+});

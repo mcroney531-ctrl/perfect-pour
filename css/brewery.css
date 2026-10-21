@@ -282,4 +282,4 @@ html, body { background: #050707; }
    doesn't read as the way to bring the glass up (the pad is). Still works. */
 #stationHost .st-pouring #angleCtl { opacity: 0.45; transition: opacity 0.2s; }
 /* The pill says it more plainly; hide the pad's own subtitle while it shows. */
-#stationHost #pour:has(.st-cue--guided.is-on) #pourSub { visibility: hidden; }
+#stationHost #pour:has(.st-cue--guided.is-on) #pourSub { color: transparent; }   /* still read by screen readers */
