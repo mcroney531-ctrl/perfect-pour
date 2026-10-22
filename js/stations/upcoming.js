@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   RiversideStations.register({ id: 'hefeweizen', contract: 1,
-    meta: { name: 'Hefeweizen', sub: 'Transfer pour', glass: 'hefe' } });
+    meta: { name: 'Hefeweizen', sub: 'Foam Control', glass: 'hefe' } });
   RiversideStations.register({ id: 'stout', contract: 1,
     meta: { name: 'Nitro Stout', sub: 'Two-step pour', glass: 'stout' } });
 })();

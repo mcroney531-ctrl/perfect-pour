@@ -440,7 +440,7 @@ station, simulation, scoring or art.
   - Phase events.
   - Parking.
   - Station-tagged pour logs (these come with Hefeweizen).
-- The Hefeweizen card still reads "Transfer pour"; the agreed "Foam Control" label is a one-line change in `js/stations/upcoming.js`.
+- The Hefeweizen card now reads "Foam Control", the agreed label (it was "Transfer pour").
 
 ## Multi-station planning (approved with amendments)
 
