@@ -61,6 +61,17 @@ behaviourally identical.
 **Gate:** does Hefeweizen teach something Pilsner doesn't, in a fresh-player
 check? If not, revisit the procedure before building Nitro.
 
+## Step 2b — Shared station UI, before Nitro (proposed)
+- **Status of step 2:** the Hefeweizen station is functionally approved. Its bands stay provisional until the owner's playtest.
+- **Why this step:** the two stations share 63% of the Hefeweizen station's lines verbatim. That shared part is plumbing, not beer.
+- **Proposal:** a narrow kit in `docs/shared-station-ui.md`. Shared: lifecycle, speech, loop, log store, panel and result markup, pad input. Beer-specific: sims, renderers, coaching, debrief, phases.
+- **Order:**
+  1. Step 0: DOM-parity fixtures and a parity tool.
+  2. Step 1: the kit core.
+  3. Step 2: markup builders.
+  4. Step 3: input, with an owner device check.
+- **Protection:** Pilsner DOM and pixel parity, plus Hefeweizen behaviour tests, gate every step.
+
 ## Step 3 — Add Nitro Stout
 1. Directions are set (`docs/procedures/nitro-stout.md`): compressed settle in all modes, readiness read from the beer, hold-to-pour top-up at full flow, slight dome. Calibrate at build time.
 2. **`js/stout-sim.js`:**

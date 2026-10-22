@@ -231,6 +231,11 @@ Members are built only when a concrete consumer needs them:
   - `describe()`: until the second station.
   - `park` / `advance` / `resume`: until Final Rush enables stout overlap.
 
+## 6b. After two stations (update)
+- **Proven:** Hefeweizen proved the registry and the contract with a second, different sim. Pilsner was untouched.
+- **Cost:** a second copy of the station plumbing. The narrow shared kit proposed in `docs/shared-station-ui.md` addresses it.
+- **Unchanged:** renderers, sims, coaching and phases stay per beer.
+
 ## 7. Art pipeline for further stations
 
 Same method as M5, per station:

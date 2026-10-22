@@ -119,14 +119,17 @@ action verdict is given.
 - **Only calm or lively pours are dealt.**
 - A passing Solo pour certifies (the M6 rule). **One pass shows success on that pour's condition, not mastery of both.** The certificate wording claims only "virtual Hefeweizen training", per M6.
 
-**Scenarios (deterministic, balanced, no rerolls):**
+**Scenarios (deterministic, balanced; no free rerolls):**
 - `HefeSim.scenario(mode, n)` gives pour n of a mode:
   - **Guided:** typical (L 1), then lively, calm, typical, and so on.
   - **Solo:** each pair of pours holds one calm and one lively, in an order set by the pair's seed.
   - Where a pour sits inside its category comes from its own seed.
 - The next index per mode is kept on the device (`riverside.hefe.scenario`).
 - **Only a served pour moves a mode on.** Restarting, switching modes, or leaving the station and coming back replays the same pour.
-  - The review allowed a deliberate mode change to advance the sequence. We chose the stricter rule: it is simpler, and no route rerolls.
+  - The review allowed a deliberate mode change to advance the sequence. We chose the stricter rule because it is simpler.
+- **What this does and doesn't prevent:**
+  - Any served pour advances the sequence, a failed one included. A learner can still serve a deliberately bad pour to move on to the next scenario.
+  - That is accepted (functional review). This is a training experience, not an anti-cheating system, and no extra anti-gaming logic is planned.
 
 **Debrief** (after the pour; the only place this pour's window is shown):
 - The glass with this pour's good range, the LINE zone, and ticks where the player acted.
@@ -218,8 +221,20 @@ or GAME, no scoring change:
 - More splash and agitation on lively pours.
 - A wider liveliness range.
 
-## 7. Open items
-1. Final scoring bands after interactive play (provisional now).
+## 7. Decisions (functional review) and open items
+
+**Decided:**
+- **Functional station approved.**
+- **The good straighten range appears in the debrief only.** No predictive band in Watch, Guided or Solo; the foam is the cue.
+- **Seed progression as built is accepted** (see §3).
+
+**Open:**
+1. **Final scoring bands, after the owner's sideways-phone playtest of a calm and a lively pour.** Provisional now: head band 16–24%, liveliness range, calibrated windows.
+   - Key question: does the learner watch the foam in the glass, or read the HEAD gauge? The intent is to teach observation, not to swap a timing meter for a foam meter.
+   - If the foam is too subtle, fix the rendering, not the scoring.
 2. Art: the measured template and backdrop, with a taller glass zone (M5 method).
-3. Hefeweizen can be played before Pilsner is certified. The hub recommends Pilsner first ("Start here"), and Hefeweizen shows a quieter "Start". Should Hefeweizen lock until Pilsner is certified instead?
+3. ~~Lock Hefeweizen until Pilsner is certified?~~ **Decided: stays unlocked** (functional review).
+   - The hub recommends Pilsner first and Hefeweizen is open.
+   - Certification proves performance on that station, not completion of earlier content.
+   - The only hard gate is Final Rush (all three certified).
 4. The fresh-learner playtest (shared with Pilsner's open item).

@@ -438,10 +438,12 @@ bring the glass up.
 - **Watch:** a lively demo, plus an optional "Watch a calmer pour".
 - **Guided:** no target band. A FOAM bracket on the beer, and hints that react to this pour.
 - **Solo:** calm and lively pours only; a pass certifies (M6).
-- **No rerolls:** restarting, switching modes or leaving replays the same pour. Only a served pour moves on.
+- **No free rerolls:** restarting, switching modes or leaving replays the same pour. Only a served pour moves on; a failed serve counts, which is accepted for training.
 - **Hub:** guidance handles two playable stations. Pilsner is "Start here"; Hefeweizen is open ("Start") and becomes "Start here, recommended next" once Pilsner is certified.
 - **Shared code:** the folded Watch steps moved into `js/station-chrome.js`, now used by both stations. Pilsner screens are pixel-identical.
 - **Spec and perception notes:** `docs/hefeweizen-behaviour.md`.
+- **Functional review:** approved. Hefeweizen stays unlocked, and the good range shows in the debrief only. Bands stay provisional until the owner's playtest.
+- **Next:** the proposed shared-UI extraction before Nitro, in `docs/shared-station-ui.md`.
 
 ## Slice 1: station registry (for review)
 
