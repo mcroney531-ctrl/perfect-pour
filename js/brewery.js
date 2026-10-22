@@ -19,6 +19,16 @@
   // progress. The first playable one is where a new learner starts.
   const STATIONS = window.RiversideStations.list().map(s => ({ id: s.id, playable: s.playable, def: s, ...s.meta }));
   const BY_ID = Object.fromEntries(STATIONS.map(s => [s.id, s]));
+  // The certification seal: shared artwork (#pp-seal) with this station's
+  // name on the lower arc. Names longer than "PILSNER STATION" are fitted to
+  // the arc so they never run past it.
+  function sealSvg(cls, id) {
+    const label = `${BY_ID[id].name.toUpperCase()} STATION`;
+    const fit = label.length > 15 ? ' textLength="150" lengthAdjust="spacingAndGlyphs"' : '';
+    return `<svg class="${cls}" viewBox="0 0 220 220" aria-hidden="true" data-seal="${id}"><use href="#pp-seal"/>` +
+      `<text class="seal__station" style="font: 700 13px 'Barlow Condensed', sans-serif; letter-spacing: 2.5px" fill="#f7d27a">` +
+      `<textPath href="#pp-seal-bot" startOffset="50%" text-anchor="middle"${fit}>${label}</textPath></text></svg>`;
+  }
   const FIRST = STATIONS.find(s => s.playable);
   // The station to do next: the first playable one, in hub order, that is
   // not certified yet (null once every open station is certified).
@@ -74,7 +84,7 @@
               <button type="button" class="hub__card" data-station="${s.id}"
                 ${s.playable ? '' : 'aria-disabled="true"'} aria-describedby="status-${s.id}">
                 <svg class="hub__thumb" aria-hidden="true"><use href="#pp-glass-${s.glass}"/></svg>
-                <svg class="hub__seal" viewBox="0 0 220 220" aria-hidden="true"><use href="#pp-seal"/></svg>
+                ${sealSvg('hub__seal', s.id)}
                 <span class="hub__name">${s.name}</span>
                 <span class="hub__sub">${s.sub}</span>
                 <span class="hub__action" id="chip-${s.id}"></span>
@@ -324,7 +334,7 @@
     if (!sheet) return;
     sheet.insertAdjacentHTML('afterbegin', `
       <div class="st-cert">
-        <svg class="st-cert__seal" viewBox="0 0 220 220" aria-hidden="true"><use href="#pp-seal"/></svg>
+        ${sealSvg('st-cert__seal', id)}
         <div>
           <p class="pp-label st-cert__label">Certified</p>
           <p class="st-cert__title">${BY_ID[id].name} station complete</p>

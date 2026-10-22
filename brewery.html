@@ -38,14 +38,15 @@
       <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="none" stroke="#dfe4e6" stroke-width="1.6" stroke-dasharray="3 3"/>
     </symbol>
     <!-- Riverside certification seal (from the M2 component sheet). -->
+    <!-- The seal is shared; its lower arc names the station and is drawn per
+         seal by js/brewery.js (sealSvg) along pp-seal-bot. -->
+    <path id="pp-seal-bot" d="M39.7 156 A84 84 0 0 0 180.3 156" fill="none"/>
     <symbol id="pp-seal" viewBox="0 0 220 220">
       <path id="pp-seal-top" d="M30 110 A80 80 0 0 1 190 110" fill="none"/>
-      <path id="pp-seal-bot" d="M39.7 156 A84 84 0 0 0 180.3 156" fill="none"/>
       <circle cx="110" cy="110" r="104" fill="url(#pp-gold-metal)"/>
       <circle cx="110" cy="110" r="96" fill="#0f2a23" stroke="#f7d27a" stroke-width="1.5"/>
       <circle cx="110" cy="110" r="66" fill="none" stroke="#c98d24" stroke-width="1.2" stroke-dasharray="2 4"/>
       <text style="font: 800 15px 'Barlow Condensed', sans-serif; letter-spacing: 2.5px" fill="#f7d27a"><textPath href="#pp-seal-top" startOffset="50%" text-anchor="middle">RIVERSIDE BREWING CO.</textPath></text>
-      <text style="font: 700 13px 'Barlow Condensed', sans-serif; letter-spacing: 2.5px" fill="#f7d27a"><textPath href="#pp-seal-bot" startOffset="50%" text-anchor="middle">PILSNER STATION</textPath></text>
       <svg x="82" y="56" width="56" height="56" style="color:#f0bd4a"><use href="#pp-emblem"/></svg>
       <path d="M34 122 H186 L176 136 L186 150 H34 L44 136 Z" fill="url(#pp-gold-metal)" stroke="#7d5512"/>
       <text x="110" y="142" text-anchor="middle" style="font: 800 20px 'Barlow Condensed', sans-serif; letter-spacing: 3px" fill="#1c1406">CERTIFIED</text>
@@ -75,6 +76,6 @@
 <script src="js/stations/pilsner.js?v=h1"></script>
 <script src="js/stations/hefeweizen.js?v=h1"></script>
 <script src="js/stations/upcoming.js?v=h1"></script>
-<script src="js/brewery.js?v=h1"></script>
+<script src="js/brewery.js?v=c1"></script>
 </body>
 </html>

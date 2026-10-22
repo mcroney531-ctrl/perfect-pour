@@ -622,6 +622,7 @@ test('M6: a passing Solo pour certifies exactly once, with the seal above the fu
   assert.ok(p1.certifiedAt);
   assert.equal(await h.page.isVisible('.st-cert'), true);
   assert.match(await h.text('.st-cert'), /Pilsner station complete/);
+  assert.equal(await h.text('.st-cert__seal .seal__station'), 'PILSNER STATION', 'the seal artwork names this station');
   assert.match(await h.text('.st-cert'), /virtual Pilsner training/);
   assert.doesNotMatch(await h.text('.st-cert'), /qualified|licen[cs]ed|professional|official/i, 'scoped wording');
   // The debrief is still there, below the seal.
@@ -651,6 +652,7 @@ test('M6: certification persists across reloads and is not revoked by a failed r
   assert.equal(await chip(h, 'pilsner'), 'Replay');
   assert.match(await h.text('#status-pilsner'), /Certified/);
   assert.equal(await h.page.isVisible('[data-station=pilsner] .hub__seal'), true);
+  assert.equal(await h.text('[data-station=pilsner] .hub__seal .seal__station'), 'PILSNER STATION');
   assert.equal(await h.text('#hubCount'), '1');
   assert.equal(await h.text('#hubLede'), 'Pilsner certified. Next: the Hefeweizen station.');
   // Final Rush stays locked with only Pilsner certified; the others are untouched.

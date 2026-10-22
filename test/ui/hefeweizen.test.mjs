@@ -194,6 +194,9 @@ test('Solo: calm and lively pours only, no coaching; adapting passes and certifi
   assert.match(await h.text('#fbPrimary'), /built foam slowly/);
   assert.equal(await h.page.locator('.st-cert').count(), 1);
   assert.match(await h.text('.st-cert__title'), /Hefeweizen station complete/);
+  // The seal artwork itself names the station (it once said PILSNER STATION for every station).
+  assert.equal(await h.text('.st-cert__seal .seal__station'), 'HEFEWEIZEN STATION');
+  assert.ok(await h.page.isVisible('.st-cert__seal .seal__station'));
   const p = await progress(h);
   assert.equal(p.stations.hefeweizen.status, 'certified');
   assert.equal(p.stations.pilsner.status, 'new', 'Pilsner untouched');
@@ -202,6 +205,9 @@ test('Solo: calm and lively pours only, no coaching; adapting passes and certifi
   // Back at the hub: certified, persists.
   await h.page.click('#exitBtn'); await settle(h, 300);
   assert.equal(await chip(h, 'hefeweizen'), 'Replay');
+  assert.equal(await h.text('[data-station=hefeweizen] .hub__seal .seal__station'), 'HEFEWEIZEN STATION');
+  assert.ok(await h.page.isVisible('[data-station=hefeweizen] .hub__seal'));
+  assert.equal(await h.page.isVisible('[data-station=pilsner] .hub__seal'), false, 'Pilsner not certified: no seal');
   await h.page.reload(); await h.run(300);
   assert.equal(await chip(h, 'hefeweizen'), 'Replay');
   assert.deepEqual(h.errors, []);
