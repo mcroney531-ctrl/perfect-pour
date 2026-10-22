@@ -405,6 +405,19 @@ station.unmount('navigate');  // closes the tap, abandons an unserved pour, remo
 The brewery app (`js/brewery.js`) mounts and unmounts stations; the station
 knows nothing about the hub.
 
+## Multi-station planning (for review; nothing implemented)
+
+Specification gate before Hefeweizen, Nitro Stout and Final Rush:
+
+- `docs/architecture-multi-station.md`: shell vs station modules, the station
+  contract, the Nitro stress test, the art pipeline and the (not yet done)
+  entry-point migration.
+- `docs/procedures/`: Pilsner (locked), Hefeweizen and Nitro Stout specs.
+- `docs/source-claim-audit.md`: what each source says and how it was accessed
+  (search excerpts only so far; nothing verified first-hand), plus proposed
+  copy corrections.
+- `docs/final-rush-outline.md` and `docs/implementation-plan.md`.
+
 ## Still open
 
 - Verify the sources first-hand (see the doc), and decide American-standard vs

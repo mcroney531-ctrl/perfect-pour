@@ -5,6 +5,9 @@ gathered from search-result excerpts; the source pages themselves could not be
 opened from the build environment. Before any copy ships, someone should read
 each source directly and update the "Checked" column.
 
+The latest source pass and the CLAIM copy review are in
+`docs/source-claim-audit.md`.
+
 The game keeps three kinds of rule apart. They are labelled in the code
 (`PHYSICAL`, `SOURCED`, `GAME` in the `<script id="sim">` block) and here.
 
