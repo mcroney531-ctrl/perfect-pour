@@ -591,3 +591,97 @@ test('Storyline-style embed: releasing the pointer outside the iframe closes the
   assert.equal(await g.getAttribute('#pour', 'aria-pressed'), 'false', 'tap closed after releasing outside');
   await h.close();
 });
+
+// ---- M6: certification (docs/m6-certification-spec.md) ----
+// pourTo(): tilt, pour, start straightening at `straightenAt`% full, stop at 95%.
+// A straighten at 30% gives a big head: a failing pour with good technique.
+async function serveIn(h, mode, opts) { await pourTo(h, mode, opts); await h.page.keyboard.press('s'); await h.run(400); }
+const pil = async h => (await progress(h)).stations.pilsner;
+
+test('M6: a passing Guided pour does not certify; a failing Solo pour does not certify', async () => {
+  const h = await openApp(browser, APP() + '#/pilsner');
+  await h.run(300);
+  await serveIn(h, 'guided');
+  assert.equal(await h.text('#resultTitle'), 'Clean pour');
+  assert.equal((await pil(h)).status, 'inProgress', 'Guided pass is practice only');
+  assert.equal(await h.page.locator('.st-cert').count(), 0);
+  await h.page.keyboard.press('r'); await h.run(300);
+  await serveIn(h, 'solo', { straightenAt: 30 });
+  assert.notEqual(await h.text('#resultTitle'), 'Clean pour');
+  assert.equal((await pil(h)).status, 'inProgress', 'Solo fail does not certify');
+  assert.equal(await h.page.locator('.st-cert').count(), 0);
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('M6: a passing Solo pour certifies exactly once, with the seal above the full debrief', async () => {
+  const h = await openApp(browser, APP() + '#/pilsner');
+  await h.run(300);
+  await serveIn(h, 'solo');
+  assert.equal(await h.text('#resultTitle'), 'Clean pour');
+  const p1 = await pil(h);
+  assert.equal(p1.status, 'certified');
+  assert.ok(p1.certifiedAt);
+  assert.equal(await h.page.isVisible('.st-cert'), true);
+  assert.match(await h.text('.st-cert'), /Pilsner station complete/);
+  assert.match(await h.text('.st-cert'), /virtual Pilsner training/);
+  assert.doesNotMatch(await h.text('.st-cert'), /qualified|licen[cs]ed|professional|official/i, 'scoped wording');
+  // The debrief is still there, below the seal.
+  for (const sel of ['#checksTech', '#checks', '#debriefText', '#fbPrimary']) assert.equal(await h.page.isVisible(sel), true, sel);
+  assert.match(await h.text('#debriefText'), /started bringing it up/);
+  // Another passing Solo pour: no second award, no repeated banner.
+  await h.page.keyboard.press('r'); await h.run(300);
+  await serveIn(h, 'solo');
+  const p2 = await pil(h);
+  assert.equal(p2.certifiedAt, p1.certifiedAt, 'not re-awarded');
+  assert.equal(await h.page.locator('.st-cert').count(), 0, 'the moment happens once');
+  assert.equal(p2.attempts, 2);
+  assert.equal(p2.passes, 2);
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('M6: certification persists across reloads and is not revoked by a failed replay; hub shows Certified and Replay', async () => {
+  const h = await openApp(browser, APP() + '#/pilsner');
+  await h.run(300);
+  await serveIn(h, 'solo');
+  assert.equal((await pil(h)).status, 'certified');
+  await h.page.keyboard.press('r'); await h.run(300);
+  await serveIn(h, 'solo', { straightenAt: 30 });
+  assert.equal((await pil(h)).status, 'certified', 'a failed replay never revokes');
+  await h.page.click('#exitBtn'); await settle(h, 300);
+  assert.equal(await chip(h, 'pilsner'), 'Replay');
+  assert.match(await h.text('#status-pilsner'), /Certified/);
+  assert.equal(await h.page.isVisible('[data-station=pilsner] .hub__seal'), true);
+  assert.equal(await h.text('#hubCount'), '1');
+  assert.match(await h.text('#hubLede'), /Pilsner certified/);
+  // Final Rush stays locked with only Pilsner certified; the others are still coming soon.
+  assert.equal(await h.page.getAttribute('#rushBtn', 'aria-disabled'), 'true');
+  assert.match(await h.text('#rushChip'), /Locked/);
+  for (const id of ['hefeweizen', 'stout']) assert.equal((await progress(h)).stations[id].status, 'new');
+  // Survives a reload, and Replay opens the station.
+  await h.page.reload(); await h.run(300);
+  assert.equal(await chip(h, 'pilsner'), 'Replay');
+  await h.page.click('[data-station=pilsner]'); await settle(h, 300);
+  assert.equal(await h.page.evaluate(() => window.ppBrewery.current()), 'pilsner');
+  assert.equal((await pil(h)).status, 'certified', 'entering again does not demote');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('M6: abandoning a pour after certification keeps certification and counts the abandon', async () => {
+  const h = await openApp(browser, APP());
+  await h.run(300);
+  await h.page.click('[data-station=pilsner]'); await settle(h, 300);
+  await serveIn(h, 'solo');
+  await h.page.keyboard.press('r'); await h.run(300);
+  await h.page.keyboard.press('t'); await h.run(400);
+  await h.page.keyboard.down(' '); await h.run(2000);
+  await h.page.goBack(); await settle(h, 300);
+  await h.page.keyboard.up(' ');
+  const p = await pil(h);
+  assert.equal(p.status, 'certified');
+  assert.equal(p.abandoned, 1);
+  assert.equal((await lastLog(h)).endedBy, 'navigate');
+  await h.close();
+});

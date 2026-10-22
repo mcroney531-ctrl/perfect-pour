@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>The Bar · Riverside Brewing Co.</title>
-<link rel="stylesheet" href="css/tokens.css?v=m5e">
-<link rel="stylesheet" href="css/components.css?v=m5e">
-<link rel="stylesheet" href="css/pilsner-station.css?v=m5e">
-<link rel="stylesheet" href="css/brewery.css?v=m5e">
+<link rel="stylesheet" href="css/tokens.css?v=m6">
+<link rel="stylesheet" href="css/components.css?v=m6">
+<link rel="stylesheet" href="css/pilsner-station.css?v=m6">
+<link rel="stylesheet" href="css/brewery.css?v=m6">
 </head>
 <body>
 <!-- Brand symbols shared by the hub (same as design/components.html). -->
@@ -37,6 +37,19 @@
       <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="#2a160c" opacity="0.6"/><path d="M9 4 L37 4 L36.6 10 L9.4 10 Z" fill="#e8d6b4" opacity="0.6"/>
       <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="none" stroke="#dfe4e6" stroke-width="1.6" stroke-dasharray="3 3"/>
     </symbol>
+    <!-- Riverside certification seal (from the M2 component sheet). -->
+    <symbol id="pp-seal" viewBox="0 0 220 220">
+      <path id="pp-seal-top" d="M30 110 A80 80 0 0 1 190 110" fill="none"/>
+      <path id="pp-seal-bot" d="M39.7 156 A84 84 0 0 0 180.3 156" fill="none"/>
+      <circle cx="110" cy="110" r="104" fill="url(#pp-gold-metal)"/>
+      <circle cx="110" cy="110" r="96" fill="#0f2a23" stroke="#f7d27a" stroke-width="1.5"/>
+      <circle cx="110" cy="110" r="66" fill="none" stroke="#c98d24" stroke-width="1.2" stroke-dasharray="2 4"/>
+      <text style="font: 800 15px 'Barlow Condensed', sans-serif; letter-spacing: 2.5px" fill="#f7d27a"><textPath href="#pp-seal-top" startOffset="50%" text-anchor="middle">RIVERSIDE BREWING CO.</textPath></text>
+      <text style="font: 700 13px 'Barlow Condensed', sans-serif; letter-spacing: 2.5px" fill="#f7d27a"><textPath href="#pp-seal-bot" startOffset="50%" text-anchor="middle">PILSNER STATION</textPath></text>
+      <svg x="82" y="56" width="56" height="56" style="color:#f0bd4a"><use href="#pp-emblem"/></svg>
+      <path d="M34 122 H186 L176 136 L186 150 H34 L44 136 Z" fill="url(#pp-gold-metal)" stroke="#7d5512"/>
+      <text x="110" y="142" text-anchor="middle" style="font: 800 20px 'Barlow Condensed', sans-serif; letter-spacing: 3px" fill="#1c1406">CERTIFIED</text>
+    </symbol>
   </defs>
 </svg>
 <div id="app-root"></div>
@@ -48,12 +61,12 @@
   <button type="button" class="pp-btn pp-btn--ghost" id="rotateDismiss">Continue anyway</button>
 </div>
 
-<script src="js/sim.js?v=m5e"></script>
-<script src="js/pilsner-station.js?v=m5e"></script>
-<script src="js/progress.js?v=m5e"></script>
-<script src="js/hub-scenes.js?v=m5e"></script>
-<script src="js/station-look.js?v=m5e"></script>
-<script src="js/station-cues.js?v=m5e"></script>
-<script src="js/brewery.js?v=m5e"></script>
+<script src="js/sim.js?v=m6"></script>
+<script src="js/pilsner-station.js?v=m6"></script>
+<script src="js/progress.js?v=m6"></script>
+<script src="js/hub-scenes.js?v=m6"></script>
+<script src="js/station-look.js?v=m6"></script>
+<script src="js/station-cues.js?v=m6"></script>
+<script src="js/brewery.js?v=m6"></script>
 </body>
 </html>

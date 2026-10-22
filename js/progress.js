@@ -49,6 +49,14 @@
     markEntered: id => touch(id, s => { if (s.status === 'new') s.status = 'inProgress'; }),
     recordServed: (id, pass) => touch(id, s => { s.attempts++; if (pass) s.passes++; }),
     recordAbandoned: id => touch(id, s => { s.abandoned++; }),
+    // M6: certification is awarded once and never revoked by later pours.
+    // Returns true only the first time (idempotent; callers decide when).
+    certify: id => {
+      const s = data.stations[id];
+      if (!s || s.status === 'certified') return false;
+      touch(id, st => { st.status = 'certified'; st.certifiedAt = new Date().toISOString(); });
+      return true;
+    },
     seen: key => !!data.seen[key],
     markSeen: key => { if (!data.seen[key]) { data.seen[key] = true; save(); } },
     reload: () => { readOnly = false; data = load(); },

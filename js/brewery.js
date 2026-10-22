@@ -24,7 +24,7 @@
   const STATE = {
     new: { action: 'Start here', status: 'Not started. Recommended first station.', ring: 'new' },
     inProgress: { action: 'Continue', status: 'In progress.', ring: 'progress' },
-    certified: { action: 'Replay', status: 'Certified.', ring: 'certified' },   // set by M6 only
+    certified: { action: 'Replay', status: 'Certified: virtual training complete.', ring: 'certified' },   // a passing Solo pour (M6)
     preview: { action: 'Coming soon', status: 'Coming soon. Not playable yet.', ring: 'preview' }
   };
   const ROOM = { top: 0, bottom: 52, side: 12, edge: 4, ring: 44 };   // top is the measured header height
@@ -73,6 +73,7 @@
               <button type="button" class="hub__card" data-station="${s.id}"
                 ${s.playable ? '' : 'aria-disabled="true"'} aria-describedby="status-${s.id}">
                 <svg class="hub__thumb" aria-hidden="true"><use href="#pp-glass-${s.glass}"/></svg>
+                <svg class="hub__seal" viewBox="0 0 220 220" aria-hidden="true"><use href="#pp-seal"/></svg>
                 <span class="hub__name">${s.name}</span>
                 <span class="hub__sub">${s.sub}</span>
                 <span class="hub__action" id="chip-${s.id}"></span>
@@ -294,7 +295,7 @@
     const station = PilsnerStation.mount(stationHost, {
       onExit: leaveStation,
       onEvent(type, d) {
-        if (type === 'served') P.recordServed(id, d.pass);
+        if (type === 'served') onServed(id, d);
         if (type === 'abandoned') P.recordAbandoned(id);
       }
     });
@@ -324,6 +325,32 @@
     const exit = document.getElementById('exitBtn');
     if (exit) exit.focus({ preventScroll: true });
   }
+
+  // M6: only a passing Solo pour certifies (Watch and Guided never do), once,
+  // permanently. The station's own debrief stays; the seal sits above it.
+  function onServed(id, d) {
+    P.recordServed(id, d.pass);
+    const old = stationHost.querySelector('.st-cert');
+    if (old) old.remove();
+    if (d.mode === 'solo' && d.pass === true && P.certify(id)) showCertified(id);
+  }
+  function showCertified(id) {
+    const sheet = document.getElementById('result');
+    if (!sheet) return;
+    sheet.insertAdjacentHTML('afterbegin', `
+      <div class="st-cert">
+        <svg class="st-cert__seal" viewBox="0 0 220 220" aria-hidden="true"><use href="#pp-seal"/></svg>
+        <div>
+          <p class="pp-label st-cert__label">Certified</p>
+          <p class="st-cert__title">${BY_ID[id].name} station complete</p>
+          <p class="st-cert__note">You've completed Riverside's virtual ${BY_ID[id].name} training. Your pour details are below.</p>
+        </div>
+      </div>`);
+    certLive.textContent = `Certified: ${BY_ID[id].name} station complete. You've completed Riverside's virtual ${BY_ID[id].name} training.`;
+  }
+  const certLive = document.createElement('div');
+  certLive.className = 'sr-only'; certLive.setAttribute('aria-live', 'polite'); certLive.setAttribute('aria-atomic', 'true');
+  document.body.appendChild(certLive);
 
   function leaveStation() {
     if (cameFromHub) history.back();

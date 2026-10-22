@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # simulation (61) + hub layout (8), Node 18+, no installs
-npm run test:ui     # browser: 49 Playwright tests (npm install first)
+npm run test:ui     # browser: 53 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -197,7 +197,20 @@ pixel-parity checks across refactors.
   the renderer: back-wall art behind the beer, wall/rim/base/highlights in
   front, training overlays always on top.
 
-## M5: Pilsner station in the brewery look (for review)
+## M6: certification (for review)
+
+- One passing **Solo** pour certifies the Pilsner station: once, permanently
+  (a failed replay never revokes it). Watch and Guided never certify.
+- The first certifying pour shows the Riverside seal above the full pour
+  debrief: "Pilsner station complete · You've completed Riverside's virtual
+  Pilsner training." Scoped wording: not a professional qualification, not a
+  centrally kept record (progress lives in the browser).
+- Hub: seal on the Pilsner card, "Replay", "1 of 3 certified"; Final Rush
+  stays locked until all three stations are certified.
+- Spec and implementation notes: [`docs/m6-certification-spec.md`](docs/m6-certification-spec.md).
+- M5's fresh-learner playtest is still open.
+
+## M5: Pilsner station in the brewery look (implementation complete; fresh-learner validation pending)
 
 - **Backdrop:** revision 2 approved (`assets/station/pilsner.webp`), with the
   M2 treatment applied from outside the station (`js/station-look.js`: warm
@@ -210,7 +223,6 @@ pixel-parity checks across refactors.
   dims so it doesn't read as the way to straighten (it still works).
 - **Panel:** Watch steps fold behind "Show all steps"; the caption carries
   the current step.
-- M6 rules agreed (not implemented): [`docs/m6-certification-spec.md`](docs/m6-certification-spec.md).
 - **Reachability** tested at 1920 x 1080, 1280 x 720, 844 x 390 and 667 x 375:
   modes, tilt, pad, Serve, Restart and the result buttons. (Delivered as a
   standalone web app; Storyline embedding is not a target, though the frame

@@ -1,7 +1,8 @@
-# M6 spec: certification and progress (agreed, not yet implemented)
+# M6 spec: certification and progress (implemented, for review)
 
-Status: product rules locked by the user and GPT. Implementation is on hold
-until one M5 validation check is done: a fresh-learner playtest. (The
+Status: implemented (all tests below pass). M6 was started before the M5
+fresh-learner playtest by agreement; that playtest remains an open M5
+validation item. (The
 Storyline Web Object test was dropped: the app ships as a standalone 16:9 web
 app.)
 
@@ -44,3 +45,16 @@ app.)
 - Final Rush stays locked with only Pilsner certified.
 - Attempt counters, logging and abandonment behave as before.
 - The Pilsner simulation tests are unchanged and pass.
+
+## Implementation
+
+- `js/progress.js`: `certify(id)`, idempotent; sets `status: 'certified'` and
+  `certifiedAt` once and returns true only then. `markEntered` never demotes.
+- `js/brewery.js`: the station's `served` event keeps its `mode`;
+  `onServed` records the attempt and certifies only on
+  `mode === 'solo' && pass === true`. The first certifying pour inserts a
+  seal card at the top of the result sheet (the debrief stays below it) and
+  announces it in a polite live region.
+- Hub: the certified card shows the seal, "Replay" and "Certified: virtual
+  training complete."; the count reads 1 of 3; Final Rush stays locked.
+- Untouched: `js/sim.js`, `js/pilsner-station.js`, `index.html`.

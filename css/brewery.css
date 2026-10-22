@@ -283,3 +283,25 @@ html, body { background: #050707; }
 #stationHost .st-pouring #angleCtl { opacity: 0.45; transition: opacity 0.2s; }
 /* The pill says it more plainly; hide the pad's own subtitle while it shows. */
 #stationHost #pour:has(.st-cue--guided.is-on) #pourSub { color: transparent; }   /* still read by screen readers */
+
+/* ---- M6: certification ---- */
+/* Hub card: a small seal on the certified station's card. */
+.hub__seal { display: none; position: absolute; right: -14px; top: -16px; width: 44px; height: 44px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6)); }
+.hub__card--certified .hub__seal { display: block; }
+.hub__card--certified { border-color: rgba(240, 189, 74, 0.8); }
+
+/* Station: the certification moment, above the pour debrief in the result sheet. */
+#stationHost .st-cert {
+  display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center;
+  margin: -4px 0 12px; padding: 10px 12px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(21, 52, 44, 0.95), rgba(10, 26, 22, 0.95)); border: 1px solid rgba(240, 189, 74, 0.7);
+}
+#stationHost .st-cert__seal { width: 76px; height: 76px; }
+#stationHost .st-cert__label { margin: 0; }
+#stationHost .st-cert__title { margin: 2px 0 2px; font: 800 1.35rem/1.05 var(--pp-font-display); text-transform: uppercase; letter-spacing: 0.02em; color: var(--pp-text); }
+#stationHost .st-cert__note { margin: 0; font-size: 0.82rem; color: var(--pp-text-muted); }
+@media (prefers-reduced-motion: no-preference) {
+  #stationHost .st-cert__seal { animation: st-seal 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+}
+@keyframes st-seal { from { transform: scale(0.4) rotate(-20deg); opacity: 0; } }
