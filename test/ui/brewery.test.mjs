@@ -43,23 +43,23 @@ const INSTRUMENT = () => {
 };
 const listeners = h => h.page.evaluate(() => [...window.__pp.live.values()].reduce((n, s) => n + s.size, 0));
 
-test('hub: Pilsner is the place to start, the others are visible but not playable, Final Rush is locked', async () => {
+test('hub: Pilsner is the place to start, Hefeweizen is open, Nitro Stout is visible but not playable, Final Rush is locked', async () => {
   const h = await openApp(browser, APP());
   await h.run(200);
   assert.equal(await h.page.title(), 'The Bar · Riverside Brewing Co.');
   assert.equal(await chip(h, 'pilsner'), 'Start here');
-  assert.equal(await chip(h, 'hefeweizen'), 'Coming soon');
+  assert.equal(await chip(h, 'hefeweizen'), 'Start');
   assert.equal(await chip(h, 'stout'), 'Coming soon');
-  for (const id of ['hefeweizen', 'stout'])
-    assert.equal(await h.page.getAttribute(`[data-station=${id}]`, 'aria-disabled'), 'true');
-  assert.equal(await h.page.getAttribute('[data-station=pilsner]', 'aria-disabled'), null);
+  assert.equal(await h.page.getAttribute('[data-station=stout]', 'aria-disabled'), 'true');
+  for (const id of ['pilsner', 'hefeweizen'])
+    assert.equal(await h.page.getAttribute(`[data-station=${id}]`, 'aria-disabled'), null);
   assert.equal(await h.page.getAttribute('#rushBtn', 'aria-disabled'), 'true');
   assert.match(await h.text('#rushChip'), /Locked/);
   assert.equal(await h.text('#hubCount'), '0');
   // Coming soon and locked do nothing but say so.
-  await h.page.click('[data-station=hefeweizen]', { force: true }); await h.run(100);
+  await h.page.click('[data-station=stout]', { force: true }); await h.run(100);
   assert.ok(await hubVisible(h));
-  assert.match(await h.text('#hubNotice'), /Hefeweizen is coming soon/);
+  assert.match(await h.text('#hubNotice'), /Nitro Stout is coming soon\. Start with the Pilsner\./);
   await h.page.click('#rushBtn', { force: true }); await h.run(100);
   assert.match(await h.text('#hubNotice'), /Final Rush unlocks/);
   assert.equal(await h.page.evaluate(() => location.hash), '');
@@ -304,7 +304,7 @@ test('real art loads unlabelled, the UI scales with the frame; missing art is fl
   await b.close();
 });
 
-test('truthful hub: nothing certified, no rejected slogan, coming-soon cards offer no Start', async () => {
+test('truthful hub: nothing certified, no rejected slogan, the coming-soon card offers no Start', async () => {
   const h = await openApp(browser, APP());
   await h.run(200);
   const text = await h.page.evaluate(() => document.body.innerText);
@@ -312,10 +312,8 @@ test('truthful hub: nothing certified, no rejected slogan, coming-soon cards off
   assert.doesNotMatch(text, /✓|Replay/, 'no certified station shown');
   assert.equal(await h.text('#hubCount'), '0');
   assert.equal(await h.page.locator('.hub__action--certified, .hub__ring--certified').count(), 0);
-  for (const id of ['hefeweizen', 'stout']) {
-    assert.equal(await chip(h, id), 'Coming soon');
-    assert.doesNotMatch(await h.text(`[data-station=${id}]`), /Start|Continue/);
-  }
+  assert.equal(await chip(h, 'stout'), 'Coming soon');
+  assert.doesNotMatch(await h.text('[data-station=stout]'), /Start|Continue/);
   for (const f of ['assets/hub/hub-desktop-provisional.svg']) {
     const svg = await h.page.evaluate(async u => (await fetch(u)).text(), f);
     assert.doesNotMatch(svg, /good beer|better people/i, f);
@@ -654,8 +652,8 @@ test('M6: certification persists across reloads and is not revoked by a failed r
   assert.match(await h.text('#status-pilsner'), /Certified/);
   assert.equal(await h.page.isVisible('[data-station=pilsner] .hub__seal'), true);
   assert.equal(await h.text('#hubCount'), '1');
-  assert.match(await h.text('#hubLede'), /Pilsner certified/);
-  // Final Rush stays locked with only Pilsner certified; the others are still coming soon.
+  assert.equal(await h.text('#hubLede'), 'Pilsner certified. Next: the Hefeweizen station.');
+  // Final Rush stays locked with only Pilsner certified; the others are untouched.
   assert.equal(await h.page.getAttribute('#rushBtn', 'aria-disabled'), 'true');
   assert.match(await h.text('#rushChip'), /Locked/);
   for (const id of ['hefeweizen', 'stout']) assert.equal((await progress(h)).stations[id].status, 'new');
@@ -716,7 +714,7 @@ test('contract: every playable station mounts, abandons a started pour once, unm
     }, id);
     await h.run(100);
     assert.equal(typeof (await h.page.evaluate(() => typeof window.__h.unmount)), 'string');
-    // Start a pour in Guided (Pilsner's controls; a new station adds its own branch here).
+    // Start a pour in Guided (both stations share these controls and ids).
     await h.page.click('#contractHost #modes [data-mode=guided]'); await h.run(100);
     await h.page.keyboard.press('t'); await h.run(400);
     await h.page.keyboard.down(' '); await h.run(1500);

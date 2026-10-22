@@ -1070,7 +1070,7 @@
         attempt++;
         const m = evaluate(state, cfg).metrics;
         const entry = {
-          v: 2.3, session, attempt, at: new Date().toISOString(),
+          station: 'pilsner', v: 2.3, session, attempt, at: new Date().toISOString(),
           mode, variant, tapMode, straightenVia,
           orientation: innerWidth > innerHeight ? 'landscape' : 'portrait',
           served: wasServed,

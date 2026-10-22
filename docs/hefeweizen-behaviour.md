@@ -1,9 +1,11 @@
-# Hefeweizen (Foam Control): behaviour spec and proposed tuning — for review
+# Hefeweizen (Foam Control): behaviour spec and tuning
 
 **Status:**
-- **Built:** the simulation, `js/hefe-sim.js` (`HefeSim`), with 13 node tests (`test/hefe-sim.test.js`).
-- **Not built:** the station UI, the hub entry, art.
-- **Not locked:** the scoring bands. They are proposals for this review.
+- **Playable station built** (for review):
+  - `js/hefe-sim.js` (`HefeSim`) and `js/hefe-station.js` (`HefeStation`), registered by `js/stations/hefeweizen.js`.
+  - Tests: 16 node tests (`test/hefe-sim.test.js`) and 9 browser tests (`test/ui/hefeweizen.test.mjs`).
+- **Tuning:** approved **provisionally** in the simulation review. Bands are not final until interactive pours have been seen.
+- **Art:** provisional backdrop only.
 - **Unchanged:** Pilsner's sim and scoring.
 
 Procedure background is in `docs/procedures/hefeweizen.md` and source status
@@ -71,7 +73,7 @@ action verdict is given.
   - Lively pours narrow to 15–17 points. Tilted capacity caps them: at 45° the glass holds only up to 85% before spilling.
 - **There is a physical ceiling.** Staying tilted too long spills over the lip (PHYSICAL), so "just always wait" fails too.
 
-## 2. Proposed tuning targets (for approval)
+## 2. Tuning targets (approved provisionally)
 
 | Parameter | Proposed | Kind | Note |
 |---|---|---|---|
@@ -86,49 +88,58 @@ action verdict is given.
 | Verdict grace | Early: 10 points below the band; late: 10 points above | GAME | Wide enough that "early" or "late" always means a miss |
 | Glass | Weizen vase: bulb, waist, flare, rim turning in | PHYSICAL (for the drawing) | Tilted capacity: 81% of volume at 45° |
 
-## 3. Behaviour by mode (for the station build, next slice)
+## 3. Behaviour by mode (as built, after the simulation review)
 
 **Watch:**
-- The demo is a **lively** pour (L 1.18).
-- It visibly waits past half full and starts up at about 71%, passing with a 19% head.
-- Captions:
-  1. "Same routine as the Pilsner: tilt the glass to about 45°."
-  2. "Open the tap fully and watch the foam. This one is building it fast."
-  3. "Past half full, but plenty of foam already: stay tilted a little longer." This is timed from the beer.
-  4. "Now bring the glass up. Read the foam each time: later when it builds fast, sooner when it builds slowly."
-  5. "Finish upright to build the big wheat-beer head."
-  6. "The head reached the LINE: let go, then serve."
-- **Proposal:** a second, calm demo, shown with a "Show a calm pour" toggle, so the contrast is seen as well as told. This is a decision for review.
+- **The lively demo plays first** (L 1.18). It visibly waits past half full and starts up at about 71%, passing with a 19% head. The "past half full" caption is timed from the beer.
+- **"Watch a calmer pour"** is an optional button. It plays the calm demo (L 0.88): little foam forms while tilted, and the same movement starts at about 37%.
+  - The button then reads "Watch the foamy pour again".
+  - Learners never have to sit through both.
+- The FOAM bracket marks the foam already on the beer while the glass is tilted.
 
 **Guided:**
-- A **per-pour BRING UP band** drawn on the glass. It moves with the pour; the coach "knows the keg".
-- At-most-once hints:
+- **No BRING UP band**, and no target drawn on the glass (review decision 5).
+- The learner-facing signal is the beer itself:
+  - The foam layer has a darker beer/foam edge.
+  - A **FOAM bracket** sits beside the glass, from the top of the foam to the beer, while the glass is tilted and pouring.
+- The hidden calibrated window decides only two things:
+  - When a hint is due.
+  - What the action verdict says ("…at a good point for this pour").
+- **Hints**, at most once each:
   - Tilt first.
-  - **Foam fast:** on a lively pour, when the player is still tilted at about half full (the habit point): "Foam is building fast on this one: stay tilted a little longer."
-  - **Foam slow:** on a calm pour, once its band is reached: "…start bringing it up a little sooner than usual."
-  - The backup "bring it up now" past the band.
+  - **Foam fast:** on a lively pour, at the habitual half-full point. The FOAM bracket lights up for 3 s with it.
+  - **Foam slow:** on a calm pour, once its window opens. The bracket lights up the same way.
+  - The backup "bring it up now", past the window.
   - Spill warning, near the line, stop.
-- Typical pours get no foam hint.
+
+  Typical pours get no foam hint.
 
 **Solo:**
-- No band, no hints. The learner reads the foam.
-- A passing Solo pour certifies (the M6 rule, unchanged).
-- **Decision for review:** if Solo draws from the full range, a learner can certify on a typical pour using the Pilsner habit, without ever adapting. Options:
-  - **(a)** Full range (simplest; adaptation encouraged, not proven).
-  - **(b)** Solo pours are always calm or lively, so a Solo pass shows adaptation. **Recommended.** The M6 rule is still one passing Solo pour.
+- No bracket, no hints, no action marks.
+- **Only calm or lively pours are dealt.**
+- A passing Solo pour certifies (the M6 rule). **One pass shows success on that pour's condition, not mastery of both.** The certificate wording claims only "virtual Hefeweizen training", per M6.
 
-**Seeds:**
-- Watch is fixed.
-- Guided and Solo pours take the next seed in a per-session sequence. The first Guided pour is typical, so the first experience isn't the hardest.
-- The seed and liveliness are logged.
+**Scenarios (deterministic, balanced, no rerolls):**
+- `HefeSim.scenario(mode, n)` gives pour n of a mode:
+  - **Guided:** typical (L 1), then lively, calm, typical, and so on.
+  - **Solo:** each pair of pours holds one calm and one lively, in an order set by the pair's seed.
+  - Where a pour sits inside its category comes from its own seed.
+- The next index per mode is kept on the device (`riverside.hefe.scenario`).
+- **Only a served pour moves a mode on.** Restarting, switching modes, or leaving the station and coming back replays the same pour.
+  - The review allowed a deliberate mode change to advance the sequence. We chose the stricter rule: it is simpler, and no route rerolls.
 
-**Debrief** (`HefeSim.COPY`): every line names the pour and the adaptation. Examples:
-- "This pour foamed more than usual, and you started bringing it up at about 53% full, so the head came out too big (27%). When the foam is building fast, stay tilted a little longer."
-- "Clean pour. This pour foamed less than usual, and you brought it up at about 37% full to match."
+**Debrief** (after the pour; the only place this pour's window is shown):
+- The glass with this pour's good range, the LINE zone, and ticks where the player acted.
+- "Started up at 56%, with foam 10% of the glass. Good range for this pour: 68–78%: early for this pour. Stopped at 94%: in the zone."
+- Then the feedback line. Copy describes the observed pour ("This pour built foam fast / slowly / a moderate amount of foam"), never what wheat beer "usually" does. A test forbids "usual", "standard", "rule" and "always".
 
-A test checks that no line claims a "standard" or a universal rule.
+**Accessibility:**
+- While tilted, the level milestones add the foam ("Level 50%. Foam 9% of the glass."). That is the cue in words.
+- Hints and verdicts go to the live region, as at Pilsner.
 
-**Action verdicts** are judged against this pour's band: "Started bringing it up a little early for this pour."
+**Log:**
+- `perfectPour.log.hefe.v1`, entries tagged `station: 'hefeweizen'`, with the scenario (n, seed, liveliness, label).
+- Pilsner's entries now carry `station: 'pilsner'`.
 
 ## 4. What the tests guarantee (`test/hefe-sim.test.js`)
 
@@ -186,15 +197,29 @@ must stay pixel-identical when they are extracted.
 - Per-pour windows.
 - Seeded variation.
 
-## 6. Requirements carried into the station build
-- **The renderer must make the foam layer on a tilted beer clearly legible.** It is the cue. This needs checking on a phone held sideways.
-- Station-tagged pour log, with the seed and liveliness.
-- Hub guidance for more than one playable station. The lede and "start here" currently come from the first playable station.
-- Provisional backdrop. Then the measured template (a taller glass zone), then art.
+## 6. Perception check (the next review's question)
 
-## 7. Questions for this review
-1. Approve the per-pour liveliness mechanism (range, labels, distribution)?
-2. Approve the head band of 16–24% and the other targets in §2?
-3. Solo draws: (a) full range, or (b) calm or lively only (recommended)?
-4. A second, calm Watch demo?
-5. Guided band moving per pour (proposed), or a fixed house band plus foam hints only?
+The calculated foam difference has to be **visible during play**. Measured on
+screen at half full, on a phone held sideways (844×390):
+
+| Pour | Foam on the beer | Head gauge |
+|---|---|---|
+| Lively | a cream band about 12 px thick | 9% |
+| Calm | a thin line about 4 px thick | 3% |
+
+At 1280×720 the bands are about 22 px and 7 px. Both sizes were measured
+from the drawn geometry. The head gauge shows the same number in every mode,
+Solo included.
+
+This is a judgment for a person: whether a learner notices and acts on it is
+what the next review is for. Levers if it reads too subtly, all presentation
+or GAME, no scoring change:
+- A creamier, higher-contrast foam texture.
+- More splash and agitation on lively pours.
+- A wider liveliness range.
+
+## 7. Open items
+1. Final scoring bands after interactive play (provisional now).
+2. Art: the measured template and backdrop, with a taller glass zone (M5 method).
+3. Hefeweizen can be played before Pilsner is certified. The hub recommends Pilsner first ("Start here"), and Hefeweizen shows a quieter "Start". Should Hefeweizen lock until Pilsner is certified instead?
+4. The fresh-learner playtest (shared with Pilsner's open item).

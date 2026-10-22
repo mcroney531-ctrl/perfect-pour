@@ -149,8 +149,8 @@ glass is.**
 ## Tests
 
 ```
-npm test            # Pilsner sim (61), Hefeweizen sim (13), hub layout (8), station registry (3), progress (4); Node 18+, no installs
-npm run test:ui     # browser: 56 Playwright tests (npm install first)
+npm test            # Pilsner sim (61), Hefeweizen sim (16), hub layout (8), station registry (3), progress (4); Node 18+, no installs
+npm run test:ui     # browser: 65 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -385,7 +385,9 @@ modules) so `index.html` still opens by double-click from disk.
 | `js/progress.js` | Versioned training progress on this device (`RiversideProgress`). Older or damaged saves are repaired per station, never wiped |
 | `js/stations.js` | The station registry (`RiversideStations`): the shell builds the hub and mounts stations from what is registered |
 | `js/stations/pilsner.js` | Registers Pilsner: its card, intro and backdrop, and a thin adapter around `PilsnerStation.mount` that adds the Pilsner-only look and cue layers |
-| `js/stations/upcoming.js` | Hefeweizen and Nitro Stout as coming soon (card details only, no mount) |
+| `js/stations/hefeweizen.js`, `js/hefe-station.js`, `js/hefe-sim.js` | The Hefeweizen station: registration, station (renderer, input, modes, debrief, log) and its own sim |
+| `js/station-chrome.js` | Panel chrome shared by both stations (the folded Watch steps) |
+| `js/stations/upcoming.js` | Nitro Stout as coming soon (card details only, no mount) |
 | `css/pilsner-station.css` | The station's styles, scoped to its host (`.pp-st`) |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
 | `css/tokens.css`, `css/components.css` | M2 visual system: colour, type, spacing tokens and the shared components (used by the hub; the station adopts them in M5) |
@@ -418,21 +420,28 @@ RiversideStations.register({
 });   // no mount = shown as coming soon
 ```
 
-## Step 2a: Hefeweizen simulation (for review; scoring bands not locked)
+## Step 2: Hefeweizen station (playable, for review; bands provisional, art provisional)
 
-`js/hefe-sim.js` (`HefeSim`) is its own pure, seeded, fixed-step sim. Nothing
-is shared with the protected Pilsner sim.
+**Foam Control.** The same routine as the Pilsner, applied to a foamier beer
+that varies from pour to pour. The learner reads the foam and adapts when to
+bring the glass up.
 
-- **Glass:** a curved weizen vase.
-- **Foam:** foamier than the Pilsner.
-- **Per-pour liveliness:** calm, typical or lively. Lively pours visibly carry more foam while tilted, which is the cue.
-
-The skill is reading that foam and adapting when to bring the glass up. No
-single straighten point passes every pour.
-
-- **Tests:** 13 node tests hold the Guided window and the verdicts to the sim, and cover the adaptation, the cue, known-bad pours, the feedback and the hints.
-- **For review:** the proposed bands and the open questions are in `docs/hefeweizen-behaviour.md`.
-- **Not built yet:** the station UI, the hub entry and art.
+- **Sim:** `js/hefe-sim.js` (`HefeSim`), a pure, seeded sim of its own:
+  - A curved weizen glass.
+  - Per-pour liveliness (calm, typical or lively).
+  - Calibrated hidden windows.
+  - Deterministic, balanced scenarios.
+- **Station:** `js/hefe-station.js` (`HefeStation`), registered by `js/stations/hefeweizen.js`.
+  - It reuses the Pilsner station's markup structure and ids, so the station styles and the in-frame layout apply unchanged.
+  - The pad, keys and buttons work the same.
+  - The Pilsner station and sim are untouched.
+- **Watch:** a lively demo, plus an optional "Watch a calmer pour".
+- **Guided:** no target band. A FOAM bracket on the beer, and hints that react to this pour.
+- **Solo:** calm and lively pours only; a pass certifies (M6).
+- **No rerolls:** restarting, switching modes or leaving replays the same pour. Only a served pour moves on.
+- **Hub:** guidance handles two playable stations. Pilsner is "Start here"; Hefeweizen is open ("Start") and becomes "Start here, recommended next" once Pilsner is certified.
+- **Shared code:** the folded Watch steps moved into `js/station-chrome.js`, now used by both stations. Pilsner screens are pixel-identical.
+- **Spec and perception notes:** `docs/hefeweizen-behaviour.md`.
 
 ## Slice 1: station registry (for review)
 

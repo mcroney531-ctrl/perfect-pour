@@ -1,10 +1,11 @@
 // Pilsner station, registered with the app shell. A thin adapter: the
 // station itself (js/pilsner-station.js), its simulation and its scoring are
 // unchanged. The adapter adds the Pilsner-only presentation layers that sit
-// outside the station (the approved look, the straighten cues, the pad-held
-// marker and the folded Watch steps), which read the Pilsner station's own
-// markup and so belong with it rather than in the shell.
-// Classic script; needs PilsnerStation and RiversideStations.
+// outside the station (the approved look, the straighten cues and the
+// pad-held marker), which read the Pilsner station's own markup and so belong
+// with it rather than in the shell, and the folded Watch steps it shares with
+// the Hefeweizen station (js/station-chrome.js).
+// Classic script; needs PilsnerStation, RiversideStationChrome and RiversideStations.
 (function () {
   'use strict';
   RiversideStations.register({
@@ -29,19 +30,7 @@
         padObs = new MutationObserver(() => ctlEl.classList.toggle('st-pouring', padEl.getAttribute('aria-pressed') === 'true'));
         padObs.observe(padEl, { attributes: true, attributeFilter: ['aria-pressed'] });
       }
-      // Watch: the caption carries the current step; the full step list and the
-      // explanation fold away behind a toggle (panel only; the stage is untouched).
-      const tbox = host.querySelector('#transcriptBox');
-      if (tbox) {
-        tbox.classList.add('is-folded');
-        tbox.insertAdjacentHTML('afterbegin', '<button type="button" class="st-steps-toggle" aria-expanded="false" aria-controls="transcript">Show all steps</button>');
-        const tg = tbox.querySelector('.st-steps-toggle');
-        tg.addEventListener('click', () => {
-          const open = tbox.classList.toggle('is-folded') === false;
-          tg.setAttribute('aria-expanded', String(open));
-          tg.textContent = open ? 'Hide steps' : 'Show all steps';
-        });
-      }
+      RiversideStationChrome.foldSteps(host);
       const exit = host.querySelector('#exitBtn');
       if (exit) exit.focus({ preventScroll: true });
 

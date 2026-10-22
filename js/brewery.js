@@ -20,9 +20,15 @@
   const STATIONS = window.RiversideStations.list().map(s => ({ id: s.id, playable: s.playable, def: s, ...s.meta }));
   const BY_ID = Object.fromEntries(STATIONS.map(s => [s.id, s]));
   const FIRST = STATIONS.find(s => s.playable);
+  // The station to do next: the first playable one, in hub order, that is
+  // not certified yet (null once every open station is certified).
+  const nextUp = () => STATIONS.find(s => s.playable && P.station(s.id).status !== 'certified') || null;
+  const list = names => names.length < 3 ? names.join(' and ') : names.slice(0, -1).join(', ') + ' and ' + names.at(-1);
   // What each state looks like on a card: words first, colour second.
   const STATE = {
     new: { action: 'Start here', status: 'Not started. Recommended first station.', ring: 'new' },
+    next: { action: 'Start here', status: 'Not started. Recommended next.', ring: 'new' },
+    open: { action: 'Start', status: 'Not started.', ring: 'open' },       // playable, but not the one to do next
     inProgress: { action: 'Continue', status: 'In progress.', ring: 'progress' },
     certified: { action: 'Replay', status: 'Certified: virtual training complete.', ring: 'certified' },   // a passing Solo pour (M6)
     preview: { action: 'Coming soon', status: 'Coming soon. Not playable yet.', ring: 'preview' }
@@ -186,8 +192,11 @@
 
   // ---- Hub state ----
   function renderHub() {
+    const next = nextUp();
+    const started = STATIONS.some(s => s.playable && P.station(s.id).status !== 'new');
     STATIONS.forEach(s => {
-      const state = s.playable ? P.station(s.id).status : 'preview';
+      let state = s.playable ? P.station(s.id).status : 'preview';
+      if (state === 'new') state = s !== next ? 'open' : started ? 'next' : 'new';
       const look = STATE[state] || STATE.new;
       const btn = hub.querySelector(`[data-station="${s.id}"]`);
       const action = document.getElementById('chip-' + s.id);
@@ -198,11 +207,13 @@
       hub.querySelector(`.hub__ring[data-ring="${s.id}"]`).className = `hub__ring hub__ring--${look.ring}`;
     });
     document.getElementById('hubCount').textContent = P.certifiedCount();
-    const first = P.station(FIRST.id).status;
+    const done = list(STATIONS.filter(s => s.playable && P.station(s.id).status === 'certified').map(s => s.name));
+    const more = STATIONS.some(s => !s.playable);
     document.getElementById('hubLede').textContent =
-      first === 'new' ? `Your first shift. Start at the ${FIRST.name} station.`
-      : first === 'inProgress' ? `Pick up where you left off: the ${FIRST.name} station.`
-      : `${FIRST.name} certified. More stations are on the way.`;
+      !next ? `${done} certified.${more ? ' More stations are on the way.' : ''}`
+      : P.station(next.id).status === 'inProgress' ? `Pick up where you left off: the ${next.name} station.`
+      : !started ? `Your first shift. Start at the ${next.name} station.`
+      : `${done} certified. Next: the ${next.name} station.`;
   }
 
   hub.addEventListener('click', e => {

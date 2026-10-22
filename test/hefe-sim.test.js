@@ -162,17 +162,19 @@ test('the head holds once the tap is shut, so Serve timing cannot change the ver
 
 test('feedback names the foam and the adaptation, and every cause has copy', () => {
   const early = H.feedback(pour(1.2, 0.45));
-  assert.match(early.primary, /foamed more than usual/);
+  assert.match(early.primary, /built foam fast/);
   assert.match(early.primary, /stay tilted a little longer/);
   const late = H.feedback(pour(0.85, 0.6));
-  assert.match(late.primary, /foamed less than usual/);
+  assert.match(late.primary, /built foam slowly/);
   assert.match(late.primary, /come up a little sooner/);
   assert.match(H.feedback(pour(1, 0.5)).primary, /^Clean pour\./);
   const m = pour(1, 0.5).metrics;
   for (const k of Object.keys(H.COPY)) assert.equal(typeof H.COPY[k](m, HEFE), 'string', k);
   // No external standard is claimed: the copy never states a fixed
   // straighten percentage as the rule for wheat beer.
-  for (const fn of Object.values(H.COPY)) assert.doesNotMatch(fn(m, HEFE), /always|standard|rule/i);
+  // Nor what wheat beer "usually" does: the categories are the game's.
+  for (const fn of Object.values(H.COPY)) assert.doesNotMatch(fn(m, HEFE), /always|standard|rule|usual/i);
+  for (const L of [0.88, 1, 1.2]) assert.doesNotMatch(H.feedback(pour(L, 0.5)).primary, /usual/i);
 });
 
 test('Guided hints react to this pour: wait on a lively one, come up sooner on a calm one, nothing extra on a typical one', () => {
@@ -196,4 +198,46 @@ test('Guided hints react to this pour: wait on a lively one, come up sooner on a
   assert.equal(at(calm, 'foamFast'), undefined);
   assert.equal(at(typical, 'foamFast'), undefined); assert.equal(at(typical, 'foamSlow'), undefined);
   for (const list of [lively, calm, typical]) assert.ok(at(list, 'straighten') > 0, 'backup hint once past the band');
+});
+
+test('Watch, calmer pour: little foam while tilted, the same movement starts sooner, and it passes', () => {
+  const calm = H.runTimeline(H.GHOST_CALM, H.GHOST_CALM_LIVE), lively = H.runTimeline(H.GHOST, H.GHOST_LIVE);
+  assert.equal(calm.result.pass, true);
+  const c = calm.result.metrics, l = lively.result.metrics;
+  assert.equal(c.liveLabel, 'calm');
+  const [w0, w1] = H.straightenWindow(H.GHOST_CALM_LIVE);
+  assert.ok(c.straightenBegan >= w0 && c.straightenBegan <= w1);
+  assert.ok(c.straightenBegan < l.straightenBegan - 0.2, 'starts up much sooner than the lively demo');
+  assert.ok(c.headAtStraighten < l.headAtStraighten / 2, 'far less foam on the beer when it starts up');
+  assert.ok(Array.from(H.GHOST_CALM_STEPS).some(t => /sooner/.test(t)));
+  assert.ok(!Array.from(H.GHOST_CALM_STEPS).some(t => /Past half full/.test(t)));
+});
+
+test('scenarios: deterministic and balanced; Guided starts typical then varies; Solo deals one calm and one lively per pair', () => {
+  assert.equal(JSON.stringify(H.scenario('solo', 3)), JSON.stringify(H.scenario('solo', 3)));
+  const guided = Array.from({ length: 7 }, (_, n) => H.scenario('guided', n));
+  assert.deepEqual(guided.map(g => g.label), ['typical', 'lively', 'calm', 'typical', 'lively', 'calm', 'typical']);
+  assert.equal(guided[0].live, 1);
+  const solo = Array.from({ length: 40 }, (_, n) => H.scenario('solo', n));
+  for (const sc of solo) {
+    assert.equal(H.liveLabel(sc.live), sc.label, `solo ${sc.n}: liveliness matches its label`);
+    assert.ok(sc.label === 'calm' || sc.label === 'lively', `solo ${sc.n}: ${sc.label}`);
+  }
+  for (let i = 0; i < 40; i += 2) assert.notEqual(solo[i].label, solo[i + 1].label, `pair ${i / 2} has one of each`);
+  const orders = new Set(Array.from({ length: 20 }, (_, k) => solo[2 * k].label));
+  assert.equal(orders.size, 2, 'the order inside a pair varies');
+  const lives = new Set(solo.map(sc => sc.live.toFixed(3)));
+  assert.ok(lives.size > 30, 'pours differ inside a category');
+  for (const g of guided) assert.equal(H.liveLabel(g.live), g.label);
+  // Every Solo scenario can be passed (the middle of its window passes).
+  for (const sc of solo.slice(0, 10)) {
+    const [w0, w1] = H.straightenWindow(sc.live);
+    assert.equal(pour(sc.live, (w0 + w1) / 2 - 0.02).pass, true, `solo ${sc.n} (${sc.live.toFixed(3)})`);
+  }
+});
+
+test('pad: the same thumb mapping as the Pilsner', () => {
+  assert.equal(H.padTarget(45, 5), 45, 'dead zone');
+  assert.ok(close(H.padTarget(45, 8 + 70), 0));
+  assert.ok(close(H.padTarget(20, -(8 + 70)), 60));
 });

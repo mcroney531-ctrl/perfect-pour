@@ -64,6 +64,15 @@
 
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const rad = d => d * Math.PI / 180;
+
+  // Continuous pad: glass target from where the thumb landed and how far it
+  // has slid up since (px). The same mapping as the Pilsner's, so the hands
+  // do the same thing.
+  function padTarget(angle0, dyUp, ctl = CONTROL) {
+    if (Math.abs(dyUp) <= ctl.padDead) return angle0;
+    const eff = dyUp - Math.sign(dyUp) * ctl.padDead;
+    return clamp(angle0 - eff * 45 / ctl.padTravel, 0, ctl.maxAngle);
+  }
   const fillZone = (cfg = HEFE) => [cfg.fillLine - cfg.fillTol / 2, cfg.fillLine + cfg.fillTol / 2];
 
   // ---- Liveliness from a seed (deterministic) ------------------------------
@@ -75,6 +84,30 @@
     const u = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     const [a, b] = cfg.liveRange;
     return a + (b - a) * u;
+  }
+  // The pour a learner gets: deterministic from the mode and how many pours
+  // they have completed in it, so a restart replays the same pour and only a
+  // completed (served) pour moves on. Balanced, so nobody meets a long run of
+  // one kind:
+  //   Guided: typical first (liveliness 1), then lively, calm, typical, ...
+  //   Solo:   only calm or lively (planning review); each pair of pours holds
+  //           one of each, in an order set by the pair's seed.
+  // Where a pour sits inside its category comes from its own seed.
+  const CATEGORY = { calm: [0.85, 0.94], typical: [0.97, 1.08], lively: [1.12, 1.25] };
+  const unit = (seed, cfg) => (liveliness(seed, cfg) - cfg.liveRange[0]) / (cfg.liveRange[1] - cfg.liveRange[0]);
+  const within = (label, seed, cfg) => { const [a, b] = CATEGORY[label]; return a + (b - a) * unit(seed, cfg); };
+  function scenario(mode, n, cfg = HEFE) {
+    if (mode === 'guided') {
+      if (n === 0) return { mode, n, seed: null, live: 1, label: 'typical' };
+      const label = ['lively', 'calm', 'typical'][(n - 1) % 3], seed = 1000 + n;
+      return { mode, n, seed, live: within(label, seed, cfg), label };
+    }
+    if (mode === 'solo') {
+      const first = unit(3000 + Math.floor(n / 2), cfg) < 0.5 ? 'calm' : 'lively';
+      const label = n % 2 === 0 ? first : first === 'calm' ? 'lively' : 'calm', seed = 2000 + n;
+      return { mode, n, seed, live: within(label, seed, cfg), label };
+    }
+    return { mode, n: 0, seed: null, live: GHOST_LIVE, label: 'lively' };
   }
   // How the debrief names it. GAME wording thresholds.
   const liveLabel = L => L < 0.95 ? 'calm' : L <= 1.1 ? 'typical' : 'lively';
@@ -335,7 +368,10 @@
   // js/sim.js). Lines about this pour's liveliness describe the game's
   // variation and the foam the learner saw, not a service standard.
   const pct = v => Math.round(v * 100);
-  const FOAMED = { calm: 'This pour foamed less than usual', typical: 'This pour foamed about as a wheat beer usually does', lively: 'This pour foamed more than usual' };
+  // Describes the pour the learner just saw. The three categories are the
+  // game's, not an industry classification, so nothing here says what wheat
+  // beer "usually" does.
+  const FOAMED = { calm: 'This pour built foam slowly', typical: 'This pour built a moderate amount of foam', lively: 'This pour built foam fast' };
   const COPY = {
     // CLAIM: pouring straight down into an upright glass makes a lot of foam.
     upright: m => `You opened the tap with the glass upright (${Math.round(m.startAngle)}°). Wheat beer foams fast poured straight down. Tilt first.`,
@@ -371,7 +407,7 @@
   const HINTS = {
     tiltFirst: 'Tilt the glass before you open the tap.',
     foamFast: 'Foam is building fast on this one: stay tilted a little longer.',
-    foamSlow: 'Foam is building slowly on this one: start bringing it up a little sooner than usual.',
+    foamSlow: 'Foam is building slowly on this one: start bringing it up a little sooner.',
     straighten: "The beer's past the BRING UP band. Bring the glass up now.",
     spillWarn: 'Nearly at the lip. Bring it up.',
     nearLine: 'Close to the line.',
@@ -436,14 +472,16 @@
     return s;
   }
 
-  // The Watch demo: a lively pour, so the pourer is seen waiting past the
-  // Pilsner's half-full point because of the foam, straightening in the
-  // middle of this pour's window.
-  const GHOST_LIVE = 1.18;
-  function buildGhost(cfg = HEFE) {
-    // Times come from running the policy, so the captions line up with the beer.
-    const at = (straightenWindow(GHOST_LIVE)[0] + straightenWindow(GHOST_LIVE)[1]) / 2;
-    let s = initState({ live: GHOST_LIVE }), tHalf = null, tUp = null, tClose = null;
+  // The Watch demos. The lively one plays first: the pourer is seen waiting
+  // past the Pilsner's half-full point because of the foam. The calm one is
+  // the optional comparison: little foam forms while tilted, so the same
+  // movement starts sooner. Each straightens in the middle of its pour's
+  // window; captions are timed from the beer.
+  const GHOST_LIVE = 1.18, GHOST_CALM_LIVE = 0.88;
+  function buildGhost(live, cfg = HEFE) {
+    const [w0, w1] = straightenWindow(live), at = (w0 + w1) / 2;
+    const lively = liveLabel(live) === 'lively';
+    let s = initState({ live }), tHalf = null, tUp = null, tClose = null;
     const release = fillZone(cfg)[0] + 0.004;
     for (let tick = 0; tick < 40 * HZ && tClose === null; tick++) {
       const t = tick / HZ;
@@ -455,19 +493,27 @@
       s = step(s, { pour: pour && tClose === null, target }, STEP, cfg);
     }
     const r = x => Math.round(x * 100) / 100;
-    return [
-      { t: 0, target: 0, caption: 'Same routine as the Pilsner: tilt the glass to about 45°.', stepIndex: 0 },
+    const keys = [
+      { t: 0, target: 0, caption: 'Same routine as the Pilsner: tilt the glass to about 45°.' },
       { t: 0.5, target: 45 },
-      { t: 1.6, pour: true, caption: 'Open the tap fully and watch the foam. This one is building it fast.', stepIndex: 1 },
-      { t: r(tHalf), caption: 'Past half full, but plenty of foam already: stay tilted a little longer.', stepIndex: 2 },
-      { t: r(tUp), target: 0, ramp: 2.2, caption: 'Now bring the glass up. Read the foam each time: later when it builds fast, sooner when it builds slowly.', stepIndex: 3 },
-      { t: r(tUp + 2.2), caption: 'Finish upright to build the big wheat-beer head.', stepIndex: 4 },
-      { t: r(tClose), pour: false, caption: 'The head reached the LINE: let go, then serve.', stepIndex: 5 },
-      { t: r(tClose + 1), serve: true }
+      { t: 1.6, pour: true, caption: lively ? 'Open the tap fully and watch the foam. This one is building it fast.'
+        : 'Open the tap fully and watch the foam. This one is building it slowly.' }
     ];
+    if (lively) keys.push({ t: r(tHalf), caption: 'Past half full, but plenty of foam already: stay tilted a little longer.' });
+    keys.push(
+      { t: r(tUp), target: 0, ramp: 2.2, caption: lively
+        ? 'Now bring the glass up. Read the foam each time: later when it builds fast, sooner when it builds slowly.'
+        : 'Not much foam yet, so bring the glass up sooner than on a foamy pour.' },
+      { t: r(tUp + 2.2), caption: 'Finish upright to build the big wheat-beer head.' },
+      { t: r(tClose), pour: false, caption: 'The head reached the LINE: let go, then serve.' },
+      { t: r(tClose + 1), serve: true });
+    let i = 0;
+    keys.forEach(k => { if (k.caption) k.stepIndex = i++; });
+    return keys;
   }
-  const GHOST = buildGhost();
+  const GHOST = buildGhost(GHOST_LIVE), GHOST_CALM = buildGhost(GHOST_CALM_LIVE);
   const GHOST_STEPS = GHOST.filter(k => k.caption).map(k => k.caption);
+  const GHOST_CALM_STEPS = GHOST_CALM.filter(k => k.caption).map(k => k.caption);
 
   function runTimeline(timeline = GHOST, live = GHOST_LIVE, cfg = HEFE, ctl = CONTROL) {
     let s = initState({ live });
@@ -481,10 +527,11 @@
   }
 
   root.HefeSim = {
-    HZ, STEP, HEFE, CONTROL, PROFILE, POLY, WINDOW,
+    HZ, STEP, HEFE, CONTROL, PROFILE, POLY, WINDOW, CATEGORY,
     liveliness, liveLabel, capacity, surfaceAt, heightOf, volumeOf, spillLimit, levelOf, headOf, total,
     straightenWindow, straightenVerdict, stopVerdict, VERDICT_TEXT, fillZone,
     initState, step, canServe, evaluate, feedback, COPY,
-    HINTS, guidedHints, tickOf, inputAt, policyPour, GHOST, GHOST_STEPS, GHOST_LIVE, runTimeline
+    padTarget, scenario, HINTS, guidedHints, tickOf, inputAt, policyPour,
+    GHOST, GHOST_STEPS, GHOST_LIVE, GHOST_CALM, GHOST_CALM_STEPS, GHOST_CALM_LIVE, buildGhost, runTimeline
   };
 })(globalThis);
