@@ -25,6 +25,8 @@ app.)
 5. **Wording.** The certificate states completion of the *virtual Pilsner
    training*. It is not evidence of real-world professional bartending
    competency, and no copy may imply it is.
+   Progress lives in the learner's browser, so the seal and wording must not
+   present it as a centrally verified staff-training record either.
 6. **Final Rush** stays locked until all three stations are actually
    certified. No simulated certifications for Hefeweizen or Nitro Stout.
 7. **No Storyline/LMS reporting.** The app is delivered standalone; progress
