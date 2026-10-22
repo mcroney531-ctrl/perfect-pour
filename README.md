@@ -149,7 +149,7 @@ glass is.**
 ## Tests
 
 ```
-npm test            # simulation (61), hub layout (8), station registry (3), progress (4); Node 18+, no installs
+npm test            # Pilsner sim (61), Hefeweizen sim (13), hub layout (8), station registry (3), progress (4); Node 18+, no installs
 npm run test:ui     # browser: 56 Playwright tests (npm install first)
 npm run test:all    # both
 ```
@@ -417,6 +417,22 @@ RiversideStations.register({
   mount(host, { onExit, onEvent }) { /* ... */ return { unmount(reason) { return { abandoned }; } }; }
 });   // no mount = shown as coming soon
 ```
+
+## Step 2a: Hefeweizen simulation (for review; scoring bands not locked)
+
+`js/hefe-sim.js` (`HefeSim`) is its own pure, seeded, fixed-step sim. Nothing
+is shared with the protected Pilsner sim.
+
+- **Glass:** a curved weizen vase.
+- **Foam:** foamier than the Pilsner.
+- **Per-pour liveliness:** calm, typical or lively. Lively pours visibly carry more foam while tilted, which is the cue.
+
+The skill is reading that foam and adapting when to bring the glass up. No
+single straighten point passes every pour.
+
+- **Tests:** 13 node tests hold the Guided window and the verdicts to the sim, and cover the adaptation, the cue, known-bad pours, the feedback and the hints.
+- **For review:** the proposed bands and the open questions are in `docs/hefeweizen-behaviour.md`.
+- **Not built yet:** the station UI, the hub entry and art.
 
 ## Slice 1: station registry (for review)
 
