@@ -208,7 +208,9 @@ pixel-parity checks across refactors.
 - Hub: seal on the Pilsner card, "Replay", "1 of 3 certified"; Final Rush
   stays locked until all three stations are certified.
 - Spec and implementation notes: [`docs/m6-certification-spec.md`](docs/m6-certification-spec.md).
-- M5's fresh-learner playtest is still open.
+- M5's fresh-learner playtest is still open. The owner's device playtest
+  (phone sideways, mouse/keyboard, cues, full first-visit flow, mid-pour exit)
+  passed with no issues.
 
 ## M5: Pilsner station in the brewery look (implementation complete; fresh-learner validation pending)
 
