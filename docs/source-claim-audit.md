@@ -23,12 +23,56 @@ quoted by the search tool from the pages below.
 |---|---|
 | **excerpt** | A passage was seen in a search excerpt. The page itself was not opened. |
 | **listed** | The source was named earlier (`docs/pour-procedure.md`) but not re-checked this pass. |
-| **verified** | Read first-hand. **No source has this status yet.** |
+| **verified (GPT review)** | Read first-hand in GPT's planning review (see the next section). Claude's environment has still not opened any source. |
 
 Before shipping copy, someone with normal internet access should open each
 **excerpt** link and change it to verified, or correct it. Start with the
 Brewers Association *Draught Beer Quality Manual* (the most authoritative US
 source) and the Cicerone CBS material.
+
+## First-hand review (GPT, planning review round)
+
+These pages were opened and read **in GPT's review, not from Claude's build
+environment**, which still cannot reach them. They are labelled
+**verified (GPT review)**. The notes summarise what the review reported.
+Passages are not quoted here because this pass could not see the pages.
+
+**1. Brewers Association, *Draught Beer Quality Manual*, 4th ed. (2019), p. 56.**
+- Link: https://cdn.brewersassociation.org/wp-content/uploads/2019/03/13094643/Draught-Beer-Quality-Manual-2019.pdf
+- Supports the general draught sequence:
+  - Tilt to about 45°.
+  - Open the faucet fully.
+  - Straighten gradually at about halfway.
+  - Form an approximately 1-inch head.
+  - Close promptly.
+
+**2. Cicerone, "How to Pour The Perfect Beer in 5 Simple Steps".**
+- Link: https://www.cicerone.org/us-en/blog/how-to-pour-the-perfect-beer-in-5-simple-steps
+- Supports the same general technique. Cicerone's guidance sometimes places the transition nearer two-thirds full.
+
+**3. Cicerone, "Why Pour Beer into a Glass?".**
+- Link: https://www.cicerone.org/us-en/node/7092
+- Per the review, Cicerone material confirms that tall traditional hefeweizen glassware accommodates substantially more foam.
+
+**4. Brewers Association, "Presenting Draught Beer" training presentation, p. 32.**
+- Link: https://cdn.brewersassociation.org/wp-content/uploads/2019/01/DBQ2018-Presenting_Draught_Beer_Glassware_Styles_Cleaning_and_Serving.pdf
+- Documents the two-part nitro pour:
+  1. Fill about two-thirds to three-quarters.
+  2. Set the glass aside to settle.
+  3. **Open the faucet completely again** for the top-off.
+
+**5. Guinness Draught product guidance.**
+- Link: https://www.guinness.com/en-us/beers/guinness-draught
+- Corroborates the core two-part sequence: a 45° start, a three-quarter fill, settle, then finish. It is a reference only, never named in game.
+
+**6. ERDINGER Weißbier pouring instructions.**
+- Link: https://erdinger.de/en-UK/erdinger-weissbier
+- The rinse-and-yeast-swirl sequence is **bottle-specific**. It does not transfer to draft.
+
+**Consequences:**
+- **Pilsner:** the core procedure is **verified (GPT review)**. The sim's bands remain GAME decisions.
+- **Nitro:** the two-stage objective is strongly supported. A slower push-back top-up is **not** universal: the BA reopens the faucet fully. The top-up control is a design choice, and push-back is excluded unless Riverside chooses equipment that has it.
+- **Hefeweizen:** a larger head in tall glassware is supported. No source establishes a universal later-straightening rule for draft. Rinse and swirl are bottle practice.
 
 ## Sources
 

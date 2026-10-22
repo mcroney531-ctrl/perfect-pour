@@ -2,9 +2,13 @@
 
 **Status: locked.** The mechanic, sim, scoring and thresholds are approved
 and protected. This spec records them; it changes nothing. Source status is
-in `docs/source-claim-audit.md`. In short, the procedure is confirmed in
-search excerpts from Cicerone and Brewers Association material, but has not
-been read first-hand.
+in `docs/source-claim-audit.md`.
+
+- **The core procedure is verified (GPT review)** against two sources:
+  - The Brewers Association *Draught Beer Quality Manual* (2019), p. 56.
+  - Cicerone's "How to Pour The Perfect Beer in 5 Simple Steps".
+- Claude's environment did not open them.
+- The sim's thresholds remain GAME decisions.
 
 **Method:** the general American draught method. The Czech-style pours
 (*hladinka*, *šnyt*, *mlíko*) are explicitly not taught (see
@@ -20,12 +24,12 @@ been read first-hand.
 ## Steps (source status)
 | # | Step | Status |
 |---|---|---|
-| 1 | Glass at about 45° under the faucet | SOURCED (excerpt: Cicerone CBS prep, BA) |
-| 2 | Open fully; partly open pours foamy | SOURCED (excerpt: Cicerone CBS prep) |
-| 3 | Straighten at about half (Cicerone) to two-thirds (others), gradually (BA: "gradually tilt it upright") | SOURCED (excerpt) |
-| 4 | Finish down the middle to build the head | SOURCED (excerpt: BA, Cicerone) |
-| 5 | About 1-inch head for most American ales and lagers | SOURCED (excerpt: Cicerone) |
-| 6 | Close the tap quickly, and keep the faucet out of the beer | SOURCED (excerpt: BA, Cicerone). **Not modelled.** |
+| 1 | Glass at about 45° under the faucet | verified (GPT review: BA DBQM p. 56; Cicerone) |
+| 2 | Open fully; partly open pours foamy | verified (GPT review: BA DBQM p. 56; Cicerone) |
+| 3 | Straighten at about half (Cicerone) to two-thirds (others), gradually (BA: "gradually tilt it upright") | verified (GPT review): BA "near halfway"; Cicerone sometimes nearer two-thirds |
+| 4 | Finish down the middle to build the head | verified (GPT review) |
+| 5 | About 1-inch head for most American ales and lagers | verified (GPT review: BA DBQM p. 56) |
+| 6 | Close the tap quickly, and keep the faucet out of the beer | Close promptly: verified (GPT review). Faucet out of the beer: excerpt only. **Not modelled.** |
 
 ## Mode flow
 - **Watch:**

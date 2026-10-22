@@ -153,11 +153,11 @@ absorbs it **without the shell learning any stout physics**:
    - *Absorbed by:* each module owning its own evaluation and causes. The shell reads only `pass`.
 4. **In Final Rush, the settle should overlap other work.**
    - That is realistic and the best part of the Rush design.
-   - *Absorbed by:* `park()` and the pure static `advance()`.
+   - *Absorbed by:* `park()` and the pure static `advance()`. This is designed in, but built only when Final Rush enables overlap (a later decision).
      1. The stout module hands Rush an opaque snapshot.
      2. Rush calls `StoutStation.advance(snap, dt)` on its clock while Pilsner is mounted.
      3. Rush remounts the stout with `{ resume: snap }` for the top-up.
-   - The shell never looks inside the snapshot. If the owner prefers, Rush v1 can skip parking: the settle plays out in place, as a short wait.
+   - The shell never looks inside the snapshot. Until overlap is enabled, the settle plays out in place.
 
 What Nitro **does** share with Pilsner is everything that isn't the pour:
 - Modes and their meaning: Watch demonstrates, Guided coaches, and Solo is independent and certifies.
@@ -187,7 +187,8 @@ cascade, the dark body rising as the head separates, the domed top-up. See
 1. **Adding a station ID wipes all progress.**
    - In `progress.js`, `load()` accepts data only if `IDS.every(id => d.stations[id]...)`.
    - Adding `finalRush` to `IDS` makes every existing save fail that check, so the app silently starts fresh.
-   - Needs: a v2 migration, or a lenient merge that adds missing stations as `new`, before any new ID ships. Tests must cover v1 data loading into the new shape.
+   - Needs: a lenient merge that adds missing stations as `new`, before any new ID ships. Tests must cover v1 data loading into the new shape.
+   - **Final Rush is not a station record.** Its progress is a separate top-level `finalRush` record, a sibling of `stations`, so the three-station certification collection and the "X of 3 certified" count are never contaminated.
 2. **The shell hard-codes Pilsner.**
    - `mountStation` calls `PilsnerStation.mount`.
    - There is one `STATION_BACKDROP`.
@@ -214,10 +215,21 @@ cascade, the dark body rising as the head separates, the domed top-up. See
    - The key is `perfectPour.log.v2.3`.
    - Entries have no `station` field, and `config` is Pilsner's.
    - Needs: per-station keys, or a `station` field, before Hefeweizen logs anything.
-9. **The station label "Transfer pour" on the Hefeweizen card** has no source behind it (see `docs/procedures/hefeweizen.md`). It is a naming decision for the owner.
+9. **The station label "Transfer pour" on the Hefeweizen card** has no source behind it. Decided in the planning review: it becomes **Foam Control** (see `docs/procedures/hefeweizen.md`).
 
 Items 1, 2, 6, 7 and 8 are app-layer changes. None touches the protected sim
 or scoring.
+
+**Scope note (planning review):** the contract above is the target shape.
+Members are built only when a concrete consumer needs them:
+- **Slice 1 builds:**
+  - `register` and `mount` / `unmount`.
+  - `meta`.
+  - The existing `served` and `abandoned` events.
+- **Waits:**
+  - Mode locking, enriched `served` metrics and `phase`: until Final Rush or another consumer needs them.
+  - `describe()`: until the second station.
+  - `park` / `advance` / `resume`: until Final Rush enables stout overlap.
 
 ## 7. Art pipeline for further stations
 

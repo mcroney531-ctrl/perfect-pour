@@ -6,35 +6,43 @@ Two rules for every step:
 1. **No change to `js/sim.js`, Pilsner scoring, thresholds or copy** unless the owner approves a specific item from `docs/source-claim-audit.md`.
 2. **Every existing test passes unchanged.** That is 69 node tests and 53 browser tests, including the `index.html` pixel guards.
 
-## Step 1 — Prove the station contract with Pilsner (first slice)
-App layer only. The Pilsner player experience must be pixel-identical.
+## Step 1 — Prove the station contract with Pilsner (first slice; approved, amended)
+App layer only. The Pilsner player experience must be visually and
+behaviourally identical.
 
-1. **`js/stations.js`:** a registry, `RiversideStations.register/get/list`.
-2. **Pilsner registers itself** through a thin adapter (`js/stations/pilsner.js`) that wraps `PilsnerStation.mount`.
-   - It moves `INTRO.pilsner`, `STATION_BACKDROP` and the exit label out of `brewery.js` into `meta`.
-   - It adds the `ctx.mode` and `ctx.lockMode` options. The lock hides the tabs and needs a small option in `pilsner-station.js` that doesn't touch the sim.
-   - It enriches `served` with `summary` and `durationS`; `metrics` comes from the existing `evaluate()` output.
-3. **`brewery.js` mounts through the registry.**
-   - Hub and intro copy is generated from `meta`, keeping today's exact Pilsner strings.
-   - "Coming soon" comes from registration: a station is playable if it is registered.
-4. **Progress migration.**
-   - A lenient load: missing station records are added as `new`, and existing saves are never wiped.
-   - Tests cover v1 data loading after a new ID is added.
-   - Do this now, even before `finalRush` exists.
-5. **Station-tag the pour log:** add a `station` field. The old key and entries stay readable.
-6. **Contract test:**
-   - Every registered station mounts and unmounts.
-   - `unmount` is idempotent.
-   - Abandon emits.
-   - `served` has `{mode, pass}`.
-   - A Solo-locked mount shows no tabs.
+1. **`js/stations.js`:** a registry, `RiversideStations.register/get/list`, with definitions checked as they register.
+2. **Pilsner adapter** (`js/stations/pilsner.js`):
+   - Registers Pilsner with its `meta`: name, card label, glass, intro, backdrop.
+   - Wraps `PilsnerStation.mount` with no change to the station.
+   - Brings the Pilsner-only presentation wiring out of `brewery.js` and into the adapter: the look, the cues, the pad observer, the Watch step fold and the exit focus.
+3. **The upcoming stations** (Hefeweizen, Nitro Stout) register `meta` only. No `mount` means "coming soon".
+4. **`brewery.js` mounts through the registry.**
+   - Hub, intro, backdrop and messages come from `meta`.
+   - The exact Pilsner strings are unchanged.
+5. **Backward-compatible progress loading.**
+   - A missing or damaged station record is added back as `new`, without wiping the others.
+   - Fields that are missing get defaults.
+   - Unknown keys are kept.
+   - No version bump.
+   - `finalRush` will later be a separate top-level record, not a station.
+6. **Contract and regression tests.**
+   - Registry validation (node).
+   - Progress loading (node).
+   - A browser contract test: every playable station mounts, unmounts idempotently and abandons cleanly, and every registered station has a hub anchor and a progress record.
+   - All existing tests unchanged.
 
-**Deferred to step 2** (needs a second station to justify it): moving
-`station-look` and `station-cues` behind `describe()`. Until then they stay
-Pilsner-only layers, applied by the Pilsner adapter.
+**Deferred** until a concrete consumer needs them:
+- Mode locking (`ctx.mode`, `lockMode`).
+- Enriched `served` metrics.
+- The `phase` event.
+- `describe()`.
+- `park` / `advance` / `resume`.
+- Station-tagging the pour log. Hefeweizen is the first consumer, so it comes with step 2.
+
+**Stop for review after this slice.**
 
 ## Step 2 — Validate against Hefeweizen
-1. **Owner decisions first:** rinse step, head target, card label (`docs/procedures/hefeweizen.md`).
+1. Directions are set (`docs/procedures/hefeweizen.md`): Foam Control, no scored rinse, adaptation to the foam. Calibrate the bands at build time. Station-tag the pour log here.
 2. **`js/hefe-sim.js` (`HefeSim`):**
    - A pure, fixed-step sim with its own Node tests.
    - Curved-glass geometry with a numeric solver, its foam model and its scoring.
@@ -54,7 +62,7 @@ Pilsner-only layers, applied by the Pilsner adapter.
 check? If not, revisit the procedure before building Nitro.
 
 ## Step 3 — Add Nitro Stout
-1. **Owner decisions first:** settle compression, top-up control, faucet type, head and dome (`docs/procedures/nitro-stout.md`).
+1. Directions are set (`docs/procedures/nitro-stout.md`): compressed settle in all modes, readiness read from the beer, hold-to-pour top-up at full flow, slight dome. Calibrate at build time.
 2. **`js/stout-sim.js`:**
    - A phase machine, with settling while the tap is closed.
    - Static `advance()` and `judge()` for parking.
@@ -65,20 +73,16 @@ check? If not, revisit the procedure before building Nitro.
 
 ## Step 4 — Consolidate the entry point, then Final Rush
 1. **Entry-point migration** (architecture §8): `brewery.html` becomes the root front door, and the legacy Pilsner page gets its own path.
-2. **Final Rush** (`docs/final-rush-outline.md`): the shell orchestrator, the `finalRush` progress record and the results screen. Stout parking only if approved.
+2. **Final Rush** (`docs/final-rush-outline.md`):
+   - The shell orchestrator, mode locking and the enriched `served` event (built here, for their first consumer).
+   - A separate `finalRush` progress record.
+   - The results screen.
+   - Stout parking only if enabled.
 
 ## Step 5 — Polish
 The owner's visual pass per station, art re-exports, and the open M5 items:
 - The fresh-learner playtest.
 - The sideways-phone result-panel scroll.
 
-## Recommended first slice
-**Step 1, items 1–4 and 6:** the registry, the Pilsner adapter, the mode
-options, the progress migration and the contract test.
-
-Why this slice first:
-- It is small.
-- It changes nothing a player sees.
-- It removes the two hazards that would otherwise bite the moment a second station appears: the progress wipe and the hard-coded Pilsner shell.
-
-Item 5 (the log tag) can ride along.
+## First slice
+Step 1 above.
