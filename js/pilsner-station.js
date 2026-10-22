@@ -257,12 +257,9 @@
     const emit = (type, detail) => { try { if (opts.onEvent) opts.onEvent(type, detail); } catch (_) { /* host's problem */ } };
     const $ = id => host.querySelector('#' + id);
     const params = new URLSearchParams(opts.search ?? location.search);
-    let alive = true, rafId = 0;
-    const disposers = [];
-    const on = (target, type, fn, options) => {
-      target.addEventListener(type, fn, options);
-      disposers.push(() => target.removeEventListener(type, fn, options));
-    };
+    // Tracked window/document listeners and the alive flag (js/station-kit.js).
+    const Kit = RiversideStationKit;
+    const life = Kit.lifecycle(), on = life.on;
     if (opts.onExit) {
       const brand = host.querySelector('.brand');
       brand.insertAdjacentHTML('afterend',
@@ -738,22 +735,9 @@
     on(document, 'visibilitychange', () => { if (document.hidden) stopPour(); });
 
     // ==== Speech and captions ================================================
-    const live = $('live');
-    let pending = [], flushTimer = null;
-    function announce(msg) {
-      pending.push(msg);
-      if (flushTimer) return;
-      live.textContent = '';
-      flushTimer = setTimeout(() => {
-        live.textContent = pending.join(' ');
-        pending = []; flushTimer = null;
-      }, 80);
-    }
-    function setCaption(text, kind) {
-      setText($('caption'), text || '');
-      $('caption').classList.toggle('hint', kind === 'hint');
-      $('caption').classList.toggle('verdict', kind === 'verdict');
-    }
+    // Live-region speech batched over 80 ms, and the caption line (js/station-kit.js).
+    const speech = Kit.announcer($('live'));
+    const announce = speech.say, setCaption = Kit.caption($('caption'));
 
     // ==== Modes ==============================================================
     const MODE_LABEL = { watch: 'Watch', guided: 'Guided', solo: 'Solo' };
@@ -1060,12 +1044,7 @@
       const session = Math.random().toString(36).slice(2, 8);
       let attempt = 0;
       const r4 = v => v === null || v === undefined ? null : Math.round(v * 1e4) / 1e4;
-      function read() {
-        try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (_) { return []; }
-      }
-      function write(list) {
-        try { localStorage.setItem(KEY, JSON.stringify(list.slice(-CAP))); return true; } catch (_) { return false; }
-      }
+      const { read, write } = Kit.logStore(KEY, CAP);    // the capped localStorage list; entries are built here
       function record(state, result, wasServed, endedBy) {
         attempt++;
         const m = evaluate(state, cfg).metrics;
@@ -1189,20 +1168,15 @@
     })();
 
     // ==== Loop ===============================================================
-    let acc = 0, last = performance.now();
-    function frame(now) {
-      if (!alive) return;
-      acc += Math.min(0.25, Math.max(0, (now - last) / 1000));
-      last = now;
-      while (acc >= STEP) { tick(); acc -= STEP; }
+    // Fixed 60 Hz sim ticks, then one draw per frame (js/station-kit.js).
+    const Loop = Kit.loop(STEP, tick, () => {
       // Coaching (the BRING UP band, the STOP label, the action marks) shows in Watch
       // and Guided and fades out in Solo, leaving the beer, the glass and the fill line.
       const coach = mode !== 'solo';
       Renderer.render(sim, { reducedMotion: motionQuery.matches, showMark: coach, marks: coach ? sim.events : null });
       syncUI();
       Debug.update();
-      rafId = requestAnimationFrame(frame);
-    }
+    });
 
     // ==== Unmount ============================================================
     // Leaves no trace: loop stopped, timers cleared, tap closed, every window
@@ -1212,17 +1186,16 @@
     // attempt is abandoned, never graded. It is logged with endedBy set to
     // the reason, and the host is told. Returns { abandoned }.
     function unmount(reason) {
-      if (!alive) return { abandoned: false };
-      alive = false;
-      cancelAnimationFrame(rafId);
-      clearTimeout(flushTimer);
+      if (!life.end()) return { abandoned: false };
+      Loop.stop();
+      speech.cancel();
       stopPour();
       const abandoned = mode !== 'watch' && sim.opened && !served;
       if (abandoned) {
         Log.record(sim, null, false, reason || 'navigate');
         emit('abandoned', { mode, reason: reason || 'navigate' });
       }
-      disposers.splice(0).forEach(off => off());
+      life.dispose();
       host.textContent = '';
       host.classList.remove('pp-st');
       return { abandoned };
@@ -1230,7 +1203,7 @@
 
     setVariant(variant);
     setMode('watch');
-    rafId = requestAnimationFrame(frame);
+    Loop.start();
     return { unmount };
   }
 

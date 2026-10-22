@@ -1,7 +1,10 @@
 # Shared station UI: smallest safe extraction (proposal, for review)
 
-**Status: proposal only.** Nothing in it is implemented yet. Written after the
-Hefeweizen functional review, before Nitro's station UI.
+**Status:**
+- **Steps 0 and 1 done** (approved; see §6).
+- **Steps 2 and 3:** separate review gates, not started.
+
+Written after the Hefeweizen functional review, before Nitro's station UI.
 
 **Goal:** stop copying a whole interface per beer, without a rewrite and
 without changing what Pilsner looks like or does.
@@ -152,3 +155,62 @@ Approve **step 0 and step 1** as the next slice. They are pure plumbing with
 no possible visual change, and they put the exact-parity safety net in place
 first. Steps 2 and 3 follow as separate reviewed commits. Step 3 comes with
 the owner's device check of the pad.
+
+## 6. Done so far (steps 0 and 1)
+
+**Step 0, safety net** (commits `fac70a0` and `2c7ff8c`):
+
+*DOM-parity fixtures* (`test/ui/dom-parity.test.mjs`):
+- **What they cover:** Pilsner and Hefeweizen in the app, and the legacy `index.html`.
+- **States:** Watch start, mid-demo and result; the calmer demo; Guided idle and after a scripted pour; Solo idle.
+- **Exact comparison:** every element, attribute (aria-*, hidden, disabled, classes) and text node. The only normalisation is geometry rounded to 0.1.
+- **Speech and progression trace:** a fixture per station of what the live region said, in order, and the level every 250 ms. It holds the batching and the frame progression.
+
+*Lifecycle tests* (`test/ui/lifecycle.test.mjs`, both stations and the legacy page):
+- The tap closes on blur, page hide and a hidden tab.
+- Unmount mid-pour: abandoned exactly once and logged once, ungraded. A repeat unmount is a no-op.
+- No listener, animation frame, pending timer or queued announcement is left behind.
+- The log keeps its key, its fields (a fixture), its 2000-entry cap and its attempt numbering.
+
+*Entry points* (`test/entry-points.test.js`): both pages load every script's dependencies before it.
+
+*Screenshots* (`tools/station-parity.mjs`):
+- `shoot` and `compare` at 1280×720 and 844×390.
+- It separates real differences from Chromium's few-pixel rasteriser noise: identical DOM still gives up to about 46 edge pixels off by at most 27/255.
+
+*Exact test clock* (`openPage(..., { exactClock: true })`):
+- **Why:** on a loaded machine the test clock kept running while a page loaded. Frames, and the demo, shifted by a tick, and the fixtures failed on the *unchanged* stations.
+- **How it works:** page time reads 0 and frames are held until load completes. Then the clock is paused and released, and frames run every 16 ms of test time.
+- **Result:** verified 6 of 6 under a 6-way parallel load, before and after the kit. The fixtures were regenerated from the pre-kit stations.
+- **Scope:** opt-in. The rest of the suite keeps its original clock.
+
+**Step 1, the kit core:**
+- **`js/station-kit.js`** (`RiversideStationKit`, 87 lines). Moved there unchanged from both stations:
+
+  | Function | What it holds |
+  |---|---|
+  | `lifecycle()` | Tracked window and document listeners, the alive flag, end-once |
+  | `announcer(live)` | 80 ms batched polite speech, cancelled on unmount |
+  | `caption(el)` | Plain, hint or verdict; written only on change |
+  | `loop(step, tick, draw)` | 60 Hz fixed steps, at most 0.25 s caught up, one draw per frame |
+  | `logStore(key, cap)` | The capped localStorage transport |
+- **Each station still owns:**
+  - Its log entries: fields, `station`, scenario, attempt numbering, session.
+  - Its unmount rule (an abandoned pour is logged and reported) and the order of teardown.
+- **Result-chip markup** is deferred to step 2, as asked.
+- **Loading:** both entry points load the kit before the stations. The legacy `index.html` gained one script line.
+- **Size:** Pilsner station 1,238 → 1,211 lines; Hefeweizen station 915 → 895.
+
+  The small saving is expected: step 1 is the plumbing with the most behaviour risk, not the most lines.
+
+**Evidence for step 1:**
+- **Fixtures:** all DOM, speech and progression fixtures, made from the pre-kit code, match exactly, 6 of 6 under load.
+- **Screenshots:** no real differences, only rasteriser noise in a few states.
+- **Full suite:** 100 node tests (5 new kit unit tests) and 75 browser tests, all existing tests unchanged.
+- **Kit unit tests** (`test/station-kit.test.js`) cover:
+  - End-once lifecycle.
+  - Batching order, and the region emptied first.
+  - Cancel on unmount.
+  - The fixed-step and catch-up cap.
+  - Write-on-change captions.
+  - The log cap, bad data and a full disk.
