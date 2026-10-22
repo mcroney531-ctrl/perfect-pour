@@ -34,15 +34,29 @@ export function startServer() {
 }
 
 // One fresh page per test: phone-sized, touch-capable, fake clock.
-// exactClock: start the clock already paused (no install step), so
-// performance.now() is identical on every run and animation frames land on
-// the same sim ticks. Opt-in, used by the parity tests; the default leaves a
-// few real milliseconds between install and pause, as the suite always had.
+// exactClock: time that is identical on every run, even on a loaded machine
+// (where the test clock is not yet paused while the page loads). Until the
+// page has loaded, page time (performance.now) reads 0 and animation frames
+// are held; then the harness releases them, and from there only the paused
+// test clock moves time: frames every 16 ms of it, performance.now counting
+// from the release. Opt-in, used by the parity and lifecycle tests; the
+// default is the suite's original clock.
 export async function openPage(browser, url, { mobile = true, size, init, reducedMotion, exactClock = false } = {}) {
   const ctx = await browser.newContext(Object.assign(mobile
     ? { viewport: size || { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }
     : { viewport: size || { width: 1280, height: 800 } }, reducedMotion ? { reducedMotion } : {}));
   const page = await ctx.newPage();
+  if (exactClock) await page.addInitScript(() => {
+    const pn = performance.now.bind(performance), st = window.setTimeout.bind(window), ct = window.clearTimeout.bind(window);
+    let t0 = null, held = [], seq = 0;
+    performance.now = () => (t0 === null ? 0 : pn() - t0);
+    window.requestAnimationFrame = cb => {
+      if (t0 === null) { held.push([++seq, cb]); return -seq; }
+      return st(() => cb(performance.now()), 16);
+    };
+    window.cancelAnimationFrame = id => { if (id < 0) held = held.filter(([s]) => s !== -id); else ct(id); };
+    window.__ppRelease = () => { t0 = pn(); const q = held; held = []; q.forEach(([, cb]) => window.requestAnimationFrame(cb)); };
+  });
   if (init) await page.addInitScript(init);
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -52,7 +66,12 @@ export async function openPage(browser, url, { mobile = true, size, init, reduce
   if (!exactClock) await page.clock.install({ time: new Date('2026-01-01T12:00:00Z') });
   await page.clock.pauseAt(new Date('2026-01-01T12:00:01Z'));
   await page.goto(url);
-  await page.clock.runFor(50);
+  if (exactClock) {
+    // Make sure the clock is paused now (it may have run during the load).
+    await page.clock.pauseAt(new Date(Math.ceil((await page.evaluate(() => Date.now())) / 1000) * 1000 + 1000));
+    await page.evaluate(() => window.__ppRelease());
+    await page.clock.runFor(50);
+  } else await page.clock.runFor(50);
   const cdp = mobile ? await ctx.newCDPSession(page) : null;
   const h = {
     page, ctx, errors, cdp,

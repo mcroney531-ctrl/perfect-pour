@@ -1,26 +1,31 @@
 t=0 
-say  Watch mode. A demo pour is playing. Tilt the glass to about 45°. Watch the two bands on the glass.
-t=256 Level 0%
-t=512 Level 0%
-t=752 Level 0%
+say  Watch mode. A demo pour is playing.
+t=1000 Level 0%
 t=1008 Level 0%
+t=1024 Level 0%
+t=1040 Level 0%
+say  Tilt the glass to about 45°. Watch the two bands on the glass.
 t=1264 Level 0%
 t=1504 Level 0%
+t=1760 Level 0%
+t=2000 Level 0%
+t=2256 Level 0%
 say  Open the tap fully. Pour down the side.
-t=1760 Level 1%
-t=2000 Level 5%
-t=2256 Level 9%
-t=2512 Level 13%
-t=2752 Level 16%
-t=3008 Level 20%
-t=3264 Level 23%
+t=2512 Level 1%
+t=2752 Level 5%
+t=3008 Level 9%
+t=3264 Level 13%
+t=3504 Level 16%
+t=3760 Level 20%
+t=4000 Level 23%
 say  Level 25%.
-t=3504 Level 27%
-t=3760 Level 30%
-t=4000 Level 33%
-t=4256 Level 37%
-t=4512 Level 40%
-t=4752 Level 43%
-t=5008 Level 46%
+t=4256 Level 27%
+t=4512 Level 30%
+t=4752 Level 33%
+t=5008 Level 37%
+t=5264 Level 40%
+t=5504 Level 43%
+t=5760 Level 46%
+t=6000 Level 49%
 say  Guided mode.
-t=5264 Level 0%
+t=6256 Level 0%

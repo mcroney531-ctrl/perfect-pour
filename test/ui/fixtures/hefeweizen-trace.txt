@@ -1,143 +1,147 @@
 t=0 
-say  Watch mode. A demo pour is playing: a lively pour. Same routine as the Pilsner: tilt the glass to about 45°.
-t=256 Level 0%
-t=512 Level 0%
-t=752 Level 0%
+say  Watch mode. A demo pour is playing: a lively pour.
+t=1000 Level 0%
 t=1008 Level 0%
+t=1024 Level 0%
+t=1040 Level 0%
+say  Same routine as the Pilsner: tilt the glass to about 45°.
 t=1264 Level 0%
 t=1504 Level 0%
+t=1760 Level 0%
+t=2000 Level 0%
+t=2256 Level 0%
 say  Open the tap fully and watch the foam. This one is building it fast.
-t=1760 Level 1%
-t=2000 Level 5%
-t=2256 Level 8%
-t=2512 Level 11%
-t=2752 Level 14%
-t=3008 Level 16%
-t=3264 Level 19%
-t=3504 Level 22%
-t=3760 Level 25%
+t=2512 Level 1%
+t=2752 Level 5%
+t=3008 Level 8%
+t=3264 Level 11%
+t=3504 Level 14%
+t=3760 Level 16%
+t=4000 Level 19%
+t=4256 Level 22%
+t=4512 Level 25%
 say  Level 25%. Foam 5% of the glass.
-t=4000 Level 28%
-t=4256 Level 32%
-t=4512 Level 35%
-t=4752 Level 38%
-t=5008 Level 40%
-t=5264 Level 43%
-t=5504 Level 46%
-t=5760 Level 49%
+t=4752 Level 28%
+t=5008 Level 32%
+t=5264 Level 35%
+t=5504 Level 38%
+t=5760 Level 40%
+t=6000 Level 43%
+t=6256 Level 46%
+t=6512 Level 49%
 say  Level 50%. Foam 8% of the glass.
-t=6000 Level 51%
+t=6752 Level 51%
 say  Past half full, but plenty of foam already: stay tilted a little longer.
-t=6256 Level 53%
-t=6512 Level 56%
-t=6752 Level 58%
-t=7008 Level 60%
-t=7264 Level 63%
-t=7504 Level 65%
-t=7760 Level 67%
-t=8000 Level 69%
+t=7008 Level 53%
+t=7264 Level 56%
+t=7504 Level 58%
+t=7760 Level 60%
+t=8000 Level 63%
+t=8256 Level 65%
+t=8512 Level 67%
+t=8752 Level 69%
 say  Now bring the glass up. Read the foam each time: later when it builds fast, sooner when it builds slowly.
-t=8256 Level 71%
-t=8512 Level 73%
-t=8752 Level 75%
+t=9008 Level 71%
+t=9264 Level 73%
+t=9504 Level 75%
 say  Level 75%. Foam 10% of the glass.
-t=9008 Level 77%
-t=9264 Level 79%
-t=9504 Level 80%
-t=9760 Level 82%
-t=10000 Level 84%
+t=9760 Level 77%
+t=10000 Level 79%
+t=10256 Level 80%
+t=10512 Level 82%
+t=10752 Level 84%
 say  Finish upright to build the big wheat-beer head.
-t=10256 Level 86%
-t=10512 Level 88%
+t=11008 Level 86%
+t=11264 Level 88%
 say  Head in band, 16%.
-t=10752 Level 89%
-t=11008 Level 91%
-t=11264 Level 93%
+t=11504 Level 89%
+t=11760 Level 91%
+t=12000 Level 93%
 say  The head reached the LINE: let go, then serve.
-t=11504 Level 94%
-t=11760 Level 94%
-t=12000 Level 94%
 t=12256 Level 94%
-say  Demo pour: clean. Clean pour. This pour built foam fast, and you brought it up at about 71% full to match.
 t=12512 Level 94%
+t=12752 Level 94%
+t=13008 Level 94%
+say  Demo pour: clean. Clean pour. This pour built foam fast, and you brought it up at about 71% full to match.
+t=13264 Level 94%
 say  A calmer pour is playing. Same routine as the Pilsner: tilt the glass to about 45°.
-t=12752 Level 0%
-t=13008 Level 0%
-t=13264 Level 0%
 t=13504 Level 0%
 t=13760 Level 0%
 t=14000 Level 0%
+t=14256 Level 0%
+t=14512 Level 0%
+t=14752 Level 0%
+t=15008 Level 0%
 say  Open the tap fully and watch the foam. This one is building it slowly.
-t=14256 Level 1%
-t=14512 Level 4%
-t=14752 Level 7%
-t=15008 Level 10%
-t=15264 Level 13%
-t=15504 Level 16%
-t=15760 Level 19%
-t=16000 Level 22%
-t=16256 Level 25%
+t=15264 Level 4%
+t=15504 Level 7%
+t=15760 Level 10%
+t=16000 Level 13%
+t=16256 Level 16%
+t=16512 Level 19%
+t=16752 Level 22%
+t=17008 Level 25%
 say  Level 25%. Foam 2% of the glass.
-t=16512 Level 28%
-t=16752 Level 31%
-t=17008 Level 34%
-t=17264 Level 37%
-t=17504 Level 40%
+t=17264 Level 28%
+t=17504 Level 31%
+t=17760 Level 34%
+t=18000 Level 37%
+t=18256 Level 40%
 say  Not much foam yet, so bring the glass up sooner than on a foamy pour. Guided mode.
-t=17760 Level 0%
-t=18000 Level 0%
-t=18256 Level 0%
-t=18512 Level 2%
-t=18752 Level 6%
-t=19008 Level 9%
-t=19264 Level 12%
-t=19504 Level 15%
-t=19760 Level 17%
-t=20000 Level 20%
-t=20256 Level 23%
+t=18512 Level 0%
+t=18752 Level 0%
+t=19008 Level 0%
+t=19264 Level 2%
+t=19504 Level 6%
+t=19760 Level 9%
+t=20000 Level 12%
+t=20256 Level 15%
+t=20512 Level 17%
+t=20752 Level 20%
+t=21008 Level 23%
 say  Level 25%. Foam 3% of the glass.
-t=20512 Level 26%
-t=20752 Level 30%
-t=21008 Level 33%
-t=21264 Level 36%
-t=21504 Level 39%
-t=21760 Level 42%
-t=22000 Level 44%
-t=22256 Level 47%
-t=22512 Level 50%
+t=21264 Level 26%
+t=21504 Level 30%
+t=21760 Level 33%
+t=22000 Level 36%
+t=22256 Level 39%
+t=22512 Level 42%
+t=22752 Level 44%
+t=23008 Level 47%
+t=23264 Level 50%
 say  Level 50%. Foam 5% of the glass.
-t=22752 Level 52%
+t=23504 Level 52%
 say  Started bringing it up at a good point for this pour. Keep it steady.
-t=23008 Level 55%
-t=23264 Level 57%
-t=23504 Level 59%
-t=23760 Level 62%
-t=24000 Level 64%
-t=24256 Level 66%
-t=24512 Level 68%
-t=24752 Level 70%
-t=25008 Level 72%
-t=25264 Level 74%
+t=23760 Level 55%
+t=24000 Level 57%
+t=24256 Level 59%
+t=24512 Level 62%
+t=24752 Level 64%
+t=25008 Level 66%
+t=25264 Level 68%
+t=25504 Level 70%
+t=25760 Level 72%
+t=26000 Level 74%
 say  Level 75%.
-t=25504 Level 76%
-t=25760 Level 78%
-t=26000 Level 79%
+t=26256 Level 76%
+t=26512 Level 78%
+t=26752 Level 79%
 say  Head in band, 16%.
-t=26256 Level 81%
-t=26512 Level 83%
-t=26752 Level 85%
-t=27008 Level 86%
-t=27264 Level 88%
+t=27008 Level 81%
+t=27264 Level 83%
+t=27504 Level 85%
+t=27760 Level 86%
+t=28000 Level 88%
 say  Close to the line.
-t=27504 Level 90%
-t=27760 Level 91%
-t=28000 Level 93%
+t=28256 Level 90%
+t=28512 Level 91%
+t=28752 Level 93%
 say  Stop pouring.
-t=28256 Level 94%
-say  Stopped in the fill zone.
-t=28512 Level 94%
-t=28752 Level 94%
-say  Clean pour. Clean pour. This pour built a moderate amount of foam, and you brought it up at about 53% full to match.
 t=29008 Level 94%
+say  Stopped in the fill zone.
+t=29264 Level 94%
+t=29504 Level 94%
+say  Clean pour. Clean pour. This pour built a moderate amount of foam, and you brought it up at about 53% full to match.
+t=29760 Level 94%
 say  Solo mode.
-t=29264 Level 0%
+t=30000 Level 0%
