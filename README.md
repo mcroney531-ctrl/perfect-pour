@@ -149,8 +149,8 @@ glass is.**
 ## Tests
 
 ```
-npm test            # Pilsner sim (61), Hefeweizen sim (16), hub layout (8), station registry (3), progress (4); Node 18+, no installs
-npm run test:ui     # browser: 65 Playwright tests (npm install first)
+npm test            # Pilsner sim (61), Hefeweizen sim (16), hub layout (8), station registry (3), progress (4), entry points (3); Node 18+, no installs
+npm run test:ui     # browser: 75 Playwright tests, incl. DOM/speech parity and lifecycle (npm install first)
 npm run test:all    # both
 ```
 
@@ -172,6 +172,16 @@ clean pour, filters only the art, and its shadow follows the glass).
 
 `node test/ui/snapshots.mjs <dir>` writes deterministic screenshots for
 pixel-parity checks across refactors.
+
+**Parity safety net (for the shared station kit).**
+- `test/ui/dom-parity.test.mjs` compares each station's DOM at fixed points of a deterministic run against `test/ui/fixtures/`. It covers Pilsner and Hefeweizen in the app and the legacy page, and also checks what the live region said, in order, and the level every 250 ms.
+- `test/ui/lifecycle.test.mjs` covers:
+  - The tap closing on blur, page hide and a hidden tab.
+  - Unmount: abandoned once, safe to repeat, nothing left behind.
+  - The log's key, fields, cap and attempt numbering.
+- `test/entry-points.test.js` checks script order on both pages.
+- After an intended change: `UPDATE_FIXTURES=1 node --test test/ui/dom-parity.test.mjs test/ui/lifecycle.test.mjs`.
+- `node tools/station-parity.mjs shoot <dir>` / `compare <a> <b>` gives before/after screenshots at 1280×720 and 844×390. It separates real differences from Chromium's few-pixel rasteriser noise.
 
 | Pour (staged) | Result |
 |---|---|

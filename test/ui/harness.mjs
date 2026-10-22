@@ -34,7 +34,11 @@ export function startServer() {
 }
 
 // One fresh page per test: phone-sized, touch-capable, fake clock.
-export async function openPage(browser, url, { mobile = true, size, init, reducedMotion } = {}) {
+// exactClock: start the clock already paused (no install step), so
+// performance.now() is identical on every run and animation frames land on
+// the same sim ticks. Opt-in, used by the parity tests; the default leaves a
+// few real milliseconds between install and pause, as the suite always had.
+export async function openPage(browser, url, { mobile = true, size, init, reducedMotion, exactClock = false } = {}) {
   const ctx = await browser.newContext(Object.assign(mobile
     ? { viewport: size || { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }
     : { viewport: size || { width: 1280, height: 800 } }, reducedMotion ? { reducedMotion } : {}));
@@ -45,7 +49,7 @@ export async function openPage(browser, url, { mobile = true, size, init, reduce
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   // Paused clock: time only moves when a test calls run(), so every frame is
   // reproducible (an installed-but-running clock still leaks page-load time).
-  await page.clock.install({ time: new Date('2026-01-01T12:00:00Z') });
+  if (!exactClock) await page.clock.install({ time: new Date('2026-01-01T12:00:00Z') });
   await page.clock.pauseAt(new Date('2026-01-01T12:00:01Z'));
   await page.goto(url);
   await page.clock.runFor(50);

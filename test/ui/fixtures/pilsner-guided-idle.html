@@ -1,0 +1,374 @@
+<div class="pp-st st-look" id="stationHost" style="--st-ui: 1;">
+  <div aria-hidden="true" class="st-backdrop" style="background-image:url('assets/station/pilsner.webp')">
+  <div id="app">
+    <header>
+      <div class="brand" hidden="">
+        "Perfect Pour"
+        <small>
+          "Pilsner · v2.3"
+      <button aria-label="Back to the bar" id="exitBtn" type="button">
+        "‹ Bar"
+        <small>
+          "Pilsner station"
+      <button aria-controls="debug" aria-expanded="false" aria-label="Debug panel" hidden="" id="debugToggle" type="button">
+        "⚙"
+      <nav aria-label="Mode" id="modes">
+        <button data-mode="watch" type="button">
+          "Watch"
+        <button aria-current="true" data-mode="guided" type="button">
+          "Guided"
+        <button data-mode="solo" type="button">
+          "Solo"
+    <p id="caption">
+      "Guided: tilt the glass, then hold the pad to pour. Hints show up here."
+    <div id="stage">
+      <svg aria-labelledby="sceneTitle sceneDesc" id="scene" preserveAspectRatio="xMidYMid meet" role="img" viewBox="0 -24 340 424">
+        <defs>
+          <filter color-interpolation-filters="sRGB" height="160%" id="st-fx-tap" width="160%" x="-25%" y="-25%">
+            <fecolormatrix in="SourceGraphic" result="c" type="matrix" values="1.03 0.03 0 0 0  0 0.98 0.02 0 0  -0.02 0.03 0.84 0 0  0 0 0 1 0">
+            <fegaussianblur in="SourceAlpha" stdDeviation="4">
+            <feoffset dx="5" dy="9" result="so">
+            <feflood flood-color="#030504" flood-opacity="0.7">
+            <fecomposite in2="so" operator="in" result="s">
+            <fegaussianblur in="SourceAlpha" stdDeviation="1.4">
+            <feoffset dy="-1.2" result="wo">
+            <feflood flood-color="#ffb547" flood-opacity="0.35">
+            <fecomposite in2="wo" operator="in" result="w">
+            <femerge>
+              <femergenode in="s">
+              <femergenode in="w">
+              <femergenode in="c">
+          <filter color-interpolation-filters="sRGB" height="160%" id="st-fx-glass" width="160%" x="-25%" y="-25%">
+            <fecolormatrix in="SourceGraphic" result="c" type="matrix" values="1.03 0.03 0 0 0  0 0.98 0.02 0 0  -0.02 0.03 0.84 0 0  0 0 0 1 0">
+            <fegaussianblur in="SourceAlpha" stdDeviation="1.4">
+            <feoffset dy="-1.2" result="wo">
+            <feflood flood-color="#ffb547" flood-opacity="0.35">
+            <fecomposite in2="wo" operator="in" result="w">
+            <femerge>
+              <femergenode in="w">
+              <femergenode in="c">
+          <filter color-interpolation-filters="sRGB" height="160%" id="st-fx-beer" width="160%" x="-25%" y="-25%">
+            <fecolormatrix in="SourceGraphic" result="c" type="matrix" values="1.03 0.03 0 0 0  0 0.98 0.02 0 0  -0.02 0.03 0.84 0 0  0 0 0 1 0">
+            <femerge>
+              <femergenode in="c">
+          <filter height="500%" id="st-soft" width="200%" x="-50%" y="-200%">
+            <fegaussianblur stdDeviation="3">
+          <lineargradient id="st-edge" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#fff1d6" stop-opacity="0.85">
+            <stop offset="0.5" stop-color="#ffe8c4" stop-opacity="0.45">
+            <stop offset="1" stop-color="#ffe0b0" stop-opacity="0.22">
+        <title id="sceneTitle">
+          "Pilsner glass under the tap."
+        <desc id="sceneDesc">
+          "Level and head are announced as you pour."
+        <defs>
+          <clippath clipPathUnits="userSpaceOnUse" id="glassClip">
+            <polygon id="clipPoly" points="171.9,112 187,327 233,327 248.1,112">
+          <lineargradient id="beerGrad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#f7c948">
+            <stop offset="0.6" stop-color="#e7a526">
+            <stop offset="1" stop-color="#c9811a">
+          <pattern height="8" id="foamPat" patternUnits="userSpaceOnUse" width="9">
+            <circle cx="2.5" cy="2.5" fill="#e9dcbd" r="1.7">
+            <circle cx="7" cy="6" fill="#ece1c6" r="1.2">
+          <pattern height="5" id="hatch" patternTransform="rotate(45)" patternUnits="userSpaceOnUse" width="5">
+            <line stroke="#f6eedf" stroke-width="1.4" x1="0" x2="0" y1="0" y2="5">
+          <lineargradient id="metalH" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#f3ead9">
+            <stop offset="0.45" stop-color="#cdc2ae">
+            <stop offset="1" stop-color="#857b6c">
+          <lineargradient id="metalV" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#8a8072">
+            <stop offset="0.3" stop-color="#efe5d2">
+            <stop offset="0.62" stop-color="#cbbfab">
+            <stop offset="1" stop-color="#7d7466">
+          <lineargradient id="handleWood" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#2e1a0d">
+            <stop offset="0.38" stop-color="#6e4325">
+            <stop offset="0.7" stop-color="#57331b">
+            <stop offset="1" stop-color="#2a170b">
+          <radialgradient id="nozzleGlow">
+            <stop offset="0" stop-color="#ffd877" stop-opacity="0.85">
+            <stop offset="1" stop-color="#ffd877" stop-opacity="0">
+          <lineargradient gradientUnits="userSpaceOnUse" id="foamGrad" x1="0" x2="0" y1="327" y2="331">
+            <stop offset="0" stop-color="#fffaf0">
+            <stop offset="1" stop-color="#ecdcb8">
+        <g filter="url(#st-fx-tap)" id="tap" stroke="#24170d" stroke-linejoin="round" stroke-width="1.6">
+          <rect fill="url(#metalH)" height="17" id="tapShank" rx="8.5" width="130" x="224" y="28">
+          <path d="M232,32 L340,32" stroke="#fffaf0" stroke-linecap="round" stroke-opacity="0.55" stroke-width="2">
+          <rect fill="url(#metalV)" height="27" id="tapNut" rx="3" width="12" x="219" y="23">
+          <path d="M195,31 Q195,22 204,22 L216,22 Q225,22 225,31 L225,49 Q225,57 218,59 L216,62 L204,62 L202,59 Q195,57 195,49 Z" fill="url(#metalV)" id="tapBody">
+          <path d="M200,30 L200,50" stroke="#fffaf0" stroke-linecap="round" stroke-opacity="0.7" stroke-width="2.2">
+          <path d="M203.5,61 L216.5,61 L214.5,70 Q210,73.5 205.5,70 Z" fill="url(#metalV)" id="tapSpout">
+          <ellipse cx="210" cy="71" fill="#120b06" rx="3.4" ry="1.4" stroke="none">
+          <circle cx="210" cy="74" fill="url(#nozzleGlow)" id="tapGlow" opacity="0" r="7" stroke="none">
+          <g id="handle" transform="rotate(0 210 24)">
+            <rect fill="url(#metalV)" height="12" rx="2" width="8" x="206" y="12">
+            <path d="M203.5,13 L201,-11 Q201,-20 210,-21 Q219,-20 219,-11 L216.5,13 Z" fill="url(#handleWood)" id="tapHandle">
+            <rect fill="#a5392b" height="20" id="tapBadge" rx="3" stroke="#f2d9a6" stroke-width="1" width="12" x="204" y="-12.5">
+            <text font-size="6.5" font-weight="800" id="tapLabel" stroke="none" style="fill:#f8e6c0; letter-spacing:0em" text-anchor="middle" transform="rotate(-90 210 -2.5)" x="210" y="0">
+              "PILS"
+            <ellipse cx="210" cy="-20" fill="#8a5a33" rx="6.5" ry="2" stroke-width="1.2">
+        <ellipse cx="210" cy="341" fill="#030504" filter="url(#st-soft)" opacity="0.8" rx="40.1" ry="4.5">
+        <g id="glassBack" transform="translate(210 339) rotate(0)">
+          <g filter="url(#st-fx-glass)" id="glassBackArt">
+            <polygon fill="rgba(214,230,255,0.045)" points="-38.1,-227 -23,-12 23,-12 38.1,-227">
+        <g clip-path="url(#glassClip)" filter="url(#st-fx-beer)">
+          <path d="" fill="url(#foamGrad)" id="foamFill">
+          <path d="" fill="url(#foamPat)" id="foamTex">
+          <path d="" fill="url(#beerGrad)" id="beerFill">
+          <path d="" fill="none" id="beerShine" stroke="#fff0bf" stroke-opacity="0.6" stroke-width="1.3">
+          <g fill="#fff6d2" fill-opacity="0.7" id="bubbles">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+            <circle r="0">
+        <path d="" fill="none" filter="url(#st-fx-beer)" id="stream" stroke="#eaa72c" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9">
+        <path d="" fill="none" filter="url(#st-fx-beer)" id="streamCore" stroke="#fde6a0" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.75" stroke-width="0.6">
+        <g fill="#fbf4e2" filter="url(#st-fx-beer)" id="splash">
+          <circle cx="202" cy="121.4" r="0">
+          <circle cx="206" cy="119.4" r="0">
+          <circle cx="210" cy="121.4" r="0">
+          <circle cx="214" cy="119.4" r="0">
+          <circle cx="218" cy="121.4" r="0">
+        <path d="" fill="none" filter="url(#st-fx-beer)" id="spill" stroke="#fbf4e2" stroke-linecap="round" stroke-width="4">
+        <g id="glass" transform="translate(210 339) rotate(0)">
+          <g filter="url(#st-fx-glass)" id="glassArt">
+            <defs>
+              <lineargradient id="gA_base" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#f4f9ff" stop-opacity="0.32">
+                <stop offset="1" stop-color="#f4f9ff" stop-opacity="0.62">
+            <path d="M-42.1,-229 L-27,-10 Q-28,-4 -34,-2 L-34,0 L34,0 L34,-2 Q28,-4 27,-10 L42.1,-229 L38.1,-227 L23,-12 L-23,-12 L-38.1,-227 Z" fill="rgba(226,238,255,0.13)" stroke="rgba(238,246,255,0.92)" stroke-linejoin="round" stroke-width="1.8">
+            <path d="M-27,-11 L27,-11 L29,-3 Q30,0 26,0 L-26,0 Q-30,0 -29,-3 Z" fill="url(#gA_base)" stroke="rgba(238,246,255,0.92)" stroke-width="1.4">
+            <ellipse cx="0" cy="-8" fill="rgba(255,255,255,0.32)" rx="18" ry="1.8">
+            <line stroke="rgba(255,255,255,0.8)" stroke-linecap="round" stroke-width="2.4" x1="-42.1" x2="42.1" y1="-228" y2="-228">
+            <polygon fill="rgba(255,255,255,0.24)" points="-19.1,-27.1 -32,-212 -28,-212 -15.1,-27.1">
+            <polygon fill="rgba(255,255,255,0.14)" points="28.3,-130.3 32.9,-196.9 30.9,-196.9 26.3,-130.3">
+          <polygon fill="url(#hatch)" fill-opacity="0.45" id="zoneBand" points="-37,-211.9 37,-211.9 37.6,-220.5 -37.6,-220.5" stroke="#f6eedf" stroke-dasharray="2 2" stroke-width="0.8">
+          <line id="fillLine" stroke="#f6eedf" stroke-dasharray="5 3" stroke-width="1.6" x1="-37.3" x2="37.3" y1="-216.2" y2="-216.2">
+          <text font-size="10" font-weight="700" id="fillLabel" text-anchor="end" x="-45.3" y="-212.2">
+            "LINE"
+          <text font-size="9" font-weight="700" id="stopLabel" style="fill: rgb(246, 238, 223);" x="45.3" y="-213.3">
+            "STOP"
+          <g id="bringMark">
+            <polygon fill="rgba(159,220,138,0.18)" id="bringBand" points="-30.5,-119.5 30.5,-119.5 33.1,-156 -33.1,-156" stroke="#9fdc8a" stroke-dasharray="1 2.5" stroke-width="1.4">
+            <text font-size="9" font-weight="700" id="bringLabel" style="fill: rgb(159, 220, 138);" x="41.1" y="-134.8">
+              "▲ BRING UP"
+          <g id="actMarks">
+            <g id="markStraighten" style="display: none;">
+              <line id="markStraightenLine" stroke="#9fdc8a" stroke-linecap="round" stroke-width="3" x1="33.2" x2="43.2" y1="-129.4" y2="-129.4">
+              <text font-size="8.5" font-weight="700" id="markStraightenText" style="fill:#9fdc8a" x="46.2" y="-126.4">
+                "in range"
+            <g id="markStop" style="display: none;">
+              <line id="markStopLine" stroke="#f6eedf" stroke-linecap="round" stroke-width="3" x1="39.3" x2="49.3" y1="-216.6" y2="-216.6">
+              <text font-size="8.5" font-weight="700" id="markStopText" style="fill:#f6eedf" x="52.3" y="-213.6">
+                "in zone"
+        <g id="gauge">
+          <text font-size="10" font-weight="700" text-anchor="middle" x="23" y="30">
+            "HEAD"
+          <rect fill="rgba(255,255,255,0.04)" height="140" rx="3" stroke="#5c4a37" stroke-width="1.5" width="18" x="14" y="38">
+          <rect fill="#fbf4e2" height="0" id="gaugeBar" rx="2" width="14" x="16" y="178">
+          <rect fill="url(#foamPat)" height="0" id="gaugeBarTex" width="14" x="16" y="178">
+          <rect fill="url(#hatch)" fill-opacity="0.55" height="44.8" id="gaugeBand" stroke="#f6eedf" stroke-width="1.2" width="26" x="10" y="88.4">
+          <text font-size="9" id="gaugeHi" x="40" y="91.4">
+            "16%"
+          <text font-size="9" id="gaugeLo" x="40" y="136.2">
+            "8%"
+          <text font-size="12" font-weight="700" id="gaugeVal" style="fill:#f6eedf" x="10" y="196">
+            "0%"
+          <text font-size="9" id="gaugeState" x="10" y="209">
+            "below band"
+        <text font-size="11" id="levelText" x="10" y="228">
+          "Level 0%"
+    <section aria-label="Pour controls" class="" id="controls">
+      <div id="angleCtl">
+        <div hidden="" id="sliderWrap">
+          <div class="ctl-head">
+            <label for="angleSlider">
+              "Glass angle"
+            <output for="angleSlider" id="angleOut">
+              "0°"
+          <input aria-valuetext="0 degrees, upright" id="angleSlider" max="60" min="0" step="1" type="range" value="0">
+          <div aria-hidden="true" class="ticks">
+            <span style="left:0">
+              "Upright 0°"
+            <span style="left:75%">
+              "45°"
+            <span style="left:100%;transform:translateX(-100%)">
+              "60°"
+        <div id="toggleWrap">
+          <button aria-checked="false" aria-disabled="false" aria-label="Tilt the glass to about 45 degrees" id="angleToggle" role="switch" type="button">
+            <span aria-hidden="true" class="opt opt-up">
+              "Upright"
+            <span aria-hidden="true" class="opt opt-tilt">
+              "Tilted ~45°"
+      <div id="pourRow">
+        <button aria-describedby="pourHelp" aria-disabled="false" aria-pressed="false" id="pour" type="button">
+          <span class="padText">
+            <span id="pourText">
+              "Hold to pour"
+            <span class="sub" id="pourSub">
+              "then slide up slowly to straighten"
+          <span aria-hidden="true" id="padTrack">
+            <span id="padThumb" style="top: 0%;">
+          <span aria-hidden="true" hidden="" id="padFinger" style="top: 22%;">
+          <span aria-hidden="true" class="st-cue">
+            <span class="st-cue__chev">
+              "⌃⌃⌃"
+            <span class="st-cue__text">
+              "Keep holding · slide up slowly"
+        <label class="tapmode">
+          <input id="tapMode" type="checkbox">
+          <span>
+            "Tap to start/stop pouring"
+      <p class="sr-only" id="pourHelp">
+        "Hold the button, or hold Space or Enter, to pour. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass and to bring it upright."
+      <div id="actions">
+        <button disabled="" id="serve" type="button">
+          "Serve"
+          <kbd>
+            "S"
+        <button id="restart" type="button">
+          "Restart"
+          <kbd>
+            "R"
+      <div hidden="" id="ghostActions">
+        <button id="replay" type="button">
+          "Replay"
+        <button id="skip" type="button">
+          "Skip to Guided"
+      <div class="is-folded" hidden="" id="transcriptBox">
+        <button aria-controls="transcript" aria-expanded="false" class="st-steps-toggle" type="button">
+          "Show all steps"
+        <span id="transcriptTitle">
+          "Steps in this demo"
+        <ol aria-labelledby="transcriptTitle" id="transcript">
+          <li>
+            "Tilt the glass to about 45°. Watch the two bands on the glass."
+          <li>
+            "Open the tap fully. Pour down the side."
+          <li>
+            "At the BRING UP band, keep holding and slide your thumb up slowly."
+          <li>
+            "Finish upright to build the head."
+          <li>
+            "The beer reached the LINE: let go, then serve."
+        <p class="fineprint">
+          "Two bands on the training glass:"
+          <b>
+            "BRING UP"
+          "(start bringing the glass upright when the beer gets there) and"
+          <b>
+            "LINE"
+          "(stop). BRING UP is a training mark that real glasses don't have; on the job, judge it by eye: about half to two-thirds full. Keep holding the pad the whole time: slide up and the glass comes up; stop sliding and it holds its angle while the beer keeps flowing."
+  <section aria-labelledby="resultTitle" hidden="" id="result">
+    <h2 id="resultTitle">
+      "Demo pour: clean"
+    <h3 class="chk-head">
+      "Technique"
+    <ul class="checks two" id="checksTech">
+      <li class="ok">
+        <b>
+          "✓ Tilted first"
+        "opened at 45°"
+      <li class="ok">
+        <b>
+          "✓ Finished upright"
+        "closed at 0°"
+    <h3 class="chk-head">
+      "The pour"
+    <ul class="checks" id="checks">
+      <li class="ok">
+        <b>
+          "✓ 12%"
+        "Head: in range"
+        <br>
+        "aim 8–16%"
+      <li class="ok">
+        <b>
+          "✓ 95%"
+        "Level: in range"
+        <br>
+        "aim 93–97%"
+      <li class="ok">
+        <b>
+          "✓ 0%"
+        "Spill: in range"
+        <br>
+        "max 2%"
+    <div id="debrief">
+      <svg aria-hidden="true" id="debriefGlass" viewBox="0 0 120 150">
+        <polygon fill="rgba(210,228,255,0.06)" points="26,10 36,140 64,140 74,10" stroke="rgba(230,240,255,0.8)" stroke-width="2">
+        <polygon fill="rgba(159,220,138,0.25)" points="31,75 69,75 70.7,52.9 29.3,52.9" stroke="#9fdc8a" stroke-dasharray="1 2" stroke-width="1">
+        <polygon fill="rgba(246,238,223,0.18)" points="26.7,19.1 73.3,19.1 73.7,13.9 26.3,13.9" stroke="#f6eedf" stroke-dasharray="3 2" stroke-width="1">
+        <line stroke="#9fdc8a" stroke-linecap="round" stroke-width="3" x1="71.5" x2="81.5" y1="69" y2="69">
+        <line stroke="#f6eedf" stroke-linecap="round" stroke-width="3" x1="75.5" x2="85.5" y1="16.3" y2="16.3">
+      <p id="debriefText">
+        "You started bringing it up at"
+        <b>
+          "55%"
+        "(BRING UP band 50–67%): in range. Brought up gradually (1.8 s). You stopped at"
+        <b>
+          "95%"
+        "(around the LINE, 93–97%): in the zone."
+    <p id="fbPrimary">
+      "Clean pour. You tilted first, started straightening at about 55% full and finished upright."
+    <p hidden="" id="fbSecondary">
+    <p hidden="" id="suggest">
+    <p class="fineprint">
+      "Prototype: the steps follow common beer-service guidance (see docs/pour-procedure.md); the exact numbers are placeholders, not yet checked first-hand."
+    <div id="resultActions">
+      <button class="primary" type="button">
+        "Try it guided"
+      <button type="button">
+        "Watch again"
+  <div aria-atomic="true" aria-live="polite" class="sr-only" id="live">
+    "Guided mode."
+  <aside aria-label="Debug panel" hidden="" id="debug">
+    <div class="warn">
+      "verified: false · all constants are placeholders"
+    <h3>
+      "Angle control"
+    <select aria-label="Angle control variant" id="dbgVariant">
+      <option value="staged">
+        "A: staged (swipe up to straighten)"
+      <option value="continuous">
+        "B: continuous (slide to tilt)"
+      <option value="slider">
+        "v1 fallback: slider"
+      <option value="toggle">
+        "v1 fallback: switch only"
+    <h3>
+      "Live state"
+    <pre id="dbgState">
+    <h3>
+      "Pilsner constants"
+    <div class="grid" id="dbgCfg">
+    <h3>
+      "Control feel"
+    <div class="grid" id="dbgCtl">
+    <button id="dbgReset" type="button">
+      "Reset constants"
+    <button id="dbgGhost" type="button">
+      "Run ghost check"
+    <pre id="dbgGhostOut">
+    <h3>
+      "Pour log"
+    <div id="dbgLogCount">
+    <button id="dbgDownload" type="button">
+      "Download JSON"
+    <button id="dbgCopy" type="button">
+      "Copy JSON"
+    <button id="dbgClear" type="button">
+      "Clear log"
+  <div aria-atomic="true" aria-live="polite" class="sr-only st-cue-live">
