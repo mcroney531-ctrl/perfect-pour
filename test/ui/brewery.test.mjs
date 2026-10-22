@@ -685,3 +685,74 @@ test('M6: abandoning a pour after certification keeps certification and counts t
   assert.equal((await lastLog(h)).endedBy, 'navigate');
   await h.close();
 });
+
+// ---- Slice 1: station registry and contract ----
+test('registry: the hub shows exactly the registered stations, in order, playable or coming soon', async () => {
+  const h = await openApp(browser, APP());
+  await h.run(200);
+  const reg = await h.page.evaluate(() => RiversideStations.list().map(s => ({ id: s.id, playable: s.playable, name: s.meta.name, sub: s.meta.sub })));
+  const cards = await h.page.evaluate(() => [...document.querySelectorAll('.hub__card')].map(c => ({
+    id: c.dataset.station, playable: c.getAttribute('aria-disabled') !== 'true',
+    name: c.querySelector('.hub__name').textContent, sub: c.querySelector('.hub__sub').textContent })));
+  assert.deepEqual(cards, reg);
+  assert.deepEqual(reg.map(s => s.id), ['pilsner', 'hefeweizen', 'stout']);
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('contract: every playable station mounts, abandons a started pour once, unmounts idempotently and leaves nothing behind', async () => {
+  const h = await openApp(browser, APP(), { init: `(${RETURNING})();(${INSTRUMENT})();` });
+  await h.run(200);
+  const atHub = await listeners(h);
+  const ids = await h.page.evaluate(() => RiversideStations.list().filter(s => s.playable).map(s => s.id));
+  assert.ok(ids.length >= 1);
+  for (const id of ids) {
+    await h.page.evaluate(sid => {
+      document.getElementById('hub').hidden = true;     // the station is mounted directly, not via the router
+      const host = document.createElement('div'); host.id = 'contractHost';
+      document.getElementById('app-root').appendChild(host);
+      window.__ev = [];
+      window.__h = RiversideStations.get(sid).mount(host, { onExit() {}, onEvent: (t, d) => window.__ev.push([t, d]) });
+    }, id);
+    await h.run(100);
+    assert.equal(typeof (await h.page.evaluate(() => typeof window.__h.unmount)), 'string');
+    // Start a pour in Guided (Pilsner's controls; a new station adds its own branch here).
+    await h.page.click('#contractHost #modes [data-mode=guided]'); await h.run(100);
+    await h.page.keyboard.press('t'); await h.run(400);
+    await h.page.keyboard.down(' '); await h.run(1500);
+    const first = await h.page.evaluate(() => window.__h.unmount('contract'));
+    await h.page.keyboard.up(' ');
+    assert.deepEqual(first, { abandoned: true }, id);
+    const second = await h.page.evaluate(() => window.__h.unmount('contract'));
+    assert.deepEqual(second, { abandoned: false }, `${id}: second unmount is a no-op`);
+    const ev = await h.page.evaluate(() => window.__ev);
+    assert.deepEqual(ev, [['abandoned', { mode: 'guided', reason: 'contract' }]], `${id}: one abandoned event`);
+    assert.equal(await h.page.evaluate(() => document.getElementById('contractHost').childElementCount), 0, `${id}: markup gone`);
+    await h.page.evaluate(() => { document.getElementById('contractHost').remove(); document.getElementById('hub').hidden = false; });
+  }
+  assert.equal(await listeners(h), atHub, 'no listeners left behind');
+  const raf = await h.page.evaluate(() => window.__pp.raf);
+  await h.run(500);
+  assert.equal(await h.page.evaluate(() => window.__pp.raf), raf, 'no animation loop left running');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('progress: a saved game missing a station (one added later) keeps its certification and seen screens', async () => {
+  const OLD = JSON.stringify({ version: 1, seen: { landing: true, 'intro.pilsner': true },
+    stations: { pilsner: { status: 'certified', attempts: 4, passes: 2, abandoned: 0, lastPlayed: '2026-10-01T00:00:00.000Z', certifiedAt: '2026-10-01T00:00:00.000Z' },
+      hefeweizen: { status: 'new', attempts: 0, passes: 0, abandoned: 0, lastPlayed: null } } });
+  const h = await openApp(browser, APP(), { init: `localStorage.setItem('riverside.progress', ${JSON.stringify(OLD)})` });
+  await h.run(200);
+  assert.equal(await h.page.evaluate(() => window.ppBrewery.view()), 'hub', 'no landing: seen flags kept');
+  assert.equal(await chip(h, 'pilsner'), 'Replay');
+  assert.equal(await h.text('#hubCount'), '1');
+  assert.equal(await chip(h, 'stout'), 'Coming soon');
+  await h.page.click('[data-station=pilsner]'); await settle(h, 300);
+  const p = await progress(h);
+  assert.equal(p.stations.pilsner.status, 'certified');
+  assert.equal(p.stations.pilsner.certifiedAt, '2026-10-01T00:00:00.000Z');
+  assert.equal(p.stations.stout.status, 'new');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});

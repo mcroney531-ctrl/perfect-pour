@@ -8,18 +8,18 @@
 // - Hash routes (#/, #/pilsner, #/welcome) so the browser back button works
 //   and the page still opens from disk. Stations are mounted and unmounted
 //   whole. First-time learners land on the landing; returning ones on the hub.
+// - Stations come from the registry (js/stations.js): this file names no beer.
 (function () {
   'use strict';
   const P = window.RiversideProgress;
   const { SCENES, pickScene, layoutScene } = window.RiversideHubScenes;
 
-  // ---- Stations (metadata only; state comes from progress) ----
-  const STATIONS = [
-    { id: 'pilsner', name: 'Pilsner', sub: 'Foundation pour', glass: 'pils', playable: true },
-    { id: 'hefeweizen', name: 'Hefeweizen', sub: 'Transfer pour', glass: 'hefe', playable: false },
-    { id: 'stout', name: 'Nitro Stout', sub: 'Two-step pour', glass: 'stout', playable: false }
-  ];
+  // ---- Stations: whatever is registered (js/stations.js), in hub order.
+  // Each brings its own name, intro, backdrop and mount; state comes from
+  // progress. The first playable one is where a new learner starts.
+  const STATIONS = window.RiversideStations.list().map(s => ({ id: s.id, playable: s.playable, def: s, ...s.meta }));
   const BY_ID = Object.fromEntries(STATIONS.map(s => [s.id, s]));
+  const FIRST = STATIONS.find(s => s.playable);
   // What each state looks like on a card: words first, colour second.
   const STATE = {
     new: { action: 'Start here', status: 'Not started. Recommended first station.', ring: 'new' },
@@ -32,11 +32,6 @@
   const LANDING = { src: 'assets/landing/landing.webp', provisional: false };
   const PUSH_MS = 650;          // hub-to-station camera push (agreed 0.5-0.8 s)
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const INTRO = {
-    pilsner: { label: 'Pilsner station', title: 'Foundation pour',
-      steps: ['<b>Watch</b> a demo pour.', '<b>Guided:</b> pour it yourself, with hints.', '<b>Solo:</b> pour it on your own.'],
-      goal: 'Your goal: tilt first, bring the glass upright gradually, and stop at the line with the right amount of foam.' }
-  };
 
   const root = document.getElementById('app-root');
   root.innerHTML = `
@@ -203,11 +198,11 @@
       hub.querySelector(`.hub__ring[data-ring="${s.id}"]`).className = `hub__ring hub__ring--${look.ring}`;
     });
     document.getElementById('hubCount').textContent = P.certifiedCount();
-    const pil = P.station('pilsner').status;
+    const first = P.station(FIRST.id).status;
     document.getElementById('hubLede').textContent =
-      pil === 'new' ? 'Your first shift. Start at the Pilsner station.'
-      : pil === 'inProgress' ? 'Pick up where you left off: the Pilsner station.'
-      : 'Pilsner certified. More stations are on the way.';
+      first === 'new' ? `Your first shift. Start at the ${FIRST.name} station.`
+      : first === 'inProgress' ? `Pick up where you left off: the ${FIRST.name} station.`
+      : `${FIRST.name} certified. More stations are on the way.`;
   }
 
   hub.addEventListener('click', e => {
@@ -216,7 +211,7 @@
     if (btn.id === 'rushBtn') return say('Final Rush unlocks once all three stations are certified.');
     const s = BY_ID[btn.dataset.station];
     if (!s) return;
-    if (!s.playable) return say(`${s.name} is coming soon. Start with the Pilsner.`);
+    if (!s.playable) return say(`${s.name} is coming soon. Start with the ${FIRST.name}.`);
     cameFromHub = true;
     pushNext = true;
     location.hash = '#/' + s.id;
@@ -260,13 +255,13 @@
     P.markEntered(id);
     current = { id, station: null };
     document.title = `${BY_ID[id].name} station · Riverside Brewing Co.`;
-    if (INTRO[id] && !P.seen('intro.' + id)) return showIntro(id);
+    if (BY_ID[id].intro && !P.seen('intro.' + id)) return showIntro(id);
     mountStation(id);
   }
 
   // First visit only: what the station is and how it runs, then straight in.
   function showIntro(id) {
-    const t = INTRO[id];
+    const t = BY_ID[id].intro;
     document.getElementById('introLabel').textContent = t.label;
     document.getElementById('introTitle').textContent = t.title;
     document.getElementById('introSteps').innerHTML = t.steps.map(x => `<li>${x}</li>`).join('');
@@ -282,8 +277,6 @@
     mountStation(current.id);
   });
 
-  // The station's backdrop (16:9, same frame coordinates as the live scene).
-  const STATION_BACKDROP = { src: 'assets/station/pilsner.webp', provisional: false };  // revision 2, approved
   function frameUi() {                       // panel scale for the station, from the frame size
     const w = root.clientWidth;
     stationHost.style.setProperty('--st-ui', Math.min(1.75, Math.max(0.8, w / 1280)).toFixed(4));
@@ -292,38 +285,19 @@
 
   function mountStation(id) {
     frameUi();
-    const station = PilsnerStation.mount(stationHost, {
+    const st = BY_ID[id];
+    const station = st.def.mount(stationHost, {
       onExit: leaveStation,
       onEvent(type, d) {
         if (type === 'served') onServed(id, d);
         if (type === 'abandoned') P.recordAbandoned(id);
       }
     });
-    current = { id, station, look: window.RiversideStationLook ? RiversideStationLook.apply(stationHost) : null,
-      cues: window.RiversideStationCues ? RiversideStationCues.apply(stationHost) : null };
-    // Mark the station while the pad is held (the cue layer styles from this).
-    const padEl = document.getElementById('pour'), ctlEl = document.getElementById('controls');
-    if (padEl && ctlEl) {
-      current.padObs = new MutationObserver(() => ctlEl.classList.toggle('st-pouring', padEl.getAttribute('aria-pressed') === 'true'));
-      current.padObs.observe(padEl, { attributes: true, attributeFilter: ['aria-pressed'] });
-    }
-    // Watch: the caption carries the current step; the full step list and the
-    // explanation fold away behind a toggle (panel only; the stage is untouched).
-    const tbox = document.getElementById('transcriptBox');
-    if (tbox) {
-      tbox.classList.add('is-folded');
-      tbox.insertAdjacentHTML('afterbegin', '<button type="button" class="st-steps-toggle" aria-expanded="false" aria-controls="transcript">Show all steps</button>');
-      const tg = tbox.querySelector('.st-steps-toggle');
-      tg.addEventListener('click', () => {
-        const open = tbox.classList.toggle('is-folded') === false;
-        tg.setAttribute('aria-expanded', String(open));
-        tg.textContent = open ? 'Hide steps' : 'Show all steps';
-      });
-    }
+    current = { id, station };
+    // The station's backdrop (16:9, same frame coordinates as the live scene).
+    const bd = st.backdrop;
     stationHost.insertAdjacentHTML('afterbegin', `<div class="st-backdrop" aria-hidden="true"
-      style="background-image:url('${STATION_BACKDROP.src}')">${STATION_BACKDROP.provisional ? '<p class="st-backdrop__label">Backdrop candidate</p>' : ''}</div>`);
-    const exit = document.getElementById('exitBtn');
-    if (exit) exit.focus({ preventScroll: true });
+      style="background-image:url('${bd.src}')">${bd.provisional ? '<p class="st-backdrop__label">Backdrop candidate</p>' : ''}</div>`);
   }
 
   // M6: only a passing Solo pour certifies (Watch and Guided never do), once,
@@ -362,11 +336,8 @@
   // attempt is abandoned, ungraded. Progress stays In progress.
   function closeStation() {
     if (!current) return null;
-    const { id, station, look, cues, padObs } = current;
+    const { id, station } = current;
     current = null;
-    if (look) look.stop();
-    if (cues) cues.stop();
-    if (padObs) padObs.disconnect();
     intro.hidden = true;
     if (!station) return { id, abandoned: false };          // left from the intro
     const { abandoned } = station.unmount('navigate');
@@ -388,7 +359,7 @@
     }
     if (id) {
       history.replaceState(null, '', '#/');
-      if (BY_ID[id]) say(`${BY_ID[id].name} is coming soon. Start with the Pilsner.`);
+      if (BY_ID[id]) say(`${BY_ID[id].name} is coming soon. Start with the ${FIRST.name}.`);
     }
     if (!P.seen('landing')) return showLanding(!!left);
     showHub(left);
@@ -406,7 +377,7 @@
     layout();
     document.title = 'The Bar · Riverside Brewing Co.';
     if (left) {
-      if (left.abandoned) say('Pour stopped. Attempt not scored. Return to Pilsner to try again.');
+      if (left.abandoned) say(`Pour stopped. Attempt not scored. Return to ${BY_ID[left.id].name} to try again.`);
       const card = hub.querySelector(`[data-station="${left.id}"]`);
       if (card) card.focus({ preventScroll: true });
     }

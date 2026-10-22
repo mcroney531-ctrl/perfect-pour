@@ -149,8 +149,8 @@ glass is.**
 ## Tests
 
 ```
-npm test            # simulation (61) + hub layout (8), Node 18+, no installs
-npm run test:ui     # browser: 53 Playwright tests (npm install first)
+npm test            # simulation (61), hub layout (8), station registry (3), progress (4); Node 18+, no installs
+npm run test:ui     # browser: 56 Playwright tests (npm install first)
 npm run test:all    # both
 ```
 
@@ -382,7 +382,10 @@ modules) so `index.html` still opens by double-click from disk.
 | `brewery.html`, `js/brewery.js`, `css/brewery.css` | The brewery app (M3): hub, hash router, station mounting |
 | `js/hub-scenes.js` | Hub plates, station anchors (plate pixels) and the pure `layoutScene()` mapping |
 | `assets/hub/`, `tools/make-hub-plates.mjs` | The hub plate, and a provisional-template generator (from the station table) for future plates |
-| `js/progress.js` | Versioned training progress on this device (`RiversideProgress`) |
+| `js/progress.js` | Versioned training progress on this device (`RiversideProgress`). Older or damaged saves are repaired per station, never wiped |
+| `js/stations.js` | The station registry (`RiversideStations`): the shell builds the hub and mounts stations from what is registered |
+| `js/stations/pilsner.js` | Registers Pilsner: its card, intro and backdrop, and a thin adapter around `PilsnerStation.mount` that adds the Pilsner-only look and cue layers |
+| `js/stations/upcoming.js` | Hefeweizen and Nitro Stout as coming soon (card details only, no mount) |
 | `css/pilsner-station.css` | The station's styles, scoped to its host (`.pp-st`) |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
 | `css/tokens.css`, `css/components.css` | M2 visual system: colour, type, spacing tokens and the shared components (used by the hub; the station adopts them in M5) |
@@ -403,9 +406,43 @@ station.unmount('navigate');  // closes the tap, abandons an unserved pour, remo
 ```
 
 The brewery app (`js/brewery.js`) mounts and unmounts stations; the station
-knows nothing about the hub.
+knows nothing about the hub, and the shell names no beer. A station joins
+the app by registering (slice 1 of the contract in
+`docs/architecture-multi-station.md`):
 
-## Multi-station planning (for review; nothing implemented)
+```js
+RiversideStations.register({
+  id: 'pilsner', contract: 1,
+  meta: { name, sub, glass, intro: { label, title, steps, goal }, backdrop: { src, provisional } },
+  mount(host, { onExit, onEvent }) { /* ... */ return { unmount(reason) { return { abandoned }; } }; }
+});   // no mount = shown as coming soon
+```
+
+## Slice 1: station registry (for review)
+
+The first implementation slice of the multi-station plan, approved with
+amendments in the planning review. App layer only: no change to the Pilsner
+station, simulation, scoring or art.
+
+- **Registry.** `js/stations.js`, with Pilsner registered through a thin adapter.
+- **Pilsner details moved out of the shell.** Card, intro, backdrop and the Pilsner-only look and cue layers now live in `js/stations/pilsner.js`, not `js/brewery.js`. The shell builds the hub, intro, messages and station screen from the registry.
+- **Progress loading repairs instead of wiping.** Before, a save missing any station record, or with one damaged record, was discarded whole; adding a station would have reset every learner. Now only the affected record starts as new, and unknown keys are kept. Final Rush will be its own record later, not a station.
+- **Tests.**
+  - Registry checks and progress repair (node).
+  - Browser tests:
+    - The hub matches the registry.
+    - Every playable station mounts, abandons a started pour exactly once, unmounts idempotently, and leaves no listeners or loops behind.
+    - An older save missing a station keeps its certification.
+- **Parity.** Before/after screenshots of the hub, intro, station, Watch, Guided and the return to the hub, at 1280×720 and 844×390. Static screens are pixel-identical. The only differences are in the moving pour stream and the demo thumb, and the old build differs from itself there between runs.
+- **Deferred until something needs them:**
+  - Mode locking.
+  - Richer `served` details.
+  - Phase events.
+  - Parking.
+  - Station-tagged pour logs (these come with Hefeweizen).
+- The Hefeweizen card still reads "Transfer pour"; the agreed "Foam Control" label is a one-line change in `js/stations/upcoming.js`.
+
+## Multi-station planning (approved with amendments)
 
 Specification gate before Hefeweizen, Nitro Stout and Final Rush:
 
