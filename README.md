@@ -210,6 +210,7 @@ pixel-parity checks across refactors.
   dims so it doesn't read as the way to straighten (it still works).
 - **Panel:** Watch steps fold behind "Show all steps"; the caption carries
   the current step.
+- M6 rules agreed (not implemented): [`docs/m6-certification-spec.md`](docs/m6-certification-spec.md).
 - **Reachability** tested at 1920 x 1080, 1280 x 720, 844 x 390 and 667 x 375:
   modes, tilt, pad, Serve, Restart and the result buttons. Not yet checked
   inside a real Storyline Web Object.
