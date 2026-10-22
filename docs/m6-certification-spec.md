@@ -1,8 +1,9 @@
 # M6 spec: certification and progress (agreed, not yet implemented)
 
 Status: product rules locked by the user and GPT. Implementation is on hold
-until two M5 validation checks are done: the real Storyline Web Object test
-and one fresh-learner playtest.
+until one M5 validation check is done: a fresh-learner playtest. (The
+Storyline Web Object test was dropped: the app ships as a standalone 16:9 web
+app.)
 
 ## Rules
 
@@ -26,9 +27,9 @@ and one fresh-learner playtest.
    competency, and no copy may imply it is.
 6. **Final Rush** stays locked until all three stations are actually
    certified. No simulated certifications for Hefeweizen or Nitro Stout.
-7. **Storyline/LMS reporting** is deferred. Local progress only; keep a
-   future Storyline bridge possible, but build nothing without a defined
-   reporting requirement.
+7. **No Storyline/LMS reporting.** The app is delivered standalone; progress
+   is local to the learner's browser. Nothing is built for an LMS unless a
+   reporting requirement appears later.
 
 ## Tests required
 

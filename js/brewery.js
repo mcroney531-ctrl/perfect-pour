@@ -385,7 +385,7 @@
     }
   }
 
-  // Upright phones: a "turn sideways" prompt (as Storyline does), which can be
+  // Upright phones: a "turn sideways" prompt, which can be
   // dismissed for this visit.
   const rotate = document.getElementById('rotatePrompt');
   if (rotate) document.getElementById('rotateDismiss').addEventListener('click', () => {

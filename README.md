@@ -212,8 +212,9 @@ pixel-parity checks across refactors.
   the current step.
 - M6 rules agreed (not implemented): [`docs/m6-certification-spec.md`](docs/m6-certification-spec.md).
 - **Reachability** tested at 1920 x 1080, 1280 x 720, 844 x 390 and 667 x 375:
-  modes, tilt, pad, Serve, Restart and the result buttons. Not yet checked
-  inside a real Storyline Web Object.
+  modes, tilt, pad, Serve, Restart and the result buttons. (Delivered as a
+  standalone web app; Storyline embedding is not a target, though the frame
+  would drop into a Web Object unchanged.)
 
 ## M5A: Pilsner station layout in the 16:9 frame (approved)
 
@@ -235,7 +236,7 @@ pixel-parity checks across refactors.
 
 - **One format: a single 16:9 frame.** The whole app (landing, hub, intro,
   station) renders in one 16:9 frame scaled to the window, with dark bars
-  around it, exactly as the Storyline Web Object presents it. The portrait
+  around it, like a video player. The portrait
   layout and plate are retired (in the git history). Upright phones get a
   dismissable "Turn your phone sideways" prompt. The live UI scales with the
   frame: 0.7x on small frames (phone held sideways), 1x at 1280 x 720, 1.5x

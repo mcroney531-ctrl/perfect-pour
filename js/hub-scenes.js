@@ -6,7 +6,7 @@
 (function (global) {
   'use strict';
 
-  // One composition: the app is a single 16:9 frame (the Storyline format), so
+  // One composition: the app is a single 16:9 frame, so
   // there is one landscape plate. (The retired portrait plate is in the git
   // history.) Its station map:
   //   at:    the point the station's ring sits on (the tap's drip tray, or the
@@ -18,7 +18,7 @@
   const SCENES = {
     desktop: {
       // Landscape revision 2 (1672 x 941), the chosen plate and the primary
-      // composition (16:9, Storyline). A higher-resolution export of the same
+      // composition (16:9). A higher-resolution export of the same
       // image would only need these points scaled.
       src: 'assets/hub/hub-desktop.webp', provisional: false,
       width: 1672, height: 941,

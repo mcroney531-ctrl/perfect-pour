@@ -1,4 +1,4 @@
-/* The app is one 16:9 frame (the Storyline format), centred and scaled to fit
+/* The app is one 16:9 frame, centred and scaled to fit
    the window, with dark bars around it. Sizes inside use the frame (cq units),
    and fixed-position children are contained by it (it has a transform). */
 html, body { background: #050707; }

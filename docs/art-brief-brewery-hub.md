@@ -2,8 +2,8 @@
 
 For GPT and the user.
 
-**Status:** 16:9 landscape (1920 x 1080 design reference) is the primary
-format: the app is embedded as a Web Object in Storyline 360.
+**Status:** 16:9 landscape (1920 x 1080 design reference) is the single
+format: a standalone web app in one 16:9 frame.
 
 - **Landscape: revision 2 installed** (`assets/hub/hub-desktop.webp`,
   1672 x 941). All three cards sit below their drip trays, on the calm counter
