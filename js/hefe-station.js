@@ -16,20 +16,10 @@
 (function (global) {
   'use strict';
 
-  const MARKUP = `
-<div id="app">
-  <header>
-    <div class="brand">Perfect Pour<small>Hefeweizen</small></div>
-    <nav id="modes" aria-label="Mode">
-      <button type="button" data-mode="watch">Watch</button>
-      <button type="button" data-mode="guided">Guided</button>
-      <button type="button" data-mode="solo">Solo</button>
-    </nav>
-  </header>
-
-  <p id="caption"></p>
-
-  <div id="stage">
+  // The station's stage: its own scene, art and overlays. The panel, result
+  // sheet and live region around it come from the shared builder
+  // (js/station-markup.js), filled with this station's slots.
+  const STAGE = `\
     <svg id="scene" viewBox="0 -24 340 424" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="sceneTitle sceneDesc">
       <title id="sceneTitle">Weizen glass under the tap.</title>
       <desc id="sceneDesc">Level, head and foam are announced as you pour.</desc>
@@ -136,65 +126,17 @@
       </g>
       <text id="levelText" x="10" y="228" font-size="11"></text>
     </svg>
-  </div>
-
-  <section id="controls" aria-label="Pour controls">
-    <div id="angleCtl">
-      <div id="toggleWrap">
-        <button type="button" id="angleToggle" role="switch" aria-checked="false" aria-label="Tilt the glass to 45 degrees">
-          <span class="opt opt-up" aria-hidden="true">Upright</span>
-          <span class="opt opt-tilt" aria-hidden="true">Tilted ~45°</span>
-        </button>
-      </div>
-    </div>
-
-    <div id="pourRow">
-      <button type="button" id="pour" aria-pressed="false" aria-describedby="pourHelp">
-        <span class="padText"><span id="pourText">Hold to pour</span><span class="sub" id="pourSub"></span></span>
-        <span id="padTrack" aria-hidden="true"><span id="padThumb"></span></span>
-        <span id="padFinger" aria-hidden="true" hidden></span>
-      </button>
-      <label class="tapmode"><input type="checkbox" id="tapMode"><span>Tap to start/stop pouring</span></label>
-    </div>
-    <p id="pourHelp" class="sr-only">Hold the button, or hold Space or Enter, to pour. Slide up on the button, or press the Up arrow, to bring the glass upright. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass.</p>
-
-    <div id="actions">
-      <button type="button" id="serve" disabled>Serve<kbd>S</kbd></button>
-      <button type="button" id="restart">Restart<kbd>R</kbd></button>
-    </div>
-
-    <div id="ghostActions" hidden>
-      <button type="button" id="replay">Replay</button>
-      <button type="button" id="calmer">Watch a calmer pour</button>
-      <button type="button" id="skip">Skip to Guided</button>
-    </div>
-    <div id="transcriptBox" hidden>
-      <span id="transcriptTitle">Steps in this demo</span>
-      <ol id="transcript" aria-labelledby="transcriptTitle"></ol>
-      <p class="fineprint">Same pad as the Pilsner: keep holding, slide up to bring the glass up, let go at the <b>LINE</b>. There is no BRING UP band here: watch the foam already on the beer while the glass is tilted. Lots of foam, stay tilted longer; little foam, come up sooner. How lively each pour is varies in this training game.</p>
-    </div>
-  </section>
-</div>
-
-<section id="result" aria-labelledby="resultTitle" hidden>
-  <h2 id="resultTitle"></h2>
-  <h3 class="chk-head">Technique</h3>
-  <ul id="checksTech" class="checks two"></ul>
-  <h3 class="chk-head">The pour</h3>
-  <ul id="checks" class="checks"></ul>
-  <div id="debrief">
-    <svg id="debriefGlass" viewBox="0 0 120 150" aria-hidden="true"></svg>
-    <p id="debriefText"></p>
-  </div>
-  <p id="fbPrimary"></p>
-  <p id="fbSecondary" hidden></p>
-  <p id="suggest" hidden></p>
-  <p class="fineprint">Training game: the steps follow common draught-service guidance; the foam variation, bands and windows are game settings (see docs/hefeweizen-behaviour.md).</p>
-  <div id="resultActions"></div>
-</section>
-
-<div id="live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 `;
+  const MARKUP = RiversideStationMarkup.station({
+    brand: 'Hefeweizen',
+    stage: STAGE,
+    pourHelp: `Hold the button, or hold Space or Enter, to pour. Slide up on the button, or press the Up arrow, to bring the glass upright. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass.`,
+    // The optional comparison demo.
+    watchExtra: `      <button type="button" id="calmer">Watch a calmer pour</button>
+`,
+    transcriptNote: `Same pad as the Pilsner: keep holding, slide up to bring the glass up, let go at the <b>LINE</b>. There is no BRING UP band here: watch the foam already on the beer while the glass is tilted. Lots of foam, stay tilted longer; little foam, come up sooner. How lively each pour is varies in this training game.`,
+    resultNote: `Training game: the steps follow common draught-service guidance; the foam variation, bands and windows are game settings (see docs/hefeweizen-behaviour.md).`
+  });
 
   // Which pour comes next, per mode, kept on this device so leaving and
   // coming back (or restarting) replays the same pour; only a served pour

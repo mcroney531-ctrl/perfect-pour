@@ -9,23 +9,10 @@
 (function (global) {
   'use strict';
 
-  // The station's markup. Lives here (not in a <template> on one page) so any
-  // page can mount the station; styles are in css/pilsner-station.css.
-  const MARKUP = `
-<div id="app">
-  <header>
-    <div class="brand">Perfect Pour<small>Pilsner · v2.3</small></div>
-    <button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" aria-label="Debug panel" hidden>⚙</button>
-    <nav id="modes" aria-label="Mode">
-      <button type="button" data-mode="watch">Watch</button>
-      <button type="button" data-mode="guided">Guided</button>
-      <button type="button" data-mode="solo">Solo</button>
-    </nav>
-  </header>
-
-  <p id="caption"></p>
-
-  <div id="stage">
+  // The station's stage: its own scene, art and overlays. The panel, result
+  // sheet and live region around it come from the shared builder
+  // (js/station-markup.js), filled with this station's slots.
+  const STAGE = `\
     <svg id="scene" viewBox="0 -24 340 424" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="sceneTitle sceneDesc">
       <title id="sceneTitle">Pilsner glass under the tap.</title>
       <desc id="sceneDesc">Level and head are announced as you pour.</desc>
@@ -151,69 +138,25 @@
       </g>
       <text id="levelText" x="10" y="228" font-size="11"></text>
     </svg>
-  </div>
-
-  <section id="controls" aria-label="Pour controls">
-    <div id="angleCtl">
-      <div id="sliderWrap">
+`;
+  const MARKUP = RiversideStationMarkup.station({
+    brand: 'Pilsner · v2.3',
+    headerExtra: `    <button type="button" id="debugToggle" aria-expanded="false" aria-controls="debug" aria-label="Debug panel" hidden>⚙</button>
+`,
+    stage: STAGE,
+    // The v1 slider fallback; the glass switch starts hidden until setVariant() decides.
+    angleExtra: `      <div id="sliderWrap">
         <div class="ctl-head"><label for="angleSlider">Glass angle</label><output id="angleOut" for="angleSlider">0°</output></div>
         <input type="range" id="angleSlider" min="0" max="60" step="1" value="0" aria-valuetext="0 degrees, upright">
         <div class="ticks" aria-hidden="true"><span style="left:0">Upright 0°</span><span style="left:75%">45°</span><span style="left:100%;transform:translateX(-100%)">60°</span></div>
       </div>
-      <div id="toggleWrap" hidden>
-        <button type="button" id="angleToggle" role="switch" aria-checked="false" aria-label="Tilt the glass to 45 degrees">
-          <span class="opt opt-up" aria-hidden="true">Upright</span>
-          <span class="opt opt-tilt" aria-hidden="true">Tilted ~45°</span>
-        </button>
-      </div>
-    </div>
-
-    <div id="pourRow">
-      <button type="button" id="pour" aria-pressed="false" aria-describedby="pourHelp">
-        <span class="padText"><span id="pourText">Hold to pour</span><span class="sub" id="pourSub"></span></span>
-        <span id="padTrack" aria-hidden="true"><span id="padThumb"></span></span>
-        <span id="padFinger" aria-hidden="true" hidden></span>
-      </button>
-      <label class="tapmode"><input type="checkbox" id="tapMode"><span>Tap to start/stop pouring</span></label>
-    </div>
-    <p id="pourHelp" class="sr-only">Hold the button, or hold Space or Enter, to pour. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass and to bring it upright.</p>
-
-    <div id="actions">
-      <button type="button" id="serve" disabled>Serve<kbd>S</kbd></button>
-      <button type="button" id="restart">Restart<kbd>R</kbd></button>
-    </div>
-
-    <div id="ghostActions" hidden>
-      <button type="button" id="replay">Replay</button>
-      <button type="button" id="skip">Skip to Guided</button>
-    </div>
-    <div id="transcriptBox" hidden>
-      <span id="transcriptTitle">Steps in this demo</span>
-      <ol id="transcript" aria-labelledby="transcriptTitle"></ol>
-      <p class="fineprint">Two bands on the training glass: <b>BRING UP</b> (start bringing the glass upright when the beer gets there) and <b>LINE</b> (stop). BRING UP is a training mark that real glasses don't have; on the job, judge it by eye: about half to two-thirds full. Keep holding the pad the whole time: slide up and the glass comes up; stop sliding and it holds its angle while the beer keeps flowing.</p>
-    </div>
-  </section>
-</div>
-
-<section id="result" aria-labelledby="resultTitle" hidden>
-  <h2 id="resultTitle"></h2>
-  <h3 class="chk-head">Technique</h3>
-  <ul id="checksTech" class="checks two"></ul>
-  <h3 class="chk-head">The pour</h3>
-  <ul id="checks" class="checks"></ul>
-  <div id="debrief">
-    <svg id="debriefGlass" viewBox="0 0 120 150" aria-hidden="true"></svg>
-    <p id="debriefText"></p>
-  </div>
-  <p id="fbPrimary"></p>
-  <p id="fbSecondary" hidden></p>
-  <p id="suggest" hidden></p>
-  <p class="fineprint">Prototype: the steps follow common beer-service guidance (see docs/pour-procedure.md); the exact numbers are placeholders, not yet checked first-hand.</p>
-  <div id="resultActions"></div>
-</section>
-
-<div id="live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-
+`,
+    toggleHidden: true,
+    pourHelp: `Hold the button, or hold Space or Enter, to pour. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass and to bring it upright.`,
+    transcriptNote: `Two bands on the training glass: <b>BRING UP</b> (start bringing the glass upright when the beer gets there) and <b>LINE</b> (stop). BRING UP is a training mark that real glasses don't have; on the job, judge it by eye: about half to two-thirds full. Keep holding the pad the whole time: slide up and the glass comes up; stop sliding and it holds its angle while the beer keeps flowing.`,
+    resultNote: `Prototype: the steps follow common beer-service guidance (see docs/pour-procedure.md); the exact numbers are placeholders, not yet checked first-hand.`,
+    // The debug panel (?debug=1).
+    after: `
 <aside id="debug" aria-label="Debug panel" hidden>
   <div class="warn">verified: false · all constants are placeholders</div>
   <h3>Angle control</h3>
@@ -238,7 +181,8 @@
   <button type="button" id="dbgCopy">Copy JSON</button>
   <button type="button" id="dbgClear">Clear log</button>
 </aside>
-`;
+`
+  });
 
   function mount(host, opts = {}) {
     const { STEP, PILSNER, CONTROL, GLASS, initState, step, total, canServe, evaluate, feedback,

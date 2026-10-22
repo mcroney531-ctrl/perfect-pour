@@ -1,8 +1,11 @@
 # Shared station UI: smallest safe extraction (proposal, for review)
 
 **Status:**
-- **Steps 0 and 1 done** (approved; see §6).
-- **Steps 2 and 3:** separate review gates, not started.
+- **Steps 0 and 1:** done and approved.
+- **Step 2:** done, markup only, for review.
+- **Step 3:** not started (separate gate).
+
+See §6 and §7.
 
 Written after the Hefeweizen functional review, before Nitro's station UI.
 
@@ -214,3 +217,55 @@ the owner's device check of the pad.
   - The fixed-step and catch-up cap.
   - Write-on-change captions.
   - The log cap, bad data and a full disk.
+
+## 7. Step 2: shared markup builder (markup only, for review)
+
+**Before the builder:** a separate commit (`cca5626`) fixed the certification seal. The shared seal artwork had "PILSNER STATION" baked in, so it showed on every station's seal. The station name is now drawn per seal. New assertions read the seal's own label on both stations' certification cards and hub cards. No parity fixture changed, because no fixture state shows a certified seal.
+
+**`js/station-markup.js`** (`RiversideStationMarkup.station(slots)`):
+- **What it builds:** the markup every station shares, around the station's own stage. It is generated from the Pilsner station's markup text unchanged.
+  - The header and mode tabs.
+  - The caption.
+  - The `#stage` wrapper.
+  - The controls panel: the glass switch, the pad with its track and demo thumb, tap mode, help text, Serve and Restart, the Watch buttons, the transcript box.
+  - The result-sheet frame and its slots.
+  - The live region.
+- **Slots:**
+
+  | Slot | Purpose |
+  |---|---|
+  | `brand` | The line under "Perfect Pour" |
+  | `headerExtra` | Pilsner: the debug toggle |
+  | `stage` | The station's scene |
+  | `angleExtra` | Pilsner: the v1 slider |
+  | `toggleHidden` | Pilsner: the switch starts hidden |
+  | `pourHelp` | The assistive-tech description of the controls |
+  | `watchExtra` | Hefeweizen: "Watch a calmer pour" |
+  | `transcriptNote` | The note under the Watch steps |
+  | `resultNote` | The result fine print |
+  | `after` | Pilsner: the debug panel |
+
+- **Nitro:** gets the same frame. Its two-stage controls can go in `angleExtra` or `watchExtra`, or in a new slot added when it needs one, without forking the layout.
+
+**Not moved**, as scoped: pointer and keyboard behaviour, result-action callbacks, focus management, the mode and restart state machines, and the sim, scoring, timing, coaching and rendering. Each station keeps its stage (`STAGE`) and its slot content.
+
+**Evidence:**
+- **Byte identity:**
+  - Before switching, the builder's output with each station's slots equalled each station's original markup string, byte for byte.
+  - After switching, each station mounted in the real page gives `innerHTML` identical to the same station built from the previous commit (Pilsner 15,529 characters, Hefeweizen 12,896).
+- **Fixtures:** all pre-extraction DOM, speech and progression fixtures still match exactly, 6 of 6 under a 6-way parallel load. No fixture was regenerated.
+- **Screenshots** at 1280×720 and 844×390: no real differences, only rasteriser noise.
+- **Tests:** full suite 102 node and 75 browser tests, existing tests unchanged. The two new node tests in `test/station-markup.test.js` check the ids and their order, and where each slot lands.
+- **Entry points:** both load `js/station-markup.js` before the stations. `index.html` gained one more script line, and the entry-point test holds it.
+
+**Size:**
+- Pilsner station 1,211 → 1,155 lines; Hefeweizen 895 → 837; builder 100.
+- Remaining verbatim overlap: 61% of the Hefeweizen station's substantive lines (63% before steps 1–2). By part:
+
+  | Part | Lines identical to Pilsner | Notes |
+  |---|---|---|
+  | Stage art | 68 of 87 | The tap and head gauge. They could become shared stage parts later; deliberately not done here (art and the stage are beer-specific) |
+  | Renderer | 104 of 188 | Not proposed for sharing until Nitro |
+  | Input | 60 of 68 | Step 3, held |
+  | Modes, result sheet, Watch | 113 of 192 | Result actions and focus: a possible small follow-up; mode logic stays per station |
+  | Unmount | 15 of 19 | |

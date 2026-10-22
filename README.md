@@ -149,7 +149,7 @@ glass is.**
 ## Tests
 
 ```
-npm test            # Pilsner sim (61), Hefeweizen sim (16), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5); Node 18+, no installs
+npm test            # Pilsner sim (61), Hefeweizen sim (16), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5), station markup (2); Node 18+, no installs
 npm run test:ui     # browser: 75 Playwright tests, incl. DOM/speech parity and lifecycle (npm install first)
 npm run test:all    # both
 ```
@@ -398,6 +398,7 @@ modules) so `index.html` still opens by double-click from disk.
 | `js/stations/hefeweizen.js`, `js/hefe-station.js`, `js/hefe-sim.js` | The Hefeweizen station: registration, station (renderer, input, modes, debrief, log) and its own sim |
 | `js/station-chrome.js` | Panel chrome shared by both stations (the folded Watch steps) |
 | `js/station-kit.js` | Station plumbing shared by both stations: listener lifecycle, batched speech, captions, the fixed-step loop, the log store (loaded by both entry points) |
+| `js/station-markup.js` | The panel, result sheet and live region every station shares, built around the station's own stage, with slots for station-specific parts (loaded by both entry points) |
 | `js/stations/upcoming.js` | Nitro Stout as coming soon (card details only, no mount) |
 | `css/pilsner-station.css` | The station's styles, scoped to its host (`.pp-st`) |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
