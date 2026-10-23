@@ -8,7 +8,7 @@
 // the in-frame layout in css/brewery.css) apply unchanged, and the hands meet
 // the same pad, keys and buttons. What differs is the beer: a curved weizen
 // glass, foam that varies from pour to pour, two Watch demos, coaching that
-// points at the foam (no target band on the glass), and seeded pours that a
+// points at the foam (plus this pour's BRING UP guide once the foam has started), and seeded pours that a
 // restart replays rather than rerolls.
 //
 //   const station = HefeStation.mount(hostElement, { onExit, onEvent });
@@ -94,6 +94,14 @@
         <line id="fillLine" stroke="#f6eedf" stroke-width="1.6" stroke-dasharray="5 3"/>
         <text id="fillLabel" font-size="10" font-weight="700" text-anchor="end">LINE</text>
         <text id="stopLabel" font-size="9" font-weight="700" style="fill:#f6eedf">STOP</text>
+        <!-- This pour's BRING UP guide (Watch and Guided). Subdued and dashed,
+             unlike the Pilsner's fixed band: it moves with the foam, and it
+             appears only after the learner has had a moment to see the foam. -->
+        <g id="bringMark" style="display:none">
+          <polygon id="bringBand" fill="rgba(159,220,138,0.16)" stroke="#9fdc8a" stroke-opacity="0.9" stroke-width="1.2" stroke-dasharray="4 3"/>
+          <text id="bringLabel" font-size="9" font-weight="700" text-anchor="end" style="fill:#9fdc8a">BRING UP ▲</text>
+          <text id="bringNote" font-size="7.5" text-anchor="end" style="fill:#9fdc8a">this pour</text>
+        </g>
         <g id="actMarks">
           <g id="markStraighten" style="display:none">
             <line id="markStraightenLine" stroke="#9fdc8a" stroke-width="3" stroke-linecap="round"/>
@@ -134,7 +142,7 @@
     // The optional comparison demo.
     watchExtra: `      <button type="button" id="calmer">Watch a calmer pour</button>
 `,
-    transcriptNote: `Same pad as the Pilsner: keep holding, slide up to bring the glass up, let go at the <b>LINE</b>. There is no BRING UP band here: watch the foam already on the beer while the glass is tilted. Lots of foam, stay tilted longer; little foam, come up sooner. How lively each pour is varies in this training game.`,
+    transcriptNote: `Same pad as the Pilsner: keep holding, slide up to bring the glass up, let go at the <b>LINE</b>. Watch the foam already on the beer while the glass is tilted. Lots of foam, stay tilted longer; little foam, come up sooner. In Watch and Guided, a dashed <b>BRING UP</b> guide for this pour appears once the foam has started: it sits lower on a calm pour and higher on a lively one. Solo has no guide. How lively each pour is varies in this training game.`,
     resultNote: `Training game: the steps follow common draught-service guidance; the foam variation, bands and windows are game settings (see docs/hefeweizen-behaviour.md).`
   });
 
@@ -152,7 +160,9 @@
   function mount(host, opts = {}) {
     const { STEP, HEFE, CONTROL, POLY, PROFILE, initState, step, canServe, evaluate, feedback, scenario,
       GHOST, GHOST_STEPS, GHOST_LIVE, GHOST_CALM, GHOST_CALM_STEPS, GHOST_CALM_LIVE, inputAt, HINTS, guidedHints,
-      surfaceAt, levelOf, headOf, VERDICT_TEXT, fillZone, padTarget, straightenWindow } = HefeSim;
+      surfaceAt, levelOf, headOf, VERDICT_TEXT, fillZone, padTarget, straightenWindow, liveLabel } = HefeSim;
+    const GUIDE_FLOOR = 0.10, GUIDE_LEAD = 0.20;   // GAME: when the BRING UP guide appears (guideTick)
+    const guideRevealLevel = L => Math.max(GUIDE_FLOOR, straightenWindow(L)[0] - GUIDE_LEAD);
     host.insertAdjacentHTML('beforeend', MARKUP);
     host.classList.add('pp-st');
     const emit = (type, detail) => { try { if (opts.onEvent) opts.onEvent(type, detail); } catch (_) { /* host's problem */ } };
@@ -208,7 +218,7 @@
        'glassBack', 'glassBackArt', 'glassArt', 'tapGlow', 'foamGrad', 'zoneBand', 'fillLine', 'fillLabel', 'handle',
        'gaugeBar', 'gaugeBarTex', 'gaugeBand', 'gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText', 'stopLabel',
        'markStraighten', 'markStraightenLine', 'markStraightenText', 'markStop', 'markStopLine', 'markStopText',
-       'foamCue', 'foamCueLine', 'foamCueText']
+       'foamCue', 'foamCueLine', 'foamCueText', 'bringMark', 'bringBand', 'bringLabel', 'bringNote']
         .forEach(id => { E[id] = $(id); });
 
       // Glass art (provisional): the outer wall follows the same cavity the
@@ -346,6 +356,16 @@
         setAttr(E.handle, 'transform', `rotate(${(-30 * s.flow).toFixed(1)} 210 24)`);
         setAttr(E.tapGlow, 'opacity', (0.8 * s.flow).toFixed(2));
 
+        // This pour's BRING UP guide, once revealed (Watch and Guided).
+        E.bringMark.style.display = view.coach && view.guide ? '' : 'none';
+        if (view.coach && view.guide) {
+          const [m0, m1] = straightenWindow(s.live), lx = (-halfAt(m1) - wall - 4).toFixed(1), ly = (yAt(m0) + yAt(m1)) / 2;
+          setAttr(E.bringBand, 'points',
+            `${-halfAt(m0)},${yAt(m0)} ${halfAt(m0)},${yAt(m0)} ${halfAt(m1)},${yAt(m1)} ${-halfAt(m1)},${yAt(m1)}`);
+          setAttr(E.bringLabel, 'x', lx); setAttr(E.bringLabel, 'y', (ly).toFixed(1));
+          setAttr(E.bringNote, 'x', lx); setAttr(E.bringNote, 'y', (ly + 9).toFixed(1));
+        }
+
         // Action marks (Watch and Guided): where the player started bringing
         // the glass up, and where the tap closed.
         const mark = (g2, line, text, ev, word) => {
@@ -406,7 +426,7 @@
     let sim = initState({ live: GHOST_LIVE });
     let served = null;
     const ghost = { pour: false, stepIndex: -1 };
-    let hintsFired = new Set(), milestones = new Set(), foamPulseUntil = -1, soloFailStreak = 0;
+    let hintsFired = new Set(), milestones = new Set(), foamPulseUntil = -1, soloFailStreak = 0, guideShown = false;
     let straightenVia = null;
 
     const pourBtn = $('pour'), toggle = $('angleToggle');
@@ -489,7 +509,7 @@
       sim = initState({ live: sc ? sc.live : demo === 'calm' ? GHOST_CALM_LIVE : GHOST_LIVE });
       served = null;
       ghost.pour = false; ghost.stepIndex = -1;
-      hintsFired = new Set(); milestones = new Set(); foamPulseUntil = -1;
+      hintsFired = new Set(); milestones = new Set(); foamPulseUntil = -1; guideShown = false;
       straightenVia = null;
       setTarget(0);
       setCaption(OPENING[mode]);
@@ -583,6 +603,13 @@
       straighten: { inRange: 'good timing for this pour', littleEarly: 'a little early for this pour', early: 'early for this pour', littleLate: 'a little late for this pour', late: 'late for this pour' },
       stop: { inZone: 'in the zone', short: 'short', over: 'over the line' }
     };
+    // CLAIM (GAME): how lively each pour is, and so where its guide sits, is
+    // this training game's model, described as what happened in this pour.
+    const FOAM_LINK = {
+      calm: 'A calm pour: the foam built slowly, so its guide sat low.',
+      typical: 'A typical pour: the foam built steadily, so its guide sat mid-glass.',
+      lively: 'A lively pour: the foam built fast, so its guide sat high.'
+    };
     function drawDebrief(st, r) {
       const svg = $('debriefGlass'), m = r.metrics;
       const [w0, w1] = straightenWindow(st.live), [z0, zl] = fillZone(cfg);   // the feedback line below names the foam
@@ -601,7 +628,8 @@
       const parts = [];
       if (sEv) {
         parts.push(`Started up at <b>${pctOf(sEv.level)}%</b>, with foam <b>${pctOf(m.headAtStraighten)}%</b> of the glass.`);
-        parts.push(`Good range for this pour: ${pctOf(w0)}–${pctOf(w1)}%: ${MARK_PLAIN.straighten[sEv.verdict]}.`);
+        if (mode !== 'solo') parts.push(FOAM_LINK[liveLabel(st.live)]);
+        parts.push(`${mode !== 'solo' ? "This pour's BRING UP guide" : 'Good range for this pour'}: ${pctOf(w0)}–${pctOf(w1)}%: ${MARK_PLAIN.straighten[sEv.verdict]}.`);
       } else parts.push('You never started bringing the glass up while pouring.');
       if (pEv) parts.push(`Stopped at <b>${pctOf(pEv.level)}%</b>: ${MARK_PLAIN.stop[pEv.verdict]}.`);
       $('debriefText').innerHTML = parts.join(' ');
@@ -631,6 +659,7 @@
       sim = step(sim, { pour: pourWanted(), target: input.target }, STEP, cfg, ctl);
       if (mode === 'guided') guidedTick(prev);
       if (sim.events.length > prev.events.length) actionTick(sim.events.slice(prev.events.length));
+      guideTick();
       milestoneTick();
     }
 
@@ -655,6 +684,20 @@
         setCaption(text, e.verdict === 'inRange' || e.verdict === 'inZone' ? 'verdict' : 'hint');
         announce(text);
       }
+    }
+    // This pour's BRING UP guide (Watch and Guided; presentation only, the
+    // window is the sim's). Foam first: it appears once the level reaches
+    // GUIDE_LEAD below this pour's window, and never before GUIDE_FLOOR, so
+    // the learner sees the foam start before the guide confirms it. Measured
+    // across the liveliness range at full flow, it appears 1.5 s (calmest) to
+    // 2.2 s (liveliest) before the window opens (docs/hefeweizen-behaviour.md).
+    // Once shown it stays for the rest of the pour.
+    function guideTick() {
+      if (guideShown || mode === 'solo' || !sim.opened) return;
+      const [w0, w1] = straightenWindow(sim.live);
+      if (levelOf(sim) < guideRevealLevel(sim.live)) return;
+      guideShown = true;
+      announce(`Guide for this pour: bring the glass up from about ${pctOf(w0)} to ${pctOf(w1)}% full.`);
     }
     function milestoneTick() {
       const level = levelOf(sim);
@@ -729,7 +772,7 @@
     const Loop = Kit.loop(STEP, tick, () => {
       const coach = mode !== 'solo';
       Renderer.render(sim, { reducedMotion: motionQuery.matches, coach, marks: coach ? sim.events : null,
-        foamPulse: mode === 'guided' && sim.elapsed < foamPulseUntil });
+        guide: coach && guideShown, foamPulse: mode === 'guided' && sim.elapsed < foamPulseUntil });
       syncUI();
     });
 

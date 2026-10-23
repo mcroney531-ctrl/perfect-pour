@@ -89,7 +89,7 @@ test('first visit: the Hefeweizen intro, then Watch plays the lively demo to a c
   assert.equal(await h.page.evaluate(() => window.ppBrewery.current()), 'hefeweizen');
   assert.equal(await h.page.title(), 'Hefeweizen station · Riverside Brewing Co.');
   assert.equal(await h.page.locator('.st-steps-toggle').count(), 1, 'Watch steps fold away, as at the Pilsner');
-  assert.equal(await h.page.locator('#bringMark, #bringBand').count(), 0, 'no BRING UP band on this glass');
+  assert.equal(await h.page.evaluate(() => document.getElementById('bringMark').style.display), 'none', "this pour's BRING UP guide waits for the foam");
   let pastHalf = null, sawFoam = false;
   for (let i = 0; i < 900 && !(await h.page.isVisible('#result')); i++) {
     await h.run(16);
@@ -131,7 +131,7 @@ test('Guided: the first pour is typical; the foam is pointed out, no foam hint; 
   await serve(h);
   assert.equal(await h.text('#resultTitle'), 'Clean pour');
   assert.match(await h.text('#fbPrimary'), /built a moderate amount of foam/);
-  assert.match(await h.text('#debriefText'), /Good range for this pour/);
+  assert.match(await h.text('#debriefText'), /This pour's BRING UP guide: 46–62%/);
   const log = (await hefeLog(h)).at(-1);
   assert.equal(log.station, 'hefeweizen');
   assert.equal(log.mode, 'guided');
@@ -268,4 +268,106 @@ test('phone held sideways: the Hefeweizen pad, Serve, Restart, modes and the dem
     assert.deepEqual(h.errors, []);
     await h.close();
   }
+});
+
+// ---- This pour's BRING UP guide (Watch and Guided; never Solo) -------------
+const guideOn = h => h.page.evaluate(() => document.getElementById('bringMark').style.display !== 'none');
+const windowOf = (h, live) => h.page.evaluate(L => HefeSim.straightenWindow(L).map(x => Math.round(x * 100)), live);
+// Hold the tap with the glass tilted until the level reaches `until`%,
+// recording when the guide appears: [revealLevel, revealMs, reachedMs, spoken].
+async function tiltedUntil(h, until) {
+  await h.page.keyboard.press('t'); await h.run(400);
+  await h.page.keyboard.down(' ');
+  let ms = 0, revealLevel = null, revealMs = null;
+  const spoken = new Set();
+  for (; ms < 20000 && (await h.level()) < until; ms += 16) {
+    await h.run(16);
+    spoken.add(await h.text('#live'));
+    if (revealMs === null && await guideOn(h)) { revealLevel = await h.level(); revealMs = ms; }
+  }
+  return [revealLevel, revealMs, ms, [...spoken].join(' | ')];
+}
+
+test('BRING UP guide, Guided: foam first, then this pour\'s guide, early enough on calm, typical and lively pours', async () => {
+  const probe = await open(APP() + '#/hefeweizen', { init: seed() });
+  await probe.run(200);
+  const ns = { typical: 0, calm: await findN(probe, 'guided', 'calm'), lively: await findN(probe, 'guided', 'lively') };
+  const lives = {};
+  for (const [k, n] of Object.entries(ns)) lives[k] = await probe.page.evaluate(([m, i]) => HefeSim.scenario(m, i).live, ['guided', n]);
+  await probe.close();
+  const seen = {};
+  for (const label of ['calm', 'typical', 'lively']) {
+    const h = await open(APP() + '#/hefeweizen', { init: seed({ seq: { guided: ns[label], solo: 0 } }) });
+    await h.run(300); await mode(h, 'guided');
+    assert.equal(await guideOn(h), false, `${label}: no guide before pouring`);
+    const [w0, w1] = await windowOf(h, lives[label]);
+    const [rl, rms, wms, spoken] = await tiltedUntil(h, w0);
+    assert.ok(rl !== null, `${label}: the guide appeared before its window (${w0}%)`);
+    assert.ok(rl >= 10, `${label}: not at the first drop (${rl}%)`);
+    assert.ok(rms >= 600, `${label}: foam first, ${rms} ms of pouring before the guide`);
+    assert.ok(wms - rms >= 1400, `${label}: ${wms - rms} ms of warning before the window opens`);
+    assert.match(spoken, new RegExp(`Guide for this pour: bring the glass up from about ${w0} to ${w1}% full\\.`));
+    // Bring it up inside the guide, finish, serve: the guide stays, the debrief links it to the foam.
+    for (let i = 0; i < 9; i++) { await h.page.keyboard.press('ArrowUp'); await h.run(150); }
+    assert.ok(await guideOn(h), `${label}: stays visible through the bring-up`);
+    for (let i = 0; i < 2000 && (await h.level()) < 94; i++) await h.run(16);
+    await h.page.keyboard.up(' '); await h.run(600);
+    await serve(h);
+    assert.ok(await guideOn(h), `${label}: still shown on the result`);
+    const debrief = await h.text('#debriefText');
+    assert.match(debrief, new RegExp(`A ${label} pour: the foam built`));
+    assert.match(debrief, new RegExp(`This pour's BRING UP guide: ${w0}–${w1}%`));
+    seen[label] = rl;
+    assert.deepEqual(h.errors, []);
+    await h.close();
+  }
+  assert.ok(seen.calm < seen.typical && seen.typical < seen.lively, `the guide appears later on livelier pours (${JSON.stringify(seen)})`);
+});
+
+test('BRING UP guide, Watch: both demos show it, low on the calm pour and high on the lively one', async () => {
+  const h = await open(APP() + '#/hefeweizen', { init: seed() });
+  await h.run(300);
+  const band = () => h.page.evaluate(() => document.getElementById('bringBand').getAttribute('points'));
+  const topY = pts => Math.min(...pts.trim().split(/\s+/).map(p => +p.split(',')[1]));
+  const runDemo = async () => {
+    let rl = null, pts = null;
+    for (let i = 0; i < 1500 && !(await h.page.isVisible('#result')); i++) {
+      await h.run(16);
+      if (rl === null && await guideOn(h)) { rl = await h.level(); pts = await band(); }
+    }
+    return { rl, pts };
+  };
+  const lively = await runDemo();
+  assert.ok(lively.rl !== null, 'the lively demo shows the guide');
+  assert.match(await h.text('#debriefText'), /A lively pour: the foam built fast, so its guide sat high\./);
+  await h.page.evaluate(() => document.getElementById('calmer').click()); await h.run(100);
+  const calm = await runDemo();
+  assert.ok(calm.rl !== null, 'the calm demo shows the guide');
+  assert.match(await h.text('#debriefText'), /A calm pour: the foam built slowly, so its guide sat low\./);
+  assert.ok(calm.rl < lively.rl, `revealed sooner on the calm pour (${calm.rl}% vs ${lively.rl}%)`);
+  // In glass coordinates (y up the glass is more negative): the calm guide sits lower.
+  assert.ok(topY(calm.pts) > topY(lively.pts), 'the calm guide sits lower on the glass');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('BRING UP guide, Solo: never shown, never announced, not named in the debrief', async () => {
+  const probe = await open(APP() + '#/hefeweizen', { init: seed() });
+  await probe.run(200);
+  const n = await findN(probe, 'solo', 'calm');
+  await probe.close();
+  const h = await open(APP() + '#/hefeweizen', { init: seed({ seq: { guided: 0, solo: n } }) });
+  await h.run(300); await mode(h, 'solo');
+  let ever = false;
+  const spoken = new Set();
+  await pour(h, { at: 40, watch: async () => { if (await guideOn(h)) ever = true; spoken.add(await h.text('#live')); } });
+  assert.equal(ever, false);
+  assert.doesNotMatch([...spoken].join(' | '), /Guide for this pour/);
+  await serve(h);
+  assert.equal(await guideOn(h), false);
+  const debrief = await h.text('#debriefText');
+  assert.doesNotMatch(debrief, /BRING UP|guide/);
+  assert.match(debrief, /Good range for this pour/);
+  assert.deepEqual(h.errors, []);
+  await h.close();
 });
