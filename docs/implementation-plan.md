@@ -96,6 +96,7 @@ check? If not, revisit the procedure before building Nitro.
 The owner's visual pass per station, art re-exports, and the open M5 items:
 - The fresh-learner playtest.
 - The sideways-phone result-panel scroll.
+- Nitro Watch: the action row overflows on its set-down caption (about 20 px at 667×375). See `docs/nitro-behaviour.md` §11.
 
 ## First slice
 Step 1 above.

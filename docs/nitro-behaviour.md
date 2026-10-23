@@ -318,3 +318,11 @@ sizes: a thick, busy, lighter band; a thin band with a few bubbles; a crisp
 dark-to-cream line. No threshold was changed to compensate. Readiness arrives
 about 10.3 s after set-down. Whether that feels like watching beer rather
 than waiting out a timer is the hands-on question.
+
+## 11. Open presentation items
+
+- **Watch action row overflow on sideways phones:** found during the Hefeweizen Watch layout fix, not yet corrected.
+  - The set-down caption ("At about three-quarters, let go and set it down. Let it settle…") pushes Replay, Early top-up and Skip to Guided out of view by up to about 20 px at 667×375, and about 5 px at 844×390.
+  - The early-top-up demo overhangs by about 2 px at 667×375.
+  - It is a separate Nitro layout correction, not part of the completed Hefeweizen slice.
+  - The Hefeweizen fix (`.pp-st--hefe`, Watch only: smaller caption, compact buttons, a whole-demo viewport test) is the likely pattern.
