@@ -81,6 +81,7 @@ check? If not, revisit the procedure before building Nitro.
 3. **`js/stout-station.js`:**
    - The multi-state renderer (cascade, separation, dome).
    - The set-down spot and the top-up control.
+   - **Status:** built, playable, for hands-on review (`docs/nitro-behaviour.md` §10). Settle and bands provisional.
 4. Art: a stout backdrop with a set-down spot, a stout faucet and a calm contrast behind the dark glass.
 
 ## Step 4 — Consolidate the entry point, then Final Rush

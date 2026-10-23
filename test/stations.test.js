@@ -41,17 +41,19 @@ test('bad definitions are refused with a reason', () => {
   assert.deepEqual(plain(R.list().map(s => s.id)), ['one']);
 });
 
-test('the app registers Pilsner and Hefeweizen (playable), then Nitro Stout (coming soon), matching progress and hub anchors', () => {
-  const ctx = registry({ PilsnerStation: { mount() {} }, HefeStation: { mount() {} } });
+test('the app registers all three stations as playable, in hub order, matching progress and hub anchors', () => {
+  const ctx = registry({ PilsnerStation: { mount() {} }, HefeStation: { mount() {} }, StoutStation: { mount() {} } });
   // The same files, in the same order, as brewery.html.
   const html = fs.readFileSync(path.join(__dirname, '..', 'brewery.html'), 'utf8');
   const files = [...html.matchAll(/src="js\/(stations\/[a-z-]+\.js)/g)].map(m => m[1]);
-  assert.deepEqual(files, ['stations/pilsner.js', 'stations/hefeweizen.js', 'stations/upcoming.js']);
+  assert.deepEqual(files, ['stations/pilsner.js', 'stations/hefeweizen.js', 'stations/stout.js']);
   for (const f of files) vm.runInContext(src(f), ctx);
   const list = ctx.RiversideStations.list();
-  assert.deepEqual(plain(list.map(s => [s.id, s.playable])), [['pilsner', true], ['hefeweizen', true], ['stout', false]]);
+  assert.deepEqual(plain(list.map(s => [s.id, s.playable])), [['pilsner', true], ['hefeweizen', true], ['stout', true]]);
   assert.equal(list[1].meta.sub, 'Foam Control');
   assert.equal(list[1].meta.backdrop.provisional, true, 'provisional backdrop until the art pass');
+  assert.equal(list[2].meta.name, 'Nitro Stout');
+  assert.equal(list[2].meta.backdrop.provisional, true);
   const pil = list[0].meta;
   assert.equal(pil.name, 'Pilsner');
   assert.equal(pil.intro.goal, 'Your goal: tilt first, bring the glass upright gradually, and stop at the line with the right amount of foam.');

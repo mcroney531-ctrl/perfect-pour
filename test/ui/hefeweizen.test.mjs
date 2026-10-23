@@ -49,14 +49,13 @@ async function pour(h, { at = 55, stopAt = 94, watch } = {}) {
 const mode = async (h, m) => { await h.page.click(`#modes [data-mode=${m}]`); await h.run(200); };
 const serve = async h => { await h.page.keyboard.press('s'); await h.run(400); };
 
-test('hub: two playable stations; Pilsner is recommended first, Hefeweizen is open; guidance follows progress', async () => {
+test('hub: Pilsner is recommended first, Hefeweizen is open; guidance follows progress', async () => {
   const h = await open(APP(), { init: seed() });
   await h.run(200);
   assert.equal(await chip(h, 'pilsner'), 'Start here');
   assert.equal(await chip(h, 'hefeweizen'), 'Start');
   assert.match(await h.text('#status-hefeweizen'), /^Not started\.$/);
   assert.equal(await h.page.getAttribute('[data-station=hefeweizen]', 'aria-disabled'), null);
-  assert.equal(await h.page.getAttribute('[data-station=stout]', 'aria-disabled'), 'true');
   assert.equal(await h.text('[data-station=hefeweizen] .hub__sub'), 'Foam Control');
   assert.equal(await h.text('#hubLede'), 'Your first shift. Start at the Pilsner station.');
   assert.equal(await h.page.locator('.hub__ring--new').count(), 1, 'only one station breathes "start here"');
@@ -72,7 +71,7 @@ test('hub: two playable stations; Pilsner is recommended first, Hefeweizen is op
   const b = await open(APP(), { init: seed({ pilsner: 'certified', hefeweizen: 'certified' }) });
   await b.run(200);
   assert.equal(await b.text('#hubCount'), '2');
-  assert.equal(await b.text('#hubLede'), 'Pilsner and Hefeweizen certified. More stations are on the way.');
+  assert.equal(await b.text('#hubLede'), 'Pilsner and Hefeweizen certified. Next: the Nitro Stout station.');
   assert.match(await b.text('#rushChip'), /Locked/, 'Final Rush still needs all three');
   assert.deepEqual(b.errors, []);
   await b.close();

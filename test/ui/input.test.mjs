@@ -15,11 +15,12 @@ test.after(async () => { await browser?.close(); server?.close(); });
 const RETURNING = `(() => {
   const st = () => ({ status: 'new', attempts: 0, passes: 0, abandoned: 0, lastPlayed: null });
   localStorage.setItem('riverside.progress', JSON.stringify({ version: 1, stations: { pilsner: st(), hefeweizen: st(), stout: st() },
-    seen: { landing: true, 'intro.pilsner': true, 'intro.hefeweizen': true } }));
+    seen: { landing: true, 'intro.pilsner': true, 'intro.hefeweizen': true, 'intro.stout': true } }));
 })()`;
 const STATIONS = {
   pilsner: q => openPage(browser, `${URL0}/index.html${q || ''}`, { mobile: false, size: { width: 1280, height: 800 }, exactClock: true }),
-  hefeweizen: () => openPage(browser, `${URL0}/brewery.html#/hefeweizen`, { mobile: false, size: { width: 1280, height: 720 }, reducedMotion: 'reduce', exactClock: true, init: RETURNING })
+  hefeweizen: () => openPage(browser, `${URL0}/brewery.html#/hefeweizen`, { mobile: false, size: { width: 1280, height: 720 }, reducedMotion: 'reduce', exactClock: true, init: RETURNING }),
+  stout: () => openPage(browser, `${URL0}/brewery.html#/stout`, { mobile: false, size: { width: 1280, height: 720 }, reducedMotion: 'reduce', exactClock: true, init: RETURNING })
 };
 const angle = h => h.page.evaluate(() => +/rotate\(([-\d.]+)\)/.exec(document.getElementById('glass').getAttribute('transform'))[1]);
 const pressed = h => h.page.getAttribute('#pour', 'aria-pressed');
@@ -123,7 +124,7 @@ for (const [name, open] of Object.entries(STATIONS)) {
     await h.run(300);
     assert.equal(await h.page.getAttribute('#pour', 'aria-disabled'), 'true');
     // Let the demo finish (the glass stops moving), then try the controls.
-    for (let i = 0; i < 1200 && !(await h.page.isVisible('#result')); i++) await h.run(16);
+    for (let i = 0; i < 2000 && !(await h.page.isVisible('#result')); i++) await h.run(16);
     const before = await angle(h);
     for (const k of ['ArrowRight', 'ArrowUp', 't']) { await h.page.keyboard.press(k); await h.run(300); }
     assert.equal(await angle(h), before, 'arrows and T do nothing in Watch');

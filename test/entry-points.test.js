@@ -16,8 +16,9 @@ const NEEDS = {
   'js/hefe-station.js': ['js/hefe-sim.js', 'js/station-kit.js', 'js/station-markup.js', 'js/station-input.js'],
   'js/stations/pilsner.js': ['js/stations.js', 'js/pilsner-station.js', 'js/station-chrome.js', 'js/station-look.js', 'js/station-cues.js'],
   'js/stations/hefeweizen.js': ['js/stations.js', 'js/hefe-station.js', 'js/station-chrome.js'],
-  'js/stations/upcoming.js': ['js/stations.js'],
-  'js/brewery.js': ['js/progress.js', 'js/hub-scenes.js', 'js/stations.js', 'js/stations/pilsner.js', 'js/stations/hefeweizen.js', 'js/stations/upcoming.js']
+  'js/stout-station.js': ['js/stout-sim.js', 'js/station-kit.js', 'js/station-markup.js', 'js/station-input.js'],
+  'js/stations/stout.js': ['js/stations.js', 'js/stout-station.js', 'js/station-chrome.js'],
+  'js/brewery.js': ['js/progress.js', 'js/hub-scenes.js', 'js/stations.js', 'js/stations/pilsner.js', 'js/stations/hefeweizen.js', 'js/stations/stout.js']
 };
 
 for (const page of ['brewery.html', 'index.html']) {

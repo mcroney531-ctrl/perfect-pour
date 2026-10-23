@@ -43,23 +43,19 @@ const INSTRUMENT = () => {
 };
 const listeners = h => h.page.evaluate(() => [...window.__pp.live.values()].reduce((n, s) => n + s.size, 0));
 
-test('hub: Pilsner is the place to start, Hefeweizen is open, Nitro Stout is visible but not playable, Final Rush is locked', async () => {
+test('hub: Pilsner is the place to start, Hefeweizen and Nitro Stout are open, Final Rush is locked', async () => {
   const h = await openApp(browser, APP());
   await h.run(200);
   assert.equal(await h.page.title(), 'The Bar · Riverside Brewing Co.');
   assert.equal(await chip(h, 'pilsner'), 'Start here');
   assert.equal(await chip(h, 'hefeweizen'), 'Start');
-  assert.equal(await chip(h, 'stout'), 'Coming soon');
-  assert.equal(await h.page.getAttribute('[data-station=stout]', 'aria-disabled'), 'true');
-  for (const id of ['pilsner', 'hefeweizen'])
+  assert.equal(await chip(h, 'stout'), 'Start');
+  for (const id of ['pilsner', 'hefeweizen', 'stout'])
     assert.equal(await h.page.getAttribute(`[data-station=${id}]`, 'aria-disabled'), null);
   assert.equal(await h.page.getAttribute('#rushBtn', 'aria-disabled'), 'true');
   assert.match(await h.text('#rushChip'), /Locked/);
   assert.equal(await h.text('#hubCount'), '0');
-  // Coming soon and locked do nothing but say so.
-  await h.page.click('[data-station=stout]', { force: true }); await h.run(100);
-  assert.ok(await hubVisible(h));
-  assert.match(await h.text('#hubNotice'), /Nitro Stout is coming soon\. Start with the Pilsner\./);
+  // Locked does nothing but say so.
   await h.page.click('#rushBtn', { force: true }); await h.run(100);
   assert.match(await h.text('#hubNotice'), /Final Rush unlocks/);
   assert.equal(await h.page.evaluate(() => location.hash), '');
@@ -67,12 +63,11 @@ test('hub: Pilsner is the place to start, Hefeweizen is open, Nitro Stout is vis
   await h.close();
 });
 
-test('deep links: a coming-soon station falls back to the hub; the Pilsner opens directly', async () => {
-  const h = await openApp(browser, APP() + '#/stout');
+test('deep links: an unknown station falls back to the hub; the Pilsner opens directly', async () => {
+  const h = await openApp(browser, APP() + '#/porter');
   await h.run(200);
   assert.ok(await hubVisible(h));
   assert.equal(await h.page.evaluate(() => location.hash), '#/');
-  assert.match(await h.text('#hubNotice'), /Nitro Stout is coming soon/);
   await h.close();
   const d = await openApp(browser, APP() + '#/pilsner');
   await d.run(200);
@@ -304,7 +299,7 @@ test('real art loads unlabelled, the UI scales with the frame; missing art is fl
   await b.close();
 });
 
-test('truthful hub: nothing certified, no rejected slogan, the coming-soon card offers no Start', async () => {
+test('truthful hub: nothing certified, no rejected slogan', async () => {
   const h = await openApp(browser, APP());
   await h.run(200);
   const text = await h.page.evaluate(() => document.body.innerText);
@@ -312,8 +307,6 @@ test('truthful hub: nothing certified, no rejected slogan, the coming-soon card 
   assert.doesNotMatch(text, /✓|Replay/, 'no certified station shown');
   assert.equal(await h.text('#hubCount'), '0');
   assert.equal(await h.page.locator('.hub__action--certified, .hub__ring--certified').count(), 0);
-  assert.equal(await chip(h, 'stout'), 'Coming soon');
-  assert.doesNotMatch(await h.text('[data-station=stout]'), /Start|Continue/);
   for (const f of ['assets/hub/hub-desktop-provisional.svg']) {
     const svg = await h.page.evaluate(async u => (await fetch(u)).text(), f);
     assert.doesNotMatch(svg, /good beer|better people/i, f);
@@ -747,7 +740,7 @@ test('progress: a saved game missing a station (one added later) keeps its certi
   assert.equal(await h.page.evaluate(() => window.ppBrewery.view()), 'hub', 'no landing: seen flags kept');
   assert.equal(await chip(h, 'pilsner'), 'Replay');
   assert.equal(await h.text('#hubCount'), '1');
-  assert.equal(await chip(h, 'stout'), 'Coming soon');
+  assert.equal(await chip(h, 'stout'), 'Start', 'the station missing from the save is added back as new');
   await h.page.click('[data-station=pilsner]'); await settle(h, 300);
   const p = await progress(h);
   assert.equal(p.stations.pilsner.status, 'certified');

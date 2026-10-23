@@ -1,10 +1,10 @@
 # Nitro Stout: simulation, behaviour and calibration (for review)
 
 **Status:**
-- **Built:** the simulation only. `js/stout-sim.js` (`StoutSim`), with 18 isolated node tests in `test/stout-sim.test.js`.
-- **Not built:** the station screen, art, Final Rush integration.
-- **Provisional:** the scoring bands.
-- **Unchanged:** the Pilsner and Hefeweizen sims.
+- **Built:** the simulation (`js/stout-sim.js`, 23 node tests) and the playable station (`js/stout-station.js`, registered by `js/stations/stout.js`, 7 browser tests in `test/ui/stout.test.mjs`). See §10.
+- **Not built:** final art, Final Rush integration.
+- **Provisional:** the settle length and all scoring bands, until the hands-on review.
+- **Unchanged:** the Pilsner and Hefeweizen sims and stations.
 
 The procedure direction is in `docs/procedures/nitro-stout.md`.
 
@@ -143,7 +143,7 @@ extreme. A person would stop sooner.
     3. "Settled: a clean line between the dark beer and the head."
   - It tops up 1 s after readiness, upright, to a dome, then serves.
 - The captions are timed from the beer (`buildGhost`).
-- Optional, for the station slice: a short "what topping up early looks like" comparison, mirroring Hefeweizen's calmer pour. Not built.
+- Optional: a short "Early top-up" comparison (built; see §10).
 
 **Guided:**
 - A ⅔–¾ coaching mark for stage one.
@@ -237,3 +237,74 @@ Original questions:
 3. **The set-down rule:** "upright at set-down" is currently required (≤ 15° when the tap closes). Sources say to bring it upright as it fills. Keep it as a hard check, or make it a note?
 4. **A Watch comparison demo** of an early top-up? (Station slice.)
 5. **Guided coaching during settling:** confirm pointing at the surge band on the glass, plus the one-time "Settled" hint.
+
+## 10. The station (built, for hands-on review)
+
+**Stages on screen.** The glass pours under the faucet, then slides about
+72 px left to a SET DOWN spot while it settles, and comes back under the
+faucet when the learner holds to top up. Each stage reads differently:
+- **Stage one:** tilted glass, the dark body filling, the cloudy surge on top.
+- **Set down:** the glass slides aside, upright, tap closed.
+- **Settling:** the cloudy band (cascade bubbles drifting down through a
+  lighter brown) shrinks as the dark body rises, until a clean line
+  separates beer from the cream head.
+- **Top-up:** back under the faucet, upright; a fresh, short surge, then the
+  head rises proud of the rim.
+
+**Controls:** unchanged. Hold, slide, release for stage one; release is the
+set-down; hold again to top up; release; Serve. The pad label says "Hold to
+top up" once stage one is down. Early top-ups are allowed in every mode.
+
+**Watch:** the full demo (about 25 s), plus an optional **Early top-up**
+button. It starts from the demo's own state 1.2 s after set-down (so it is
+about 6 s long, not a replay of the whole pour), tops up into the surge, and
+ends on a result titled "Example: topped up too early". Its first caption
+says it is an example of what not to do.
+
+**Guided:**
+- A SET DOWN band on the glass during stage one (preferred ⅔–¾).
+- While settling, a SURGE bracket beside the cloudy band. It pulses once, with the
+  single "Settled" hint, when readiness arrives.
+- Hints warn, never block. A same-moment verdict and hint share the caption
+  (verdict first), so "Topped up while it was still surging." is followed by
+  "Still surging: wait until the head separates from the dark beer."
+- No timer, countdown or needle.
+
+**Solo:** no marks, bracket or hints. A pass certifies (the seal names
+NITRO STOUT STATION).
+
+**Accessibility (flag for review):** in every mode, including Solo, the live
+region describes what the beer is doing: "Set down at 72%. The beer is
+surging.", "The surge is thinning.", "The head has separated from the dark
+beer.". These are the spoken equivalent of what the glass shows, not
+coaching, but they do announce readiness to a screen-reader user. Keep, or
+reduce in Solo?
+
+**Debrief:** chips for tilted first, stage one (aim 66–75% upright, passes
+60–82%), let it settle (surge % at top-up), upright top-up, head, finish
+(slight dome or level with the rim), spill. The text gives the set-down
+level, the wait in seconds and the surge left, and the finish.
+
+**HEAD gauge:** reads the settled-equivalent head. During settling it often
+shows "below band" because the head is still forming; this is expected but
+worth checking in hand.
+
+**Log:** `perfectPour.log.stout.v1`, `station: 'stout'`, with phase, notes,
+events (with surge share) and metrics.
+
+### Visual acceptance: can the learner read readiness without the gauge?
+
+Measured from the rendered SVG (Solo, no coaching), reference pour set down at
+about 72%:
+
+| Viewport | Surge band at set-down | At 6 s | At 11 s (settled) |
+|---|---|---|---|
+| 844×390 | 59 px, 40 bubbles | 17 px, 14 bubbles | 6 px, 5 bubbles |
+| 667×375 | 56 px | 17 px | 6 px |
+| 1280×720 | 112 px | 33 px | 12 px |
+
+Surging, nearly settled and settled look clearly different at both phone
+sizes: a thick, busy, lighter band; a thin band with a few bubbles; a crisp
+dark-to-cream line. No threshold was changed to compensate. Readiness arrives
+about 10.3 s after set-down. Whether that feels like watching beer rather
+than waiting out a timer is the hands-on question.

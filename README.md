@@ -149,8 +149,8 @@ glass is.**
 ## Tests
 
 ```
-npm test            # Pilsner sim (61), Hefeweizen sim (16), Nitro Stout sim (18), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5), station markup (2); Node 18+, no installs
-npm run test:ui     # browser: 86 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
+npm test            # Pilsner sim (61), Hefeweizen sim (16), Nitro Stout sim (23), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5), station markup (2); Node 18+, no installs
+npm run test:ui     # browser: 101 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
 npm run test:all    # both
 ```
 
@@ -305,8 +305,9 @@ links and the composite page use it); M4 can make the app the front door.
   retired when the app became a single 16:9 frame. Spec:
   [`docs/art-brief-brewery-hub.md`](docs/art-brief-brewery-hub.md).
 - **Progress states:** new ("Start here", green) → in progress ("Continue",
-  blue) → certified ("Replay", M6 only). Hefeweizen and Nitro Stout show a
-  dashed "Coming soon" chip and no Start. The state is in words on the card
+  blue) → certified ("Replay", M6 only). All three stations are playable;
+  Final Rush stays locked, and says "Coming soon" once all three are
+  certified. The state is in words on the card
   (and for screen readers), with a matching ring (colour plus line style).
 - **Navigation:** hash routes (`#/`, `#/pilsner`), so the browser's back
   button works and the page still opens from disk. The station's brand is
@@ -400,7 +401,7 @@ modules) so `index.html` still opens by double-click from disk.
 | `js/station-kit.js` | Station plumbing shared by both stations: listener lifecycle, batched speech, captions, the fixed-step loop, the log store (loaded by both entry points) |
 | `js/station-markup.js` | The panel, result sheet and live region every station shares, built around the station's own stage, with slots for station-specific parts (loaded by both entry points) |
 | `js/station-input.js` | The continuous pad and keyboard shared by both stations (hold, drag and dead zone, tap mode, assistive-tech clicks, keys, safety stops); Pilsner's staged, slider and switch variants plug in through hooks |
-| `js/stations/upcoming.js` | Nitro Stout as coming soon (card details only, no mount) |
+| `js/stations/stout.js`, `js/stout-station.js`, `js/stout-sim.js` | The Nitro Stout station: registration, station (renderer, two-stage modes, debrief, log) and its own sim |
 | `css/pilsner-station.css` | The station's styles, scoped to its host (`.pp-st`) |
 | `js/sim.js` | The simulation. Pure `step(state, input, dt)` at a fixed 60 Hz, geometry, scoring, feedback copy, hints, the demo timeline. Constants labelled PHYSICAL, SOURCED or GAME. Publishes `PourSim`. |
 | `css/tokens.css`, `css/components.css` | M2 visual system: colour, type, spacing tokens and the shared components (used by the hub; the station adopts them in M5) |
@@ -433,14 +434,27 @@ RiversideStations.register({
 });   // no mount = shown as coming soon
 ```
 
-## Nitro Stout simulation (for review; station not built, bands provisional)
+## Step 3: Nitro Stout station (playable, for hands-on review; settle and bands provisional, art provisional)
+
+**Staged pouring and patience.** Pour to about three-quarters, set the glass
+down, wait until the cloudy surge has settled, then top up upright to a
+slight dome.
+
+- **Station:** `js/stout-station.js` (`StoutStation`), registered by `js/stations/stout.js`, built on the shared kit, markup builder and pad controller. Same controls as the other stations.
+- **On screen:** the glass slides to a set-down spot while it settles; the cloudy band shrinks and a clean line forms between dark beer and cream head.
+- **Watch:** the full two-stage demo, plus an optional short "Early top-up" example, labelled as what not to do.
+- **Guided:** a SET DOWN band for stage one, a SURGE bracket while it settles, one "Settled" hint. No timer.
+- **Solo:** no coaching; early top-ups allowed; a pass certifies.
+- **Spec, measurements and open review items:** `docs/nitro-behaviour.md` §10.
+
+## Nitro Stout simulation
 
 `js/stout-sim.js` (`StoutSim`) is its own pure, fixed-step sim.
 
 - **The two-stage pour:** stage one to about three-quarters, set down, settle, top up upright to a slight dome.
 - **The beer keeps changing with the tap shut.** It is three parts (dark liquid, cloudy surge, head), and the surge settles over about 10 s of compressed time.
 - **When to top up is the learner's call.** It is never blocked: an early top-up is recorded and stirs the left-over surge into a loose head, and the debrief explains it.
-- **Tests:** 18 isolated node tests.
+- **Tests:** 23 isolated node tests.
 - **Spec:** targets, the "what happens when" table, samples and open decisions are in `docs/nitro-behaviour.md`.
 
 ## Step 2: Hefeweizen station (playable, for review; bands provisional, art provisional)

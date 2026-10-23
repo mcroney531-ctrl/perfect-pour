@@ -260,3 +260,15 @@ test('the early-top-up foam is told as what happened in this pour, not as measur
   assert.match(f, /In this pour/);
   assert.doesNotMatch(f, /always|every time|nitrogen/i);
 });
+
+test('the early-top-up Watch comparison is short, starts after stage one, and shows a failing pour', () => {
+  const { start, timeline } = S.EARLY;
+  assert.ok(start.closedOnce && start.phase === 'settling', 'starts from a set-down glass');
+  const r = S.runTimeline(timeline, STOUT, S.CONTROL, start);
+  assert.equal(r.result.pass, false);
+  assert.equal(r.result.primary, 'earlyTopUp');
+  const len = timeline.at(-1).t - timeline[0].t;
+  assert.ok(len < 10, `short (${len.toFixed(1)} s)`);
+  assert.match(S.EARLY_STEPS[0], /what not to do/);
+  assert.ok(r.result.metrics.finalHead > STOUT.headBand[1], 'too much head');
+});

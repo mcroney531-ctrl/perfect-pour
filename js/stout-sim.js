@@ -508,9 +508,39 @@
   }
   const GHOST = buildGhost();
   const GHOST_STEPS = GHOST.filter(k => k.caption).map(k => k.caption);
-  function runTimeline(timeline = GHOST, cfg = STOUT, ctl = CONTROL) {
+
+  // The optional Watch comparison: what topping up too early looks like.
+  // Short: it starts from the main demo's own state just after stage one
+  // was set down (no need to watch the first pour again), tops up into the
+  // surge, and is served. Labelled as an example of what not to do.
+  // -> { start: state, timeline } (timeline times are absolute, from start.tick).
+  function buildEarlyGhost(cfg = STOUT) {
     let s = initState();
-    for (let tick = 0; tick < 120 * HZ; tick++) {
+    const down = GHOST.find(k => k.caption && /set it down/.test(k.caption)).t;
+    for (let tick = 0; tick < tickOf(down + 1.2); tick++) { const i = inputAt(GHOST, tick); s = step(s, { pour: i.pour, target: i.target }, STEP, cfg); }
+    const t0 = s.tick / HZ, r = x => Math.round(x * 100) / 100;
+    let q = s, end = null;
+    for (let i = 0; i < 20 * HZ && end === null; i++) {
+      const t = q.tick / HZ, pour = t >= t0 + 1.5;
+      if (pour && levelOf(settledOf(q, cfg)) >= 1.01) end = t;
+      q = step(q, { pour: pour && end === null, target: 0 }, STEP, cfg);
+    }
+    const keys = [
+      { t: r(t0), target: 0, caption: 'Example of what not to do: topping up while the beer is still surging.' },
+      { t: r(t0 + 1.5), pour: true, caption: 'The surge has not settled, but the tap opens again.' },
+      { t: r(t0 + 3), caption: 'The cloudy surge gets stirred up into loose foam.' },
+      { t: r(end), pour: false, caption: 'Too much loose head. The fix: wait until the head separates cleanly.' },
+      { t: r(end + 1.5), serve: true }
+    ];
+    let k = 0;
+    keys.forEach(x => { if (x.caption) x.stepIndex = k++; });
+    return { start: s, timeline: keys };
+  }
+  const EARLY = buildEarlyGhost();
+  const EARLY_STEPS = EARLY.timeline.filter(k => k.caption).map(k => k.caption);
+  function runTimeline(timeline = GHOST, cfg = STOUT, ctl = CONTROL, start = null) {
+    let s = start ? Object.assign({}, start) : initState();
+    for (let tick = s.tick; tick < 120 * HZ; tick++) {
       const inp = inputAt(timeline, tick);
       if (inp.serve) break;
       s = step(s, { pour: inp.pour, target: inp.target }, STEP, cfg, ctl);
@@ -524,6 +554,6 @@
     padTarget, capacity, surfaceAt, heightOf, volumeOf, levelOf, total, bands, surgeShare, isSettled, settledOf,
     stage1Verdict, topUpVerdict, VERDICT_TEXT, NOTE,
     initState, step, canServe, evaluate, feedback, COPY, HINTS, guidedHints,
-    policyPour, tickOf, inputAt, GHOST, GHOST_STEPS, buildGhost, runTimeline
+    policyPour, tickOf, inputAt, GHOST, GHOST_STEPS, buildGhost, runTimeline, EARLY, EARLY_STEPS, buildEarlyGhost
   };
 })(globalThis);

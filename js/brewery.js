@@ -217,6 +217,10 @@
       hub.querySelector(`.hub__ring[data-ring="${s.id}"]`).className = `hub__ring hub__ring--${look.ring}`;
     });
     document.getElementById('hubCount').textContent = P.certifiedCount();
+    // Final Rush is not built yet: once every station is certified it says so
+    // rather than claiming to be locked.
+    document.getElementById('rushChip').textContent = P.certifiedCount() === STATIONS.length
+      ? 'Coming soon · all 3 stations certified' : 'Locked · complete all 3 stations to unlock';
     const done = list(STATIONS.filter(s => s.playable && P.station(s.id).status === 'certified').map(s => s.name));
     const more = STATIONS.some(s => !s.playable);
     document.getElementById('hubLede').textContent =
@@ -229,7 +233,9 @@
   hub.addEventListener('click', e => {
     const btn = e.target.closest('button');
     if (!btn) return;
-    if (btn.id === 'rushBtn') return say('Final Rush unlocks once all three stations are certified.');
+    if (btn.id === 'rushBtn') return say(P.certifiedCount() === STATIONS.length
+      ? 'All three stations certified. Final Rush is coming soon.'
+      : 'Final Rush unlocks once all three stations are certified.');
     const s = BY_ID[btn.dataset.station];
     if (!s) return;
     if (!s.playable) return say(`${s.name} is coming soon. Start with the ${FIRST.name}.`);

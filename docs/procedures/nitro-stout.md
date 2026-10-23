@@ -2,7 +2,7 @@
 
 **Status: draft spec, with direction amended in the planning review.**
 
-The simulation is built (`js/stout-sim.js`; behaviour, calibration and decisions in `docs/nitro-behaviour.md`). In every mode an early top-up is allowed, recorded and evaluated, never blocked. The station screen is not built. Source status is in `docs/source-claim-audit.md`.
+The simulation is built (`js/stout-sim.js`; behaviour, calibration and decisions in `docs/nitro-behaviour.md`). In every mode an early top-up is allowed, recorded and evaluated, never blocked. The station is built and playable, for hands-on review (`docs/nitro-behaviour.md` §10). Source status is in `docs/source-claim-audit.md`.
 
 **Brand use:** Guinness is a reference only. No brand names, harp logo,
 branded glass or "119.5 seconds" appear in the game.

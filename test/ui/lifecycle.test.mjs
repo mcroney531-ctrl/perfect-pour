@@ -16,11 +16,11 @@ let browser, server, URL0;
 test.before(async () => { ({ server, url: URL0 } = await startServer()); browser = await chromium.launch(); });
 test.after(async () => { await browser?.close(); server?.close(); });
 
-const LOG = { pilsner: 'perfectPour.log.v2.3', hefeweizen: 'perfectPour.log.hefe.v1' };
+const LOG = { pilsner: 'perfectPour.log.v2.3', hefeweizen: 'perfectPour.log.hefe.v1', stout: 'perfectPour.log.stout.v1' };
 const RETURNING = `(() => {
   const st = () => ({ status: 'new', attempts: 0, passes: 0, abandoned: 0, lastPlayed: null });
   localStorage.setItem('riverside.progress', JSON.stringify({ version: 1, stations: { pilsner: st(), hefeweizen: st(), stout: st() },
-    seen: { landing: true, 'intro.pilsner': true, 'intro.hefeweizen': true } }));
+    seen: { landing: true, 'intro.pilsner': true, 'intro.hefeweizen': true, 'intro.stout': true } }));
 })()`;
 // Counts live window/document listeners, animation frames and timers (with
 // when each timer was set), installed before the page's scripts.
@@ -49,7 +49,7 @@ async function startPour(h) {
   assert.equal(await pressed(h), 'true');
 }
 
-for (const station of ['pilsner', 'hefeweizen']) {
+for (const station of ['pilsner', 'hefeweizen', 'stout']) {
   test(`${station}: the tap closes on window blur, page hide and a hidden tab`, async () => {
     const triggers = {
       blur: () => window.dispatchEvent(new Event('blur')),
@@ -142,7 +142,15 @@ for (const station of ['pilsner', 'hefeweizen']) {
     await h.page.keyboard.down(' ');
     for (let i = 0; i < 2000 && (await h.level()) < 55; i++) await h.run(16);
     for (let i = 0; i < 9; i++) { await h.page.keyboard.press('ArrowUp'); await h.run(130); }
-    for (let i = 0; i < 2000 && (await h.level()) < 94; i++) await h.run(16);
+    if (station === 'stout') {
+      // Stage one to about 72%, set down, let it settle, top up to the rim.
+      for (let i = 0; i < 2000 && (await h.level()) < 72; i++) await h.run(16);
+      await h.page.keyboard.up(' '); await h.run(12000);
+      await h.page.keyboard.down(' ');
+      for (let i = 0; i < 2000 && (await h.level()) < 101; i++) await h.run(16);
+    } else {
+      for (let i = 0; i < 2000 && (await h.level()) < 94; i++) await h.run(16);
+    }
     await h.page.keyboard.up(' '); await h.run(600);
     await h.page.keyboard.press('s'); await h.run(400);
     await h.page.keyboard.press('r'); await h.run(200);          // a second pour, abandoned by restart
