@@ -3,7 +3,7 @@
 **Status:**
 - **Playable station built** (for review):
   - `js/hefe-sim.js` (`HefeSim`) and `js/hefe-station.js` (`HefeStation`), registered by `js/stations/hefeweizen.js`.
-  - Tests: 16 node tests (`test/hefe-sim.test.js`) and 12 browser tests (`test/ui/hefeweizen.test.mjs`).
+  - Tests: 16 node tests (`test/hefe-sim.test.js`) and 13 browser tests (`test/ui/hefeweizen.test.mjs`).
 - **Tuning:** approved **provisionally** in the simulation review. Bands are not final until interactive pours have been seen.
 - **Art:** provisional backdrop only.
 - **Unchanged:** Pilsner's sim and scoring.
@@ -92,14 +92,15 @@ action verdict is given.
 
 **Watch:**
 - **The lively demo plays first** (L 1.18). It visibly waits past half full and starts up at about 71%, passing with a 19% head. The "past half full" caption is timed from the beer.
-- **"Watch a calmer pour"** is an optional button. It plays the calm demo (L 0.88): little foam forms while tilted, and the same movement starts at about 37%.
-  - The button then reads "Watch the foamy pour again".
+- **"Calmer pour"** is an optional button. It plays the calm demo (L 0.88): little foam forms while tilted, and the same movement starts at about 37%.
+  - The button then reads "Lively pour".
+  - The visible labels are short so the three Watch actions fit a sideways phone. The accessible names say what plays: "Calmer pour: watch a calm pour, where the foam builds slowly" and "Lively pour: watch the lively pour again, where the foam builds fast".
   - Learners never have to sit through both.
 - The FOAM bracket marks the foam already on the beer while the glass is tilted.
 - Both demos show this pour's **BRING UP guide** (see §3b): low on the calm pour, high on the lively one.
 
 **Guided:**
-- **This pour's BRING UP guide** appears once the foam has started (§3b). It was originally left out (review decision 5) and reinstated in the guide review.
+- **This pour's BRING UP guide** appears a little way into the pour (§3b). It was originally left out (review decision 5) and reinstated in the guide review.
 - The learner-facing signal is still the beer itself:
   - The foam layer has a darker beer/foam edge.
   - A **FOAM bracket** sits beside the glass, from the top of the foam to the beer, while the glass is tilted and pouring.
@@ -234,7 +235,7 @@ independent test.
 - A label on the left side of the glass, "BRING UP ▲ / this pour", so it does not collide with the FOAM bracket on the right.
 - The FOAM bracket and the foam hints are unchanged and stay the prominent cue.
 
-**Where:** the band is the sim's own window for this pour (`straightenWindow`). This is presentation only: no change to the sim, windows, verdicts or scoring.
+**What it is, and is not:** the band is the sim's own window for this pour (`straightenWindow`). It is set from the pour's liveliness and stays fixed for the whole pour. It does **not** track the foam as it builds: it is "this pour's guide", not a live foam sensor. The foam on the beer is what tells the learner why it sits where it does. This is presentation only: no change to the sim, windows, verdicts or scoring.
 
 **When it appears (foam first):**
 - It appears when the level reaches **20 points below this pour's window**, but never before **10% full**.
@@ -253,25 +254,35 @@ independent test.
 | Watch, lively (L 1.18) | 63–74% | 43%, after 3.60 s | 7.1% | 5.65 s | 2.05 s |
 
 - **Across the whole liveliness range (0.85–1.25):** at least 1.5 s of warning (calmest) and up to 2.2 s (liveliest). The window itself then stays open a further 1.4–1.6 s.
-- **The calm caveat:** on the calmest pours there is almost no foam to see before the guide appears (under 1% of the glass after about a second). On a calm pour, "little foam" is itself the observation. The 10% floor keeps the guide from appearing at the first drop.
+- **The calm caveat (accepted in the guide review):** on the calmest pours there may be almost no foam to see yet when the guide appears (under 1% of the glass after about a second). That is expected: on a calm pour, the absence of foam is itself the information. The 10% floor keeps the guide from appearing at the first drop.
 - **The rule** (GAME): `GUIDE_FLOOR` and `GUIDE_LEAD` in `js/hefe-station.js`.
 
 **Debrief (Watch and Guided):** links the guide to the foam. For example: "A lively pour: the foam built fast, so its guide sat high. This pour's BRING UP guide: 63–74%: good timing for this pour." Solo keeps "Good range for this pour: …".
 
 **Solo:** unchanged. No guide, no announcement, no hints, same scenarios and the same certification bar.
 
+**Approved (guide review):** the 20-point lead and 10% floor stand, provisionally; do not retune before the owner's phone test.
+
+**Watch layout (sideways phone):** the longest demo captions run to five lines, which pushed Replay, the comparison and Skip below the frame (up to 48 px at 667×375). This is fixed for Hefeweizen only (`.pp-st--hefe` in `css/pilsner-station.css`, Watch only):
+- Compact visible labels.
+- A slightly smaller Watch caption (0.95 rem).
+- Watch buttons with less side padding and 0.9 rem text, so each label takes at most two lines.
+
+The buttons stay 48 CSS px tall. A browser test checks every frame of both demos at 844×390 and 667×375. Nitro's Watch panel shows a smaller version of the same overhang (up to 20 px at 667×375 on its set-down caption); it is not changed here.
+
 **Not built (decided):** removing the guide after the first Guided pass (Option 2). Reconsider after the owner has played several Guided pours.
 
-**Tests:** three browser tests:
+**Tests:** four browser tests:
 - Guided calm, typical and lively: foam first, at least 1.4 s of warning, the announcement, visible through the bring-up and the result, the debrief link.
 - Watch: both demos, the calm guide lower than the lively one.
 - Solo: never shown.
+- Watch on sideways phones: every Watch button whole and in view through both demos.
 
 ## 7. Decisions (functional review) and open items
 
 **Decided:**
 - **Functional station approved.**
-- ~~The good straighten range appears in the debrief only.~~ **Revised in the guide review:** Watch and Guided show this pour's BRING UP guide once the foam has started (§3b); Solo still shows it in the debrief only. The foam remains the primary cue.
+- ~~The good straighten range appears in the debrief only.~~ **Revised in the guide review:** Watch and Guided show this pour's BRING UP guide (§3b); Solo still shows it in the debrief only. The foam remains the primary cue.
 - **Seed progression as built is accepted** (see §3).
 
 **Open:**

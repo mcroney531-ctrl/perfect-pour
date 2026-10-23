@@ -104,12 +104,14 @@ test('first visit: the Hefeweizen intro, then Watch plays the lively demo to a c
   await h.close();
 });
 
-test('Watch a calmer pour: the comparison demo starts up sooner, with less foam, and passes; it is optional', async () => {
+test('Calmer pour: the comparison demo starts up sooner, with less foam, and passes; it is optional', async () => {
   const h = await open(APP() + '#/hefeweizen', { init: seed() });
   await h.run(300);
-  assert.equal(await h.text('#calmer'), 'Watch a calmer pour');
+  assert.equal(await h.text('#calmer'), 'Calmer pour');
+  assert.equal(await h.page.getAttribute('#calmer', 'aria-label'), 'Calmer pour: watch a calm pour, where the foam builds slowly');
   await h.page.click('#calmer'); await h.run(100);
-  assert.equal(await h.text('#calmer'), 'Watch the foamy pour again');
+  assert.equal(await h.text('#calmer'), 'Lively pour');
+  assert.equal(await h.page.getAttribute('#calmer', 'aria-label'), 'Lively pour: watch the lively pour again, where the foam builds fast');
   assert.ok(!(await h.page.textContent('#transcript')).includes('Past half full'));
   for (let i = 0; i < 900 && !(await h.page.isVisible('#result')); i++) await h.run(16);
   assert.equal(await h.text('#resultTitle'), 'Demo pour: clean');
@@ -265,6 +267,37 @@ test('phone held sideways: the Hefeweizen pad, Serve, Restart, modes and the dem
     for (const s of ['#replay', '#calmer', '#skip', '#modes [data-mode=solo]', '#exitBtn']) assert.ok(await inFrame(s), `${size.width}: ${s}`);
     await mode(h, 'solo');
     for (const s of ['#pour', '#serve', '#restart', '#angleToggle']) assert.ok(await inFrame(s), `${size.width}: ${s}`);
+    assert.deepEqual(h.errors, []);
+    await h.close();
+  }
+});
+
+test('phone held sideways, Watch: Replay, the comparison and Skip stay whole and in view through both demos, whatever the caption', async () => {
+  for (const size of [{ width: 844, height: 390 }, { width: 667, height: 375 }]) {
+    const h = await open(APP() + '#/hefeweizen', { init: seed(), size });
+    await h.run(300);
+    // Every Watch button: inside the frame and the panel's visible box, its
+    // label neither clipped nor spilling, and still a full-size touch target.
+    const fit = () => h.page.evaluate(() => {
+      const f = document.getElementById('app-root').getBoundingClientRect(), c = document.getElementById('controls').getBoundingClientRect();
+      const bottom = Math.min(f.bottom, c.bottom);
+      return [...document.querySelectorAll('#ghostActions button')].map(b => {
+        const r = b.getBoundingClientRect();
+        if (r.bottom > bottom + 1 || r.top < c.top - 1) return `${b.id} out of view`;
+        if (b.scrollHeight > b.clientHeight + 1 || b.scrollWidth > b.clientWidth + 1) return `${b.id} label overflows`;
+        if (b.offsetHeight < 48 || b.offsetWidth < 44) return `${b.id} too small`;   // CSS px, before the frame's scaling
+        return null;
+      }).filter(Boolean);
+    });
+    for (const demo of ['lively', 'calm']) {
+      if (demo === 'calm') { await h.page.evaluate(() => document.getElementById('calmer').click()); await h.run(100); }
+      const problems = new Set();
+      for (let i = 0; i < 1500 && !(await h.page.isVisible('#result')); i++) {
+        await h.run(16);
+        if (i % 4 === 0) for (const p of await fit()) problems.add(`${p} ("${(await h.text('#caption')).slice(0, 40)}…")`);
+      }
+      assert.deepEqual([...problems], [], `${size.width}×${size.height}, ${demo} demo`);
+    }
     assert.deepEqual(h.errors, []);
     await h.close();
   }

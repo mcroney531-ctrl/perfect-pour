@@ -8,7 +8,7 @@
 // the in-frame layout in css/brewery.css) apply unchanged, and the hands meet
 // the same pad, keys and buttons. What differs is the beer: a curved weizen
 // glass, foam that varies from pour to pour, two Watch demos, coaching that
-// points at the foam (plus this pour's BRING UP guide once the foam has started), and seeded pours that a
+// points at the foam (plus a BRING UP guide set for each pour), and seeded pours that a
 // restart replays rather than rerolls.
 //
 //   const station = HefeStation.mount(hostElement, { onExit, onEvent });
@@ -140,9 +140,9 @@
     stage: STAGE,
     pourHelp: `Hold the button, or hold Space or Enter, to pour. Slide up on the button, or press the Up arrow, to bring the glass upright. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass.`,
     // The optional comparison demo.
-    watchExtra: `      <button type="button" id="calmer">Watch a calmer pour</button>
+    watchExtra: `      <button type="button" id="calmer" aria-label="Calmer pour: watch a calm pour, where the foam builds slowly">Calmer pour</button>
 `,
-    transcriptNote: `Same pad as the Pilsner: keep holding, slide up to bring the glass up, let go at the <b>LINE</b>. Watch the foam already on the beer while the glass is tilted. Lots of foam, stay tilted longer; little foam, come up sooner. In Watch and Guided, a dashed <b>BRING UP</b> guide for this pour appears once the foam has started: it sits lower on a calm pour and higher on a lively one. Solo has no guide. How lively each pour is varies in this training game.`,
+    transcriptNote: `Same pad as the Pilsner: keep holding, slide up to bring the glass up, let go at the <b>LINE</b>. Watch the foam already on the beer while the glass is tilted. Lots of foam, stay tilted longer; little foam, come up sooner. In Watch and Guided, a dashed <b>BRING UP</b> guide appears a little way into each pour. It is set for that pour by how lively it is, and does not move as the foam builds: it sits lower on a calm pour and higher on a lively one. Solo has no guide. How lively each pour is varies in this training game.`,
     resultNote: `Training game: the steps follow common draught-service guidance; the foam variation, bands and windows are game settings (see docs/hefeweizen-behaviour.md).`
   });
 
@@ -164,7 +164,7 @@
     const GUIDE_FLOOR = 0.10, GUIDE_LEAD = 0.20;   // GAME: when the BRING UP guide appears (guideTick)
     const guideRevealLevel = L => Math.max(GUIDE_FLOOR, straightenWindow(L)[0] - GUIDE_LEAD);
     host.insertAdjacentHTML('beforeend', MARKUP);
-    host.classList.add('pp-st');
+    host.classList.add('pp-st', 'pp-st--hefe');
     const emit = (type, detail) => { try { if (opts.onEvent) opts.onEvent(type, detail); } catch (_) { /* host's problem */ } };
     const $ = id => host.querySelector('#' + id);
     // Tracked window/document listeners and the alive flag (js/station-kit.js).
@@ -466,7 +466,10 @@
         li.textContent = text;
         transcript.appendChild(li);
       });
-      setText($('calmer'), demo === 'calm' ? 'Watch the foamy pour again' : 'Watch a calmer pour');
+      // Short visible labels fit the sideways-phone panel; the names say what plays.
+      setText($('calmer'), demo === 'calm' ? 'Lively pour' : 'Calmer pour');
+      setAttr($('calmer'), 'aria-label', demo === 'calm' ? 'Lively pour: watch the lively pour again, where the foam builds fast'
+        : 'Calmer pour: watch a calm pour, where the foam builds slowly');
     }
 
     function setMode(m) {
@@ -686,7 +689,8 @@
       }
     }
     // This pour's BRING UP guide (Watch and Guided; presentation only, the
-    // window is the sim's). Foam first: it appears once the level reaches
+    // window is the sim's, fixed for the pour by its liveliness; it does not
+    // track the foam as it builds). Foam first: it appears once the level reaches
     // GUIDE_LEAD below this pour's window, and never before GUIDE_FLOOR, so
     // the learner sees the foam start before the guide confirms it. Measured
     // across the liveliness range at full flow, it appears 1.5 s (calmest) to

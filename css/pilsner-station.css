@@ -214,6 +214,18 @@ html, body {
   .pp-st #controls { grid-column: 2; grid-row: 3; overflow-y: auto; gap: 8px; }
   .pp-st #pour { min-height: 84px; }
 }
+/* Hefeweizen Watch, sideways phone: its demo captions run longest (up to
+   five lines), which pushed Replay, the comparison and Skip below the frame.
+   A slightly smaller caption in Watch keeps them in view. Hefeweizen only;
+   the Pilsner and Nitro panels are unchanged. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .pp-st--hefe #app:has(#controls.demo) #caption { font-size: 0.95rem; line-height: 1.25; }
+  /* Three Watch actions share a narrow panel: less side padding and slightly
+     smaller text keep each label to two lines ("Skip to / Guided"), while the
+     buttons stay full-size touch targets. */
+  .pp-st--hefe #ghostActions { gap: 6px; }
+  .pp-st--hefe #ghostActions button { padding: 0 4px; font-size: 0.9rem; }
+}
 
 /* Reduced motion: no pulse, no bubbles, no wobble (the renderer checks the
    same query). The pulse becomes a static dashed ring so the cue survives. */

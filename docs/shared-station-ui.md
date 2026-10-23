@@ -60,7 +60,7 @@ is what to share.
   - The header with the brand slot and mode tabs.
   - The caption.
   - The controls panel: the glass switch, the pad with its track and demo thumb, tap mode, help text, Serve and Restart.
-  - Watch buttons: Replay and Skip are standard, and a station adds its own (for example "Watch a calmer pour").
+  - Watch buttons: Replay and Skip are standard, and a station adds its own (for example "Calmer pour").
   - The transcript box with a station-supplied note.
   - The result-sheet frame: title, the two chip lists, the debrief slot, feedback lines, the suggest line, fine print, the actions row.
   - The live region.
@@ -240,7 +240,7 @@ the owner's device check of the pad.
   | `angleExtra` | Pilsner: the v1 slider |
   | `toggleHidden` | Pilsner: the switch starts hidden |
   | `pourHelp` | The assistive-tech description of the controls |
-  | `watchExtra` | Hefeweizen: "Watch a calmer pour" |
+  | `watchExtra` | Hefeweizen: "Calmer pour" |
   | `transcriptNote` | The note under the Watch steps |
   | `resultNote` | The result fine print |
   | `after` | Pilsner: the debug panel |

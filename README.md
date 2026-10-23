@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # Pilsner sim (61), Hefeweizen sim (16), Nitro Stout sim (23), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5), station markup (2); Node 18+, no installs
-npm run test:ui     # browser: 105 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
+npm run test:ui     # browser: 106 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
 npm run test:all    # both
 ```
 
@@ -472,8 +472,8 @@ bring the glass up.
   - It reuses the Pilsner station's markup structure and ids, so the station styles and the in-frame layout apply unchanged.
   - The pad, keys and buttons work the same.
   - The Pilsner station and sim are untouched.
-- **Watch:** a lively demo, plus an optional "Watch a calmer pour".
-- **Guided:** a FOAM bracket on the beer, hints that react to this pour, and this pour's dashed BRING UP guide, which appears once the foam has started (also in both Watch demos; never in Solo). See `docs/hefeweizen-behaviour.md` §3b.
+- **Watch:** a lively demo, plus an optional "Calmer pour" comparison.
+- **Guided:** a FOAM bracket on the beer, hints that react to this pour, and a dashed BRING UP guide set for each pour by how lively it is, which appears a little way into the pour (also in both Watch demos; never in Solo). See `docs/hefeweizen-behaviour.md` §3b.
 - **Solo:** calm and lively pours only; a pass certifies (M6).
 - **No free rerolls:** restarting, switching modes or leaving replays the same pour. Only a served pour moves on; a failed serve counts, which is accepted for training.
 - **Hub:** guidance handles two playable stations. Pilsner is "Start here"; Hefeweizen is open ("Start") and becomes "Start here, recommended next" once Pilsner is certified.
