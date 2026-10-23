@@ -12,8 +12,8 @@ const ROOT = path.join(__dirname, '..');
 const scripts = page => [...fs.readFileSync(path.join(ROOT, page), 'utf8').matchAll(/<script src="([^"?]+)/g)].map(m => m[1]);
 // What each script uses from another at load or mount time.
 const NEEDS = {
-  'js/pilsner-station.js': ['js/sim.js', 'js/station-kit.js', 'js/station-markup.js'],
-  'js/hefe-station.js': ['js/hefe-sim.js', 'js/station-kit.js', 'js/station-markup.js'],
+  'js/pilsner-station.js': ['js/sim.js', 'js/station-kit.js', 'js/station-markup.js', 'js/station-input.js'],
+  'js/hefe-station.js': ['js/hefe-sim.js', 'js/station-kit.js', 'js/station-markup.js', 'js/station-input.js'],
   'js/stations/pilsner.js': ['js/stations.js', 'js/pilsner-station.js', 'js/station-chrome.js', 'js/station-look.js', 'js/station-cues.js'],
   'js/stations/hefeweizen.js': ['js/stations.js', 'js/hefe-station.js', 'js/station-chrome.js'],
   'js/stations/upcoming.js': ['js/stations.js'],
@@ -34,5 +34,5 @@ for (const page of ['brewery.html', 'index.html']) {
 }
 
 test('the legacy page is still the standalone Pilsner station', () => {
-  assert.deepEqual(scripts('index.html'), ['js/sim.js', 'js/station-kit.js', 'js/station-markup.js', 'js/pilsner-station.js']);
+  assert.deepEqual(scripts('index.html'), ['js/sim.js', 'js/station-kit.js', 'js/station-markup.js', 'js/station-input.js', 'js/pilsner-station.js']);
 });

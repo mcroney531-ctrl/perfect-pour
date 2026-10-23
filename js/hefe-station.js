@@ -400,8 +400,6 @@
     })();
 
     // ==== State ==============================================================
-    const input = { pointer: false, key: false, latch: false, target: 0 };
-    let activePointer = null, drag = null, tapMode = false;
     let mode = 'watch', demo = 'lively';
     let seq = readSeq();
     let sc = null;                       // this pour's scenario (Guided / Solo)
@@ -416,95 +414,22 @@
     const pourWanted = () => served === null && (mode === 'watch' ? ghost.pour : (input.pointer || input.key || input.latch));
     const timeline = () => (demo === 'calm' ? GHOST_CALM : GHOST);
 
-    function stopPour() {
-      input.pointer = input.key = input.latch = false;
-      drag = null;
-      if (activePointer !== null) {
-        try { pourBtn.releasePointerCapture(activePointer); } catch (_) { /* already gone */ }
-        activePointer = null;
-      }
-    }
-    const setTarget = v => { input.target = Math.max(0, Math.min(ctl.maxAngle, Math.round(v * 10) / 10)); };
     const noteStraighten = via => { if (sim.opened && !straightenVia && input.target < cfg.tiltThreshold) straightenVia = via; };
 
-    // ==== Input (the Pilsner's continuous pad, same feel) =====================
-    pourBtn.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      e.preventDefault();
-      if (locked()) return;
-      activePointer = e.pointerId;
-      try { pourBtn.setPointerCapture(e.pointerId); } catch (_) { /* pointer already released */ }
-      drag = { y0: e.clientY, angle0: input.target, moved: false };
-      if (!tapMode) input.pointer = true;
+    // ==== Input ==============================================================
+    // The shared continuous pad and keys (js/station-input.js): the same
+    // feel as the Pilsner's. The glass switch's click is this station's.
+    const Pad = RiversideStationInput.pad({
+      pad: pourBtn, tapModeBox: $('tapMode'), toggle, ctl, padTarget, on, locked,
+      watching: () => mode === 'watch', serve: () => serve(), restart: () => restart(),
+      onStraighten: via => noteStraighten(via)
     });
-    pourBtn.addEventListener('pointermove', e => {
-      if (!drag || e.pointerId !== activePointer || locked()) return;
-      const dy = drag.y0 - e.clientY;
-      if (Math.abs(dy) > ctl.padDead) drag.moved = true;
-      if (drag.moved) { setTarget(padTarget(drag.angle0, dy, ctl)); noteStraighten('slide'); }
-    });
-    const endPointer = e => {
-      if (e.pointerId !== activePointer) return;
-      if (tapMode && drag && !drag.moved && e.type === 'pointerup' && !locked()) input.latch = !input.latch;
-      input.pointer = false;
-      activePointer = null;
-      drag = null;
-    };
-    pourBtn.addEventListener('pointerup', endPointer);
-    pourBtn.addEventListener('pointercancel', endPointer);
-    pourBtn.addEventListener('lostpointercapture', endPointer);
-    pourBtn.addEventListener('contextmenu', e => e.preventDefault());
-    let lastPointerAt = -Infinity;
-    const notePointer = () => { lastPointerAt = performance.now(); };
-    on(document, 'pointerdown', notePointer, true);
-    on(document, 'pointerup', notePointer, true);
-    const fromPointer = () => performance.now() - lastPointerAt < 1000;
-    pourBtn.addEventListener('click', () => { if (!fromPointer() && !locked()) input.latch = !input.latch; });
-    $('tapMode').addEventListener('change', e => { tapMode = e.target.checked; stopPour(); });
+    const { input, setTarget } = Pad, stopPour = Pad.stop;
     toggle.addEventListener('click', () => {
       if (locked()) return;
       setTarget(input.target >= ctl.tiltAngle / 2 ? 0 : ctl.tiltAngle);
       noteStraighten('button');
     });
-
-    const isTyping = el => el && (el.tagName === 'SELECT' || el.tagName === 'TEXTAREA' || el.isContentEditable ||
-      (el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox'));
-    const isOtherControl = el => el && el !== pourBtn &&
-      (el.tagName === 'BUTTON' || el.tagName === 'A' || el.tagName === 'SUMMARY' || (el.tagName === 'INPUT' && el.type === 'checkbox'));
-    on(window, 'keydown', e => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const el = document.activeElement;
-      if (isTyping(el)) return;
-      const k = e.key;
-      if (k === ' ' || k === 'Enter') {
-        if (isOtherControl(el)) return;
-        e.preventDefault();
-        if (e.repeat || locked()) return;
-        if (tapMode) input.latch = !input.latch; else input.key = true;
-      } else if (k === 'ArrowLeft' || k === 'ArrowDown' || k === 'ArrowRight' || k === 'ArrowUp') {
-        e.preventDefault();
-        if (locked()) return;
-        setTarget(input.target + (k === 'ArrowUp' || k === 'ArrowLeft' ? -5 : 5));
-        noteStraighten('key');
-      } else if (k === 't' || k === 'T') {
-        e.preventDefault();
-        if (!locked()) toggle.click();
-      } else if ((k === 's' || k === 'S') && mode !== 'watch') {
-        e.preventDefault(); serve();
-      } else if (k === 'r' || k === 'R') {
-        e.preventDefault(); restart();
-      }
-    });
-    on(document, 'click', e => {
-      const b = e.target.closest && e.target.closest('button');
-      if (b && b !== pourBtn && fromPointer()) setTimeout(() => { if (document.activeElement === b) b.blur(); }, 0);
-    });
-    on(window, 'keyup', e => {
-      if ((e.key === ' ' || e.key === 'Enter') && input.key) { input.key = false; e.preventDefault(); }
-    });
-    on(window, 'blur', stopPour);
-    on(window, 'pagehide', stopPour);
-    on(document, 'visibilitychange', () => { if (document.hidden) stopPour(); });
 
     // ==== Speech and captions ================================================
     // Live-region speech batched over 80 ms, and the caption line (js/station-kit.js).
@@ -754,7 +679,7 @@
       setAttr(pourBtn, 'aria-pressed', pouring);
       setAttr(pourBtn, 'aria-disabled', locked());
       setText($('pourText'), mode === 'watch' && !served ? (pouring ? 'Demo: pouring…' : 'Demo') :
-        locked() ? 'Locked' : pouring ? (tapMode || input.latch ? 'Tap to stop' : 'Pouring…') : (tapMode ? 'Tap to pour' : 'Hold to pour'));
+        locked() ? 'Locked' : pouring ? (Pad.tapMode() || input.latch ? 'Tap to stop' : 'Pouring…') : (Pad.tapMode() ? 'Tap to pour' : 'Hold to pour'));
       setText($('pourSub'), mode === 'watch' ? 'watch the thumb'
         : pouring ? 'Keep holding. Slide up slowly to bring the glass upright.' : 'then slide up slowly to straighten');
       const finger = $('padFinger');

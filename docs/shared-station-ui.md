@@ -2,10 +2,10 @@
 
 **Status:**
 - **Steps 0 and 1:** done and approved.
-- **Step 2:** done, markup only, for review.
-- **Step 3:** not started (separate gate).
+- **Step 2:** done and approved.
+- **Step 3:** implemented and verified by automated tests. **Physical control acceptance is pending:** the owner's sideways-phone check of both stations.
 
-See §6 and §7.
+See §6–§8.
 
 Written after the Hefeweizen functional review, before Nitro's station UI.
 
@@ -269,3 +269,63 @@ the owner's device check of the pad.
   | Input | 60 of 68 | Step 3, held |
   | Modes, result sheet, Watch | 113 of 192 | Result actions and focus: a possible small follow-up; mode logic stays per station |
   | Unmount | 15 of 19 | |
+
+## 8. Step 3: shared input controller (automated-verified; device check pending)
+
+**First, more tests against the old code** (commit `43e5bb8`, `test/ui/input.test.mjs`, 11 tests). They were written and passing before anything moved. For both stations:
+- **The pad:** hold to pour; the 8 px dead zone; 70 px of slide per 45°; a still thumb holds the angle; clamped at upright; release closes the tap.
+- **Pointer release:** releasing away from the pad still closes the tap.
+- **Tap mode:** a tap starts and stops the pour; a drag is not a tap.
+- **Assistive-tech clicks** toggle the pour. A click within 1 s of pointer activity counts as a pointer click, so the click that ends a hold never latches.
+- **Keys:** Space and Enter hold; Ctrl and other modifiers are ignored; each arrow moves 5° (Up and Left bring the glass up); Space on another focused button belongs to that button.
+- **Watch** locks the pad and keys.
+- **Focus** is dropped after a pointer click on a button.
+
+And for Pilsner's other variants:
+- **Slider:** sets the angle; Down and Left lower it; T does nothing.
+- **Switch:** T tilts and levels; arrows do nothing.
+- **Staged:** ArrowUp starts the fixed-rate straighten to upright; other arrows do nothing.
+
+The existing touch, keyboard, blur, tap-mode, staged-swipe, iframe-release and lifecycle tests already covered the rest.
+
+**`js/station-input.js`** (`RiversideStationInput.pad(opts)`, 144 lines). The shared continuous pad and keys, moved there unchanged, with the same values (`CONTROL` stays in each sim):
+- Press-and-hold, the drag and dead zone, pointer capture and release.
+- Tap mode and assistive-tech clicks.
+- Space, Enter, the arrows, T, S and R.
+- Ignoring typing and other controls.
+- Dropping focus after pointer clicks.
+- Closing the tap on blur, page hide and a hidden tab.
+
+It returns `{ input, setTarget, stop, tapMode(), pouring() }`.
+
+**Hooks**, each returning true when the station handled the event:
+- `padMove`, `arrow` and `skipT`.
+- Only Pilsner uses them, for its staged, slider and switch variants, written to match its original branches.
+- `focusExempt: '#debug'` keeps focus in Pilsner's debug panel.
+
+**Still in each station:**
+- The glass switch's click handler. It is variant- and station-specific.
+- Pilsner's slider listener, `setVariant`, the staged `requestStraighten` and `input.straighten`.
+- What a raised target means (`onStraighten`: which input started straightening, for the log).
+- Everything the sim does with the target.
+
+Hefeweizen was integrated and tested first, then Pilsner.
+
+**Evidence:**
+- **New input tests:** all 11 pass after the extraction.
+- **Full suite:** 102 node tests and 86 browser tests, existing tests unchanged.
+- **Parity fixtures** from before the kit: all DOM, speech and progression fixtures match exactly, 6 of 6 under a 6-way parallel load.
+- **Screenshots:** one Pilsner mid-demo shot showed 204 pixels off by at most 2/255 in the pour stream. A re-shot of the same new code was pixel-identical to the old code, so it was a one-off rasteriser variation. All other shots showed no real differences.
+- **Entry points:** both pages load `js/station-input.js` before the stations, held by the entry-point test.
+
+**Not claimed:** automated pointer tests check the mapping and events, not how the pad feels under a thumb. Acceptance waits for the owner's device check:
+- Thumb sensitivity.
+- Continuous straightening.
+- Tap mode.
+- Releasing off the pad, on both stations.
+
+**Size:**
+- Pilsner station 1,155 → 1,073 lines; Hefeweizen 837 → 762; controller 144.
+- Over steps 1–3: Pilsner 1,238 → 1,073 and Hefeweizen 915 → 762, with 331 lines of shared kit, markup and input.
+
+**What remains station-specific by design:** the stage art, the renderer, the mode and result logic, coaching, the sims, the log entries. **No further extraction is planned:** the next work is Nitro Stout's two-stage sim and station, on this kit, markup builder and controller.
