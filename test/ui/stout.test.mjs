@@ -85,9 +85,12 @@ test('Watch: the two-stage demo passes, the glass is set down to settle, and the
   assert.ok(setDownX !== null && setDownX < 180, `set down beside the tap (x ${setDownX})`);
   assert.ok(sawSurge, 'the settling surge is pointed out in Watch');
   assert.equal(await h.text('#resultTitle'), 'Demo pour: clean');
-  // The comparison.
+  // The comparison: a short visible label, a name that says what it plays.
+  assert.equal(await h.text('#earlyDemo'), 'Early top-up');
+  assert.equal(await h.page.getAttribute('#earlyDemo', 'aria-label'), 'Early top-up: watch an example of what not to do');
   await h.page.evaluate(() => document.getElementById('earlyDemo').click()); await h.run(100);
   assert.equal(await h.text('#earlyDemo'), 'Full pour again');
+  assert.equal(await h.page.getAttribute('#earlyDemo', 'aria-label'), 'Full pour again: watch the full two-stage demo');
   assert.match(await h.text('#caption'), /what not to do/);
   let ms = 0;
   for (; ms < 15000 && !(await h.page.isVisible('#result')); ms += 16) await h.run(16);
@@ -207,4 +210,25 @@ test('phone held sideways: the Nitro pad, Serve, Restart, modes and both Watch b
     assert.deepEqual(h.errors, []);
     await h.close();
   }
+});
+
+test('HEAD gauge: neutral while the pour is unfinished ("forming", never "below band"), judged against the band only after Serve', async () => {
+  const h = await open(APP() + '#/stout', { init: seed() });
+  await h.run(300); await mode(h, 'solo');
+  const states = new Set();
+  const watch = async () => { states.add(await h.text('#gaugeState')); };
+  await watch();
+  assert.equal(await h.text('#gaugeState'), '', 'nothing to say before the tap opens');
+  await stageOne(h, { watch });
+  await waitAndTopUp(h, 12000, { watch });
+  assert.deepEqual([...states].filter(Boolean), ['forming'], `only "forming" before Serve (${[...states]})`);
+  const head = await h.text('#gaugeVal');
+  await serve(h);
+  assert.equal(await h.text('#resultTitle'), 'Clean pour');
+  assert.equal(await h.text('#gaugeState'), 'in band', 'judged once served');
+  assert.equal(await h.text('#gaugeVal'), head, 'the value itself is unchanged by serving');
+  await h.page.keyboard.press('r'); await h.run(300);
+  assert.equal(await h.text('#gaugeState'), '', 'a restart clears it');
+  assert.deepEqual(h.errors, []);
+  await h.close();
 });

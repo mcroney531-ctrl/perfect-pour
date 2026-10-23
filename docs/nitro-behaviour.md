@@ -1,7 +1,7 @@
 # Nitro Stout: simulation, behaviour and calibration (for review)
 
 **Status:**
-- **Built:** the simulation (`js/stout-sim.js`, 23 node tests) and the playable station (`js/stout-station.js`, registered by `js/stations/stout.js`, 7 browser tests in `test/ui/stout.test.mjs`). See §10.
+- **Built:** the simulation (`js/stout-sim.js`, 23 node tests) and the playable station (`js/stout-station.js`, registered by `js/stations/stout.js`, 8 browser tests in `test/ui/stout.test.mjs`). See §10.
 - **Not built:** final art, Final Rush integration.
 - **Provisional:** the settle length and all scoring bands, until the hands-on review.
 - **Unchanged:** the Pilsner and Hefeweizen sims and stations.
@@ -277,17 +277,27 @@ NITRO STOUT STATION).
 region describes what the beer is doing: "Set down at 72%. The beer is
 surging.", "The surge is thinning.", "The head has separated from the dark
 beer.". These are the spoken equivalent of what the glass shows, not
-coaching, but they do announce readiness to a screen-reader user. Keep, or
-reduce in Solo?
+coaching, but they do announce readiness to a screen-reader user. Decided in the
+functional review: keep them in Solo, as an accessible equivalent of the
+visible change. Never add commands such as "Top up now", and never announce
+more precision than a sighted learner can see.
 
 **Debrief:** chips for tilted first, stage one (aim 66–75% upright, passes
 60–82%), let it settle (surge % at top-up), upright top-up, head, finish
 (slight dome or level with the rim), spill. The text gives the set-down
 level, the wait in seconds and the surge left, and the finish.
 
-**HEAD gauge:** reads the settled-equivalent head. During settling it often
-shows "below band" because the head is still forming; this is expected but
-worth checking in hand.
+**HEAD gauge:** shows the head as it is at that moment (not the
+settled-equivalent head the debrief judges). While the pour is unfinished it
+says "forming", with no band verdict, because a head that is still forming is
+not a mistake. After Serve it says "in band", "below band" or "above band";
+the debrief evaluates the final head. Copy only: values, bands and scoring
+are unchanged.
+
+**Watch buttons:** the visible labels stay short ("Early top-up", "Full pour
+again") to fit sideways phones. Their accessible names say what they play:
+"Early top-up: watch an example of what not to do" and "Full pour again:
+watch the full two-stage demo".
 
 **Log:** `perfectPour.log.stout.v1`, `station: 'stout'`, with phase, notes,
 events (with surge share) and metrics.

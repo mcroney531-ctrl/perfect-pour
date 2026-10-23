@@ -130,7 +130,7 @@
     stage: STAGE,
     pourHelp: `Hold the button, or hold Space or Enter, to pour. Slide up on the button, or press the Up arrow, to bring the glass upright. Let go to close the tap and set the glass down; hold again to top it up. Turn on tap mode to start and stop with single presses. Use the glass switch, or the T key, to tilt the glass.`,
     // The optional comparison demo (what not to do).
-    watchExtra: `      <button type="button" id="earlyDemo">Early top-up</button>
+    watchExtra: `      <button type="button" id="earlyDemo" aria-label="Early top-up: watch an example of what not to do">Early top-up</button>
 `,
     transcriptNote: `Two pours with the same pad: stage one (tilt, pour, bring it upright, let go at about three-quarters), then set it down and let it settle, then hold again to top up upright to a slight dome. Read the beer: the cloudy surge sinks, the dark beer rises, and a clean line forms under the head. The settle is shortened for training.`,
     resultNote: `Training game: the two-stage steps follow published draught guidance; the settle time, the bands and the foam from an early top-up are game settings (see docs/nitro-behaviour.md).`
@@ -334,7 +334,11 @@
         setAttr(E.gaugeHi, 'y', gaugeY(h1) + 3); setText(E.gaugeHi, pctOf(h1) + '%');
         setAttr(E.gaugeLo, 'y', gaugeY(h0) + 3); setText(E.gaugeLo, pctOf(h0) + '%');
         setText(E.gaugeVal, pctOf(head) + '%');
-        setText(E.gaugeState, head < h0 ? 'below band' : head > h1 ? 'above band' : 'in band');
+        // Judging the head against the band only means something once the
+        // pour is served; until then it is still forming (copy only: the
+        // value and the scoring are unchanged).
+        setText(E.gaugeState, !view.finished ? (s.opened ? 'forming' : '')
+          : head < h0 ? 'below band' : head > h1 ? 'above band' : 'in band');
         setText(E.levelText, `Level ${pctOf(levelOf(s))}%`);
         return { surgePx: band, dx };
       }
@@ -385,6 +389,9 @@
         transcript.appendChild(li);
       });
       setText($('earlyDemo'), demo === 'early' ? 'Full pour again' : 'Early top-up');
+      // The visible label is short to fit sideways phones; the name says what it plays.
+      setAttr($('earlyDemo'), 'aria-label', demo === 'early' ? 'Full pour again: watch the full two-stage demo'
+        : 'Early top-up: watch an example of what not to do');
     }
 
     function setMode(m) {
@@ -658,6 +665,7 @@
       const coach = mode !== 'solo';
       Renderer.render(sim, { reducedMotion: motionQuery.matches, coach,
         setDown: sim.closedOnce && sim.flow === 0 && !sim.pouring && served === null,
+        finished: served !== null,
         pulse: mode === 'guided' && sim.elapsed < pulseUntil });
       syncUI();
     });
