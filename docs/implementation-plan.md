@@ -76,7 +76,8 @@ check? If not, revisit the procedure before building Nitro.
 1. Directions are set (`docs/procedures/nitro-stout.md`): compressed settle in all modes, readiness read from the beer, hold-to-pour top-up at full flow, slight dome. Calibrate at build time.
 2. **`js/stout-sim.js`:**
    - A phase machine, with settling while the tap is closed.
-   - Static `advance()` and `judge()` for parking.
+   - **Parking designed in, not built:** the state is plain data and settling is `step()` with the tap shut, so a parked glass can be advanced later (tested). There is no `advance()`/`judge()` API until Final Rush enables overlap. This resolves the planning-review discrepancy in favour of `docs/procedures/nitro-stout.md`.
+   - **Status:** built (simulation only, for review). See `docs/nitro-behaviour.md`.
 3. **`js/stout-station.js`:**
    - The multi-state renderer (cascade, separation, dome).
    - The set-down spot and the top-up control.

@@ -149,7 +149,7 @@ glass is.**
 ## Tests
 
 ```
-npm test            # Pilsner sim (61), Hefeweizen sim (16), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5), station markup (2); Node 18+, no installs
+npm test            # Pilsner sim (61), Hefeweizen sim (16), Nitro Stout sim (18), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5), station markup (2); Node 18+, no installs
 npm run test:ui     # browser: 86 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
 npm run test:all    # both
 ```
@@ -432,6 +432,16 @@ RiversideStations.register({
   mount(host, { onExit, onEvent }) { /* ... */ return { unmount(reason) { return { abandoned }; } }; }
 });   // no mount = shown as coming soon
 ```
+
+## Nitro Stout simulation (for review; station not built, bands provisional)
+
+`js/stout-sim.js` (`StoutSim`) is its own pure, fixed-step sim.
+
+- **The two-stage pour:** stage one to about three-quarters, set down, settle, top up upright to a slight dome.
+- **The beer keeps changing with the tap shut.** It is three parts (dark liquid, cloudy surge, head), and the surge settles over about 10 s of compressed time.
+- **When to top up is the learner's call.** It is never blocked: an early top-up is recorded and stirs the left-over surge into a loose head, and the debrief explains it.
+- **Tests:** 18 isolated node tests.
+- **Spec:** targets, the "what happens when" table, samples and open decisions are in `docs/nitro-behaviour.md`.
 
 ## Step 2: Hefeweizen station (playable, for review; bands provisional, art provisional)
 
