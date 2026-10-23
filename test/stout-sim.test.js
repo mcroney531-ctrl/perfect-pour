@@ -118,13 +118,14 @@ test('an early top-up is allowed, recorded, and costs the pour; the earlier, the
   assert.ok(heads[0] > STOUT.headBand[1] + 0.05, 'topping up at once: far too much head');
 });
 
-test('top-up verdicts never contradict the result: settled always passes the wait, early never does', () => {
+test('top-up verdicts never contradict the result: settled and a touch early pass the wait, early never does', () => {
   for (let w = 0; w <= 16; w += 0.25) {
     const s = S.policyPour({ wait: w }), r = S.evaluate(s);
     const v = Array.from(s.events).find(e => e.type === 'topUp').verdict;
     if (v === 'settled') assert.equal(r.procedure.waited, true, `wait ${w}`);
     if (v === 'early') assert.equal(r.procedure.waited, false, `wait ${w}`);
-    if (v === 'settled') assert.equal(r.pass, true, `wait ${w}: ${r.primary}`);
+    if (v === 'littleEarly') assert.equal(r.procedure.waited, true, `wait ${w}: a passing top-up is never called a timing failure`);
+    if (v === 'settled' || v === 'littleEarly') assert.equal(r.pass, true, `wait ${w}: ${r.primary}`);
   }
 });
 
@@ -222,4 +223,40 @@ test('future parking: the state is plain data; a round-tripped state continues i
   let c = b;
   for (let i = 0; i < 5 * HZ; i++) { c = S.step(c, { pour: false, target: 0 }); }
   assert.equal(json(a), json(c));
+});
+
+test('a touch-early top-up passes with a note, and the feedback does not claim it fully settled', () => {
+  const s = S.policyPour({ wait: 9.5 }), r = S.evaluate(s), f = S.feedback(r);
+  assert.ok(r.metrics.topUpShare > STOUT.settledShare && r.metrics.topUpShare <= STOUT.waitTol);
+  assert.equal(Array.from(s.events).find(e => e.type === 'topUp').verdict, 'littleEarly');
+  assert.equal(r.pass, true);
+  assert.deepEqual(Array.from(r.notes), ['littleEarly']);
+  assert.match(f.primary, /just before it had fully settled/);
+  assert.doesNotMatch(f.primary, /waited for it to settle/);
+  assert.match(f.secondary, /little surge was still there/);
+  // A fully settled one carries no note.
+  const clean = S.evaluate(S.policyPour({}));
+  assert.deepEqual(Array.from(clean.notes), []);
+  assert.match(S.feedback(clean).primary, /waited for it to settle/);
+});
+
+test('stage one: the preferred two-thirds to three-quarters is distinguished from the more forgiving passing band', () => {
+  const wide = S.evaluate(S.policyPour({ stage1: 0.62, upAt: 0.4 }));
+  assert.equal(wide.pass, true);
+  assert.deepEqual(Array.from(wide.notes), ['stage1Wide']);
+  assert.match(S.feedback(wide).secondary, /target is about two-thirds to three-quarters \(66–75%\)/);
+  assert.deepEqual(Array.from(S.evaluate(S.policyPour({})).notes), []);
+});
+
+test('the pass wording describes the actual finish: a dome, or level with the rim', () => {
+  assert.match(S.feedback(pour({})).primary, /finished with a slight dome/);
+  const level = pour({ finish: 0.995 });
+  assert.equal(level.pass, true);
+  assert.match(S.feedback(level).primary, /finished level with the rim/);
+});
+
+test('the early-top-up foam is told as what happened in this pour, not as measured physics', () => {
+  const f = S.feedback(pour({ wait: 0 })).primary;
+  assert.match(f, /In this pour/);
+  assert.doesNotMatch(f, /always|every time|nitrogen/i);
 });

@@ -59,6 +59,10 @@
     domeMax: 0.04,            // share of glass height
     // SOURCED (BA p. 32, Guinness, via GPT review): stage one to about
     // two-thirds to three-quarters. GAME: the band around it.
+    // The preferred level is the sourced two-thirds to three-quarters; the
+    // passing band around it is deliberately more forgiving (GAME), and a
+    // pass outside the preferred range says so.
+    stage1Preferred: [0.66, 0.75],
     stage1Band: [0.6, 0.82],  // level (all parts) as a share of glass height
     // GAME: the finish. Level counts the head, so above 1 is a dome.
     finishBand: [0.99, 1.03],
@@ -152,14 +156,14 @@
     return level < a ? 'low' : level > b ? 'high' : 'inBand';
   }
   // Topping up: how much surge was still in the beer.
-  // 'settled' always passes this check; 'littleEarly' may (up to waitTol);
-  // 'early' never does.
+  // Lined up with the check: 'settled' and 'littleEarly' pass it (the
+  // latter with a note), 'early' fails it.
   function topUpVerdict(share, cfg = STOUT) {
-    return share <= cfg.settledShare ? 'settled' : share <= 2.5 * cfg.settledShare ? 'littleEarly' : 'early';
+    return share <= cfg.settledShare ? 'settled' : share <= cfg.waitTol ? 'littleEarly' : 'early';
   }
   const VERDICT_TEXT = {
     stage1: { inBand: 'Set it down at a good level.', low: 'Set it down low: less than two-thirds full.', high: 'Set it down high: more than three-quarters full.' },
-    topUp: { settled: 'Topped up once it had settled.', littleEarly: 'Topped up a little early: still some surge.', early: 'Topped up while it was still surging.' },
+    topUp: { settled: 'Topped up once it had settled.', littleEarly: 'Topped up a touch early: a little surge left, within tolerance.', early: 'Topped up while it was still surging.' },
     stop: { finish: 'Stopped at the rim.', short: 'Stopped short of the rim.', over: 'Stopped with too big a dome.' }
   };
 
@@ -322,8 +326,12 @@
       if (head > h1 + EPS && !causes.includes('earlyTopUp')) causes.push('headHigh');
       if (head < h0 - EPS) causes.push('headLow');
     }
+    // Notes: true, but not failing (a pass can carry them).
+    const notes = [];
+    if (toppedUp && procedure.waited && s.topUpShare > cfg.settledShare + EPS) notes.push('littleEarly');
+    if (procedure.stage1 && (s.stage1Level < cfg.stage1Preferred[0] - EPS || s.stage1Level > cfg.stage1Preferred[1] + EPS)) notes.push('stage1Wide');
     return {
-      pass, procedure, checks, techniqueOk, pourOk, causes,
+      pass, procedure, checks, techniqueOk, pourOk, causes, notes,
       primary: pass ? 'pass' : (causes[0] || 'headHigh'),
       secondary: pass ? null : (causes[1] || null),
       metrics: {
@@ -344,8 +352,9 @@
     noSetDown: () => 'You never set the glass down to settle. Pour to about three-quarters, close the tap and let it settle.',
     noTopUp: m => `You set it down at ${pct(m.stage1Level)}% but never topped it up. Once it has settled, open the tap again to finish.`,
     upright: m => `You opened the tap with the glass upright (${Math.round(m.startAngle)}°). Start at about 45° and bring it upright as it fills.`,
-    // CLAIM: topping up into surging beer makes a loose, oversized head.
-    earlyTopUp: m => `You topped up while it was still surging (${pct(m.topUpShare)}% of the beer still cloudy). The new beer stirred that surge into a loose head (${pct(m.finalHead)}%). Wait until the head has separated cleanly from the dark beer.`,
+    // The loose head is this simulation's modelled consequence (GAME), said
+    // as what happened here, not as measured beer physics.
+    earlyTopUp: m => `You topped up while it was still surging (${pct(m.topUpShare)}% of the beer still cloudy). In this pour, that surge was stirred into a loose, oversized head (${pct(m.finalHead)}%). Wait until the head has separated cleanly from the dark beer.`,
     tiltedTopUp: m => `You topped up with the glass tilted (up to ${Math.round(m.topUpMaxAngle)}°). Top up with the glass upright.`,
     tiltSpill: m => `Beer ran over the lip while the glass was tilted (${pct(m.waste)}% spilled). Bring it upright as it fills, and keep it fully upright for the top-up.`,
     overflow: m => `It overflowed (${pct(m.waste)}% spilled). Let go as the head rises just proud of the rim.`,
@@ -356,11 +365,23 @@
     overDome: m => `The dome came out too tall (${pct(m.finalLevel)}%). Let go a little sooner.`,
     headHigh: m => `The head came out too big (${pct(m.finalHead)}%).`,
     headLow: m => `The head came out too thin (${pct(m.finalHead)}%).`,
-    pass: m => `Clean two-stage pour. Set down at ${pct(m.stage1Level)}%, waited for it to settle, and topped up to a slight dome.`
+    // Says what this pour actually did: how long it settled, and whether it
+    // finished domed or level with the rim.
+    pass: (m, cfg) => `Clean two-stage pour. Set down at ${pct(m.stage1Level)}%, ` +
+      (m.topUpShare <= cfg.settledShare ? 'waited for it to settle, ' : 'topped up just before it had fully settled, ') +
+      (m.finalLevel > 1.0025 ? 'and finished with a slight dome.' : 'and finished level with the rim.')
   };
+  const NOTE = {
+    littleEarly: m => `A little surge was still there when you topped up (${pct(m.topUpShare)}%), within the tolerance. Waiting until the line is fully clean is better.`,
+    stage1Wide: (m, cfg) => `Stage one went to ${pct(m.stage1Level)}%, which passes; the target is about two-thirds to three-quarters (${pct(cfg.stage1Preferred[0])}–${pct(cfg.stage1Preferred[1])}%).`
+  };
+  // A pass's notes are its secondary line; a fail's second cause is.
   function feedback(result, cfg = STOUT) {
     const m = result.metrics;
-    return { primary: COPY[result.primary](m, cfg), secondary: result.secondary ? COPY[result.secondary](m, cfg) : null };
+    const secondary = result.pass
+      ? (result.notes.length ? result.notes.map(n => NOTE[n](m, cfg)).join(' ') : null)
+      : result.secondary ? COPY[result.secondary](m, cfg) : null;
+    return { primary: COPY[result.primary](m, cfg), secondary };
   }
 
   // ---- Guided hints (advisory; the caller keeps the at-most-once set) --------
@@ -501,7 +522,7 @@
   root.StoutSim = {
     HZ, STEP, STOUT, CONTROL, PROFILE, POLY,
     padTarget, capacity, surfaceAt, heightOf, volumeOf, levelOf, total, bands, surgeShare, isSettled, settledOf,
-    stage1Verdict, topUpVerdict, VERDICT_TEXT,
+    stage1Verdict, topUpVerdict, VERDICT_TEXT, NOTE,
     initState, step, canServe, evaluate, feedback, COPY, HINTS, guidedHints,
     policyPour, tickOf, inputAt, GHOST, GHOST_STEPS, buildGhost, runTimeline
   };

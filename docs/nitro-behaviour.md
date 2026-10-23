@@ -66,13 +66,13 @@ opposite of Pilsner and Hefeweizen, where the head freezes when the tap closes.
 
 **The tolerance:**
 - Topping up passes the "waited" check up to 9% surge (`waitTol`). That is about 2 s before the line is perfectly clean, so a learner is not failed at the exact visual edge.
-- Verdicts:
+- Verdicts, lined up with the check (simulation review):
 
   | Verdict | Surge at top-up | Result |
   |---|---|---|
-  | `settled` | ≤ 6% | Always passes the check |
-  | `littleEarly` | Up to 15% | Passes up to 9% |
-  | `early` | Over 15% | Never passes |
+  | `settled` | ≤ 6% | Passes the check, no note |
+  | `littleEarly` | 6–9% | Passes, with a gentle note ("a little surge was still there…"). The pass line says "topped up just before it had fully settled", never "waited for it to settle". |
+  | `early` | Over 9% | Fails |
 
   A test holds this across a sweep of waits.
 
@@ -80,7 +80,7 @@ opposite of Pilsner and Hefeweizen, where the head freezes when the tap closes.
 
 | Target | Proposed | Kind | Reference pour |
 |---|---|---|---|
-| Stage one: level at set-down | 60–82% of glass height | SOURCED ⅔–¾ (BA p. 32, Guinness; GPT review); band GAME | 73% |
+| Stage one: level at set-down | **Preferred 66–75%** (SOURCED ⅔–¾: BA p. 32, Guinness; GPT review). **Passing 60–82%** (GAME, deliberately more forgiving; a pass outside 66–75% carries a note naming the target) | as stated | 73% |
 | Stage one: tilt | Open at ≥ 35°; upright (≤ 15°) when the tap closes | SOURCED 45° start, upright as it fills; thresholds GAME | 45°, closed at 0° |
 | Readiness | Surge ≤ 6% of the beer; settle ≈ 10 s | GAME (compressed) | Ready 10.3 s after set-down |
 | Top-up timing | Surge ≤ 9% when the tap reopens | GAME | 5% (waited 11.3 s) |
@@ -214,7 +214,21 @@ identical results (tested). No `park`, `advance` or `judge` API is built:
 `docs/implementation-plan.md` is updated to match
 `docs/procedures/nitro-stout.md`, which the review chose.
 
-## 9. Open product decisions
+## 8b. Corrections after the simulation review
+- **Verdicts:** lined up with the tolerance (§2).
+- **Stage one:** the preferred range is distinguished from the passing band (§3).
+- **The pass line describes the actual finish:** "finished with a slight dome" above the rim, "finished level with the rim" otherwise. The 99–103% band accepts both.
+- **Early top-up wording:** the explanation now says what happened "in this pour". The agitation model is GAME, not verified beer physics.
+- **Notes:** a pass can carry notes (`littleEarly`, `stage1Wide`) as its secondary line.
+- **Tests:** four new tests hold all of this (22 in all).
+
+## 9. Open product decisions (answered in the simulation review)
+Settle about 10 s, kept provisionally. A touch-early top-up passes with a note.
+Upright at set-down stays a hard check (≤ 15°). An optional, short early-top-up
+Watch comparison: yes. Guided highlights the surge band and gives one
+"Settled" hint. All of it is provisional until the station has been played.
+
+Original questions:
 
 1. **The settle length:** about 10 s compressed. Is that right in hand? It is one constant (`settleTau`).
 2. **The early-top-up consequence:**
