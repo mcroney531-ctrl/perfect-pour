@@ -234,7 +234,7 @@ independent test.
 - **Sketched from the start:** a faint dashed outline of this pour's range on the glass, labelled "BRING UP ▲ / this pour" on the left (clear of the FOAM bracket).
 - **Active at straightening time:** when the level reaches this pour's range (its own window, so calm and lively still differ), it lights up with a filled band, a stronger outline and full-strength labels, and the note changes to "now".
 - **Quiet afterwards:** once the glass starts coming up, or the beer passes the range while still tilted, it returns to the sketched look. The existing early/late feedback and the "past the BRING UP band" hint handle mistakes. It stays, quietly, on the result; a restart returns it to the sketch.
-- No pulse for now: the change of fill and outline is the cue (GPT suggested "perhaps a subtle pulse"; open for the next playtest).
+- **Pulse:** when it turns active, the band breathes three times (0.9 s each, the station's existing pulse rhythm: a brighter fill and thicker outline), then holds steady. Added after the owner asked to see it. Not with reduced motion: there the change of fill and outline alone is the cue. CSS only (`.pp-st--hefe`, `css/pilsner-station.css`).
 - The FOAM bracket and the foam hints are unchanged.
 
 **What it is, and is not:** the band is the sim's own window for this pour (`straightenWindow`). It is set from the pour's liveliness and stays fixed for the whole pour. It does **not** track the foam as it builds: it is "this pour's guide", not a live foam sensor. The foam on the beer is what tells the learner why it sits where it does. This is presentation only: no change to the sim, windows, verdicts or scoring.
