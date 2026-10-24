@@ -457,7 +457,7 @@ slight dome.
 - **Tests:** 23 isolated node tests.
 - **Spec:** targets, the "what happens when" table, samples and open decisions are in `docs/nitro-behaviour.md`.
 
-## Step 2: Hefeweizen station (playable, for review; bands provisional, art provisional)
+## Step 2: Hefeweizen station (signed off by the owner; art provisional)
 
 **Foam Control.** The same routine as the Pilsner, applied to a foamier beer
 that varies from pour to pour. The learner reads the foam and adapts when to

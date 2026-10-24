@@ -1,10 +1,11 @@
 # Hefeweizen (Foam Control): behaviour spec and tuning
 
 **Status:**
-- **Playable station built** (for review):
+- **Signed off by the owner (2026-10-24)** after hands-on Guided play on a phone: the station, its Watch demos, and the sketched-then-active BRING UP range with its pulse (§3b).
+- **Playable station built:**
   - `js/hefe-sim.js` (`HefeSim`) and `js/hefe-station.js` (`HefeStation`), registered by `js/stations/hefeweizen.js`.
   - Tests: 16 node tests (`test/hefe-sim.test.js`) and 14 browser tests (`test/ui/hefeweizen.test.mjs`).
-- **Tuning:** approved **provisionally** in the simulation review. Bands are not final until interactive pours have been seen.
+- **Tuning:** accepted as built with the owner's sign-off (head band 16–24%, liveliness range, calibrated windows). Revisit only if the fresh-learner playtest shows a problem.
 - **Art:** provisional backdrop only.
 - **Unchanged:** Pilsner's sim and scoring.
 
@@ -275,7 +276,7 @@ The buttons stay 48 CSS px tall. A browser test checks every frame of both demos
 - **Seed progression as built is accepted** (see §3).
 
 **Open:**
-1. **Final scoring bands, after the owner's sideways-phone playtest of a calm and a lively pour.** Provisional now: head band 16–24%, liveliness range, calibrated windows.
+1. ~~Final scoring bands, after the owner's sideways-phone playtest.~~ **Accepted as built with the owner's sign-off (2026-10-24).** Head band 16–24%, liveliness range, calibrated windows. Still worth watching in the fresh-learner playtest:
    - Key question: does the learner watch the foam in the glass, or read the HEAD gauge? The intent is to teach observation, not to swap a timing meter for a foam meter.
    - If the foam is too subtle, fix the rendering, not the scoring.
 2. Art: the measured template and backdrop, with a taller glass zone (M5 method).
