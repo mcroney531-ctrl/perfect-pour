@@ -96,11 +96,20 @@
 
       <g id="glass">
         <g id="glassArt"></g>
-        <!-- Training mark (Watch and Guided): stage one's target, about
-             two-thirds to three-quarters. Real glasses carry no such line. -->
-        <g id="setDownMark">
-          <polygon id="setDownBand" fill="rgba(159,220,138,0.16)" stroke="#9fdc8a" stroke-width="1.3" stroke-dasharray="1 2.5"/>
+        <!-- Training marks (Watch and Guided; real glasses carry no such
+             lines). Each is sketched (a faint dashed outline), active (filled,
+             with a short pulse) while the beer is in it, and quiet after.
+             SET DOWN: stage one's target, about two-thirds to three-quarters,
+             until the glass is set down. RIM: the top-up's finish, from just
+             under the rim to a slight dome, once stage one is down. -->
+        <g id="setDownMark" data-state="sketch">
+          <polygon id="setDownBand" fill="none" stroke="#9fdc8a" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="3 4"/>
           <text id="setDownLabel" font-size="8.5" font-weight="700" style="fill:#9fdc8a">SET DOWN</text>
+        </g>
+        <g id="rimMark" style="display:none" data-state="sketch">
+          <polygon id="rimBand" fill="none" stroke="#9fdc8a" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="3 4"/>
+          <text id="rimLabel" font-size="8.5" font-weight="700" text-anchor="end" style="fill:#9fdc8a">RIM ▲</text>
+          <text id="rimNote" font-size="7" text-anchor="end" style="fill:#9fdc8a">slight dome</text>
         </g>
       </g>
 
@@ -141,7 +150,7 @@
       GHOST, GHOST_STEPS, EARLY, EARLY_STEPS, inputAt, HINTS, guidedHints, surfaceAt, levelOf, bands, surgeShare,
       isSettled, heightOf, VERDICT_TEXT, padTarget } = StoutSim;
     host.insertAdjacentHTML('beforeend', MARKUP);
-    host.classList.add('pp-st');
+    host.classList.add('pp-st', 'pp-st--stout');
     const emit = (type, detail) => { try { if (opts.onEvent) opts.onEvent(type, detail); } catch (_) { /* host's problem */ } };
     const $ = id => host.querySelector('#' + id);
     const Kit = RiversideStationKit;
@@ -187,7 +196,7 @@
       const E = {};
       ['clipPoly', 'headFill', 'headTex', 'surgeFill', 'surgeTex', 'cascade', 'liquidFill', 'sepEdge', 'stream', 'streamCore', 'spill',
        'glass', 'glassBack', 'glassBackArt', 'glassArt', 'tapGlow', 'handle', 'surgeGrad', 'headGrad',
-       'setDownMark', 'setDownBand', 'setDownLabel', 'surgeCue', 'surgeCueLine', 'surgeCueText',
+       'setDownMark', 'setDownBand', 'setDownLabel', 'rimMark', 'rimBand', 'rimLabel', 'rimNote', 'surgeCue', 'surgeCueLine', 'surgeCueText',
        'gaugeBar', 'gaugeBarTex', 'gaugeBand', 'gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText']
         .forEach(id => { E[id] = $(id); });
 
@@ -305,13 +314,33 @@
         setAttr(E.handle, 'transform', `rotate(${(-30 * s.flow).toFixed(1)} 210 24)`);
         setAttr(E.tapGlow, 'opacity', (0.8 * s.flow).toFixed(2));
 
-        // Stage one's training mark: until the glass is first set down.
-        const markOn = view.coach && !s.closedOnce;
-        E.setDownMark.style.display = markOn ? '' : 'none';
-        if (markOn) {
+        // Training marks (view.setDownMark / view.rimMark: null, 'sketch',
+        // 'active' or 'past'; the pulse is CSS on data-state="active").
+        const markLook = (g, band, texts, state) => {
+          g.style.display = state ? '' : 'none';
+          if (!state) return false;
+          const on = state === 'active';
+          setAttr(g, 'data-state', state);
+          setAttr(band, 'fill', on ? 'rgba(159,220,138,0.24)' : 'none');
+          setAttr(band, 'stroke-opacity', on ? 1 : 0.5);
+          setAttr(band, 'stroke-width', on ? 1.6 : 1);
+          setAttr(band, 'stroke-dasharray', on ? '6 2' : '3 4');
+          texts.forEach(t => setAttr(t, 'opacity', on ? 1 : 0.6));
+          return true;
+        };
+        const zone = (band, h0, h1) => setAttr(band, 'points', `${-halfAt(h0)},${yAt(h0)} ${halfAt(h0)},${yAt(h0)} ${halfAt(h1)},${yAt(h1)} ${-halfAt(h1)},${yAt(h1)}`);
+        if (markLook(E.setDownMark, E.setDownBand, [E.setDownLabel], view.coach ? view.setDownMark : null)) {
           const [m0, m1] = cfg.stage1Preferred;
-          setAttr(E.setDownBand, 'points', `${-halfAt(m0)},${yAt(m0)} ${halfAt(m0)},${yAt(m0)} ${halfAt(m1)},${yAt(m1)} ${-halfAt(m1)},${yAt(m1)}`);
+          zone(E.setDownBand, m0, m1);
           setAttr(E.setDownLabel, 'x', (halfAt(m1) + wall + 4).toFixed(1)); setAttr(E.setDownLabel, 'y', ((yAt(m0) + yAt(m1)) / 2 + 3).toFixed(1));
+        }
+        if (markLook(E.rimMark, E.rimBand, [E.rimLabel, E.rimNote], view.coach ? view.rimMark : null)) {
+          // Above the rim the band follows the dome's height (yAt is linear in
+          // height; halfAt holds the rim's width there).
+          const [f0, f1] = cfg.finishBand, lx = (-halfAt(1) - wall - 4).toFixed(1);
+          zone(E.rimBand, f0, f1);
+          setAttr(E.rimLabel, 'x', lx); setAttr(E.rimLabel, 'y', ((yAt(f0) + yAt(f1)) / 2 + 1).toFixed(1));
+          setAttr(E.rimNote, 'x', lx); setAttr(E.rimNote, 'y', ((yAt(f0) + yAt(f1)) / 2 + 9).toFixed(1));
         }
 
         // The surge bracket: beside the glass, over the cloudy band, while
@@ -569,6 +598,7 @@
       sim = step(sim, { pour: pourWanted(), target: input.target }, STEP, cfg, ctl);
       if (mode === 'guided') coachTick(prev);
       describeTick(prev);
+      markTick(prev);
     }
 
     // Guided only: verdicts on what the player just did, then hints that
@@ -594,6 +624,27 @@
       if (!lines.length) return;
       setCaption(lines.join(' '), hint ? 'hint' : 'verdict');
       lines.forEach(t => announce(t));
+    }
+    // The training marks' state, read from the beer (Watch and Guided draw
+    // them). Stage one's preferred range and the finish band are the sim's.
+    function setDownMarkState(s) {
+      if (s.closedOnce) return null;
+      const lv = levelOf(s), [q0, q1] = cfg.stage1Preferred;
+      return lv > q1 ? 'past' : lv >= q0 ? 'active' : 'sketch';
+    }
+    function rimMarkState(s) {
+      if (!s.closedOnce) return null;
+      const lv = levelOf(s), [f0, f1] = cfg.finishBand;
+      if (lv > f1) return 'past';
+      if (lv >= f0) return s.phase === 'topUp' ? 'active' : 'past';
+      return 'sketch';
+    }
+    // Watch and Guided: say it when a mark lights, once per pour.
+    function markTick(prev) {
+      if (mode === 'solo') return;
+      const say = (key, text) => { if (!said.has(key)) { said.add(key); announce(text); } };
+      if (setDownMarkState(sim) === 'active' && setDownMarkState(prev) !== 'active') say('markDown', 'In the SET DOWN range.');
+      if (rimMarkState(sim) === 'active' && rimMarkState(prev) !== 'active') say('markRim', 'At the rim: let go at a slight dome.');
     }
     // Every mode: what the beer is doing, in words (the spoken equivalent of
     // what the glass shows; it describes the beer, it does not coach).
@@ -664,6 +715,7 @@
     const Loop = Kit.loop(STEP, tick, () => {
       const coach = mode !== 'solo';
       Renderer.render(sim, { reducedMotion: motionQuery.matches, coach,
+        setDownMark: coach ? setDownMarkState(sim) : null, rimMark: coach ? rimMarkState(sim) : null,
         setDown: sim.closedOnce && sim.flow === 0 && !sim.pouring && served === null,
         finished: served !== null,
         pulse: mode === 'guided' && sim.elapsed < pulseUntil });

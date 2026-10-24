@@ -232,3 +232,44 @@ test('HEAD gauge: neutral while the pour is unfinished ("forming", never "below 
   assert.deepEqual(h.errors, []);
   await h.close();
 });
+
+test('Guided training marks: SET DOWN and RIM are sketched, light up (with a pulse) while the beer is in them, then go quiet; a short top-up leaves RIM as the target; none in Solo', async () => {
+  const markState = (h, id) => h.page.evaluate(i => { const g = document.getElementById(i); return g.style.display === 'none' ? 'hidden' : g.dataset.state; }, id);
+  const h = await open(APP() + '#/stout', { init: seed() });
+  await h.run(300); await mode(h, 'guided');
+  assert.equal(await markState(h, 'setDownMark'), 'sketch');
+  assert.equal(await markState(h, 'rimMark'), 'hidden', 'no RIM until stage one is down');
+  const down = [], rim = [], spoken = new Set();
+  const watch = async () => {
+    const d = await markState(h, 'setDownMark'), r = await markState(h, 'rimMark');
+    if (down.at(-1) !== d) down.push(d);
+    if (rim.at(-1) !== r) rim.push(r);
+    spoken.add(await h.text('#live'));
+  };
+  await stageOne(h, { upAt: 50, stopAt: 72, watch });
+  // Stop short first: RIM lights, then stays the target once the tap closes below it.
+  await waitAndTopUp(h, 12000, { stopAt: 97, watch });
+  assert.equal(await markState(h, 'rimMark'), 'sketch', 'short of the rim: RIM is still the target');
+  await h.page.keyboard.down(' ');
+  for (let i = 0; i < 2000 && (await h.level()) < 101; i++) { await h.run(16); await watch(); }
+  await h.page.keyboard.up(' '); await h.run(600); await watch();
+  assert.deepEqual(down, ['sketch', 'active', 'hidden'], 'SET DOWN: sketch, lit in 66–75%, gone once set down');
+  assert.deepEqual(rim, ['hidden', 'sketch', 'active', 'past'], 'RIM: sketch after set-down, lit at the rim while topping up, quiet after');
+  const said = [...spoken].join(' | ');
+  assert.match(said, /In the SET DOWN range\./);
+  assert.match(said, /At the rim: let go at a slight dome\./);
+  // The pulse is a CSS animation on the active band (none with reduced motion, as here).
+  const css = await h.page.evaluate(() => [...document.styleSheets].flatMap(s => { try { return [...s.cssRules].map(r => r.cssText); } catch (_) { return []; } }).join('\n'));
+  assert.match(css, /pp-st--stout #rimMark\[data-state="active"\] #rimBand/);
+  assert.match(css, /pp-st--stout #setDownMark\[data-state="active"\] #setDownBand/);
+  await h.close();
+  const s = await open(APP() + '#/stout', { init: seed() });
+  await s.run(300); await mode(s, 'solo');
+  let seen = false;
+  const look = async () => { if ((await markState(s, 'setDownMark')) !== 'hidden' || (await markState(s, 'rimMark')) !== 'hidden') seen = true; };
+  await stageOne(s, { watch: look });
+  await waitAndTopUp(s, 12000, { watch: look });
+  assert.equal(seen, false, 'no marks in Solo');
+  assert.deepEqual(s.errors, []);
+  await s.close();
+});

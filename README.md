@@ -150,7 +150,7 @@ glass is.**
 
 ```
 npm test            # Pilsner sim (61), Hefeweizen sim (16), Nitro Stout sim (23), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5), station markup (2); Node 18+, no installs
-npm run test:ui     # browser: 107 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
+npm run test:ui     # browser: 108 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
 npm run test:all    # both
 ```
 

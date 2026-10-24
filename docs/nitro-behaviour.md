@@ -1,7 +1,7 @@
 # Nitro Stout: simulation, behaviour and calibration (for review)
 
 **Status:**
-- **Built:** the simulation (`js/stout-sim.js`, 23 node tests) and the playable station (`js/stout-station.js`, registered by `js/stations/stout.js`, 8 browser tests in `test/ui/stout.test.mjs`). See §10.
+- **Built:** the simulation (`js/stout-sim.js`, 23 node tests) and the playable station (`js/stout-station.js`, registered by `js/stations/stout.js`, 9 browser tests in `test/ui/stout.test.mjs`). See §10.
 - **Not built:** final art, Final Rush integration.
 - **Provisional:** the settle length and all scoring bands, until the hands-on review.
 - **Unchanged:** the Pilsner and Hefeweizen sims and stations.
@@ -261,8 +261,14 @@ about 6 s long, not a replay of the whole pour), tops up into the surge, and
 ends on a result titled "Example: topped up too early". Its first caption
 says it is an example of what not to do.
 
-**Guided:**
-- A SET DOWN band on the glass during stage one (preferred ⅔–¾).
+**Guided (and Watch): training marks.** Added after the owner's Nitro playtest: they were consistently stopping the top-up short. Both use Hefeweizen's pattern: sketched (faint dashed outline), then active with a short pulse while the beer is in them (three 0.9 s breaths, none with reduced motion), then quiet.
+- **SET DOWN** (stage one's preferred 66–75%): sketched from the start, lit while the level is in it, quiet if the pour passes it, gone once the glass is set down. Spoken: "In the SET DOWN range."
+- **RIM** (the finish band, 99–103%: just under the rim to a slight dome): sketched once stage one is down, lit while topping up inside it, quiet after. A short stop leaves it sketched as the target for another top-up. Spoken: "At the rim: let go at a slight dome."
+  - The finish is judged on the settled beer, but settling keeps the total volume, so the level when the tap closes is the level judged. The band is an honest target.
+- Presentation only: bands, verdicts and scoring are unchanged. None in Solo.
+
+**Guided, earlier marks:**
+- (Superseded by the sketched/active SET DOWN above.) A SET DOWN band on the glass during stage one (preferred ⅔–¾).
 - While settling, a SURGE bracket beside the cloudy band. It pulses once, with the
   single "Settled" hint, when readiness arrives.
 - Hints warn, never block. A same-moment verdict and hint share the caption
