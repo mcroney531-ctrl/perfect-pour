@@ -3,7 +3,7 @@
 **Status:**
 - **Playable station built** (for review):
   - `js/hefe-sim.js` (`HefeSim`) and `js/hefe-station.js` (`HefeStation`), registered by `js/stations/hefeweizen.js`.
-  - Tests: 16 node tests (`test/hefe-sim.test.js`) and 13 browser tests (`test/ui/hefeweizen.test.mjs`).
+  - Tests: 16 node tests (`test/hefe-sim.test.js`) and 14 browser tests (`test/ui/hefeweizen.test.mjs`).
 - **Tuning:** approved **provisionally** in the simulation review. Bands are not final until interactive pours have been seen.
 - **Art:** provisional backdrop only.
 - **Unchanged:** Pilsner's sim and scoring.
@@ -230,38 +230,26 @@ teaching environment: showing where this pour wants the glass brought up, and
 why (the foam), is instruction, not giving the game away. Solo stays the
 independent test.
 
-**What it looks like:**
-- Pilsner's BRING UP band, made quieter: a dashed, lightly filled band on the glass.
-- A label on the left side of the glass, "BRING UP ▲ / this pour", so it does not collide with the FOAM bracket on the right.
-- The FOAM bracket and the foam hints are unchanged and stay the prominent cue.
+**What it looks like (revised after the owner's Guided playtest):**
+- **Sketched from the start:** a faint dashed outline of this pour's range on the glass, labelled "BRING UP ▲ / this pour" on the left (clear of the FOAM bracket).
+- **Active at straightening time:** when the level reaches this pour's range (its own window, so calm and lively still differ), it lights up with a filled band, a stronger outline and full-strength labels, and the note changes to "now".
+- **Quiet afterwards:** once the glass starts coming up, or the beer passes the range while still tilted, it returns to the sketched look. The existing early/late feedback and the "past the BRING UP band" hint handle mistakes. It stays, quietly, on the result; a restart returns it to the sketch.
+- No pulse for now: the change of fill and outline is the cue (GPT suggested "perhaps a subtle pulse"; open for the next playtest).
+- The FOAM bracket and the foam hints are unchanged.
 
 **What it is, and is not:** the band is the sim's own window for this pour (`straightenWindow`). It is set from the pour's liveliness and stays fixed for the whole pour. It does **not** track the foam as it builds: it is "this pour's guide", not a live foam sensor. The foam on the beer is what tells the learner why it sits where it does. This is presentation only: no change to the sim, windows, verdicts or scoring.
 
-**When it appears (foam first):**
-- It appears when the level reaches **20 points below this pour's window**, but never before **10% full**.
-- It is not tied to any hint: `foamSlow` fires at the window itself, too late for a reveal.
-- Once shown, it stays for the rest of the pour, including the result.
-- It is announced once: "Guide for this pour: bring the glass up from about 46 to 62% full."
+**Spoken:**
+- When the tap opens: "Guide for this pour: bring the glass up from about 46 to 62% full."
+- When it lights: "In the BRING UP range for this pour."
 
-**Measured** (sim at full flow, glass held at 45°, time from the tap opening):
+**Why the change:** the owner played Guided with the foam-first reveal (below). The range helped, and seeing it from the start, then having it switch on at the moment to act, was the clearer cue. GPT agreed: it separates *where* to straighten (the sketch) from *when* (the active state). This replaces the reveal rule (`GUIDE_FLOOR`/`GUIDE_LEAD`, removed). Timing lead is no longer a constraint, because the range is visible before the tap opens.
 
-| Pour | Guide | Appears at | Foam then | Window opens | Warning |
-|---|---|---|---|---|---|
-| Watch, calm (L 0.88) | 32–49% | 12%, after 0.98 s | 0.9% | 2.63 s | 1.65 s |
-| Guided 1st, typical (L 1.00) | 46–62% | 26%, after 2.17 s | 2.9% | 3.83 s | 1.67 s |
-| Guided 2nd, lively (L 1.14) | 59–71% | 39%, after 3.27 s | 6.1% | 5.23 s | 1.97 s |
-| Guided 3rd, calm (L 0.89) | 33–50% | 13%, after 1.08 s | 1.0% | 2.72 s | 1.63 s |
-| Watch, lively (L 1.18) | 63–74% | 43%, after 3.60 s | 7.1% | 5.65 s | 2.05 s |
-
-- **Across the whole liveliness range (0.85–1.25):** at least 1.5 s of warning (calmest) and up to 2.2 s (liveliest). The window itself then stays open a further 1.4–1.6 s.
-- **The calm caveat (accepted in the guide review):** on the calmest pours there may be almost no foam to see yet when the guide appears (under 1% of the glass after about a second). That is expected: on a calm pour, the absence of foam is itself the information. The 10% floor keeps the guide from appearing at the first drop.
-- **The rule** (GAME): `GUIDE_FLOOR` and `GUIDE_LEAD` in `js/hefe-station.js`.
+**Superseded: the foam-first reveal (guide review), for the record.** The guide first appeared 20 points below the window, never before 10% full. That gave 1.5–2.2 s of warning across the liveliness range, and on the calmest pours there was almost no foam yet when it appeared.
 
 **Debrief (Watch and Guided):** links the guide to the foam. For example: "A lively pour: the foam built fast, so its guide sat high. This pour's BRING UP guide: 63–74%: good timing for this pour." Solo keeps "Good range for this pour: …".
 
 **Solo:** unchanged. No guide, no announcement, no hints, same scenarios and the same certification bar.
-
-**Approved (guide review):** the 20-point lead and 10% floor stand, provisionally; do not retune before the owner's phone test.
 
 **Watch layout (sideways phone):** the longest demo captions run to five lines, which pushed Replay, the comparison and Skip below the frame (up to 48 px at 667×375). This is fixed for Hefeweizen only (`.pp-st--hefe` in `css/pilsner-station.css`, Watch only):
 - Compact visible labels.
@@ -272,9 +260,10 @@ The buttons stay 48 CSS px tall. A browser test checks every frame of both demos
 
 **Not built (decided):** removing the guide after the first Guided pass (Option 2). Reconsider after the owner has played several Guided pours.
 
-**Tests:** four browser tests:
-- Guided calm, typical and lively: foam first, at least 1.4 s of warning, the announcement, visible through the bring-up and the result, the debrief link.
-- Watch: both demos, the calm guide lower than the lively one.
+**Tests:** five browser tests:
+- Guided calm, typical and lively: sketched from the start and below the range, lit within a point of the range's start ("now"), both announcements, quiet once the glass starts up and on the result, back to the sketch on restart, the debrief link.
+- Guided, staying tilted: sketch, lit, then quiet past the range, with the late hint still firing.
+- Watch: sketched as the demo starts; both demos light it, the calm one sooner and lower than the lively one.
 - Solo: never shown.
 - Watch on sideways phones: every Watch button whole and in view through both demos.
 
