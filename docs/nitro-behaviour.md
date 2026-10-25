@@ -3,7 +3,12 @@
 **Status:**
 - **Built:** the simulation (`js/stout-sim.js`, 23 node tests) and the playable station (`js/stout-station.js`, registered by `js/stations/stout.js`, 13 browser tests in `test/ui/stout.test.mjs`). See §10.
 - **Not built:** final art, Final Rush integration.
-- **Provisional:** the settle length and all scoring bands, until the hands-on review.
+- **Owner-approved baseline (2026-10-25, accepted by GPT), from hands-on playtests:**
+  - `settleTau` 3.15: ready about 5.4 s after set-down (was 5, then 4).
+  - Finish band 99–105% (was 99–103%), with the dome allowance (`domeMax`) at 6% (was 4%).
+  - The Guided marks: SET DOWN, and the dome finish guide (target, near, STOP, LET GO / TOO FULL).
+  - No further tuning without new playtest evidence.
+- **Still provisional:** the other bands (stage one 60–82%, head 8–15%, readiness at 6% surge, the 9% touch-early tolerance). They stay as built unless a playtest says otherwise.
 - **Unchanged:** the Pilsner and Hefeweizen sims and stations.
 
 The procedure direction is in `docs/procedures/nitro-stout.md`.
