@@ -36,7 +36,7 @@
     // head. Compressed for training: real settles take about a minute or
     // two (sources vary); this one about 10 s. Readiness is read from the
     // beer, never a timer.
-    settleTau: 4,             // s: settled about 8 s after set-down (was 5, about 10 s; shortened after the owner's playtest; docs/nitro-behaviour.md)
+    settleTau: 3.15,          // s: settled about 5.4 s after set-down (was 5, about 10 s; shortened after the owner's playtests; docs/nitro-behaviour.md)
     settleHead: 0.085,
     // GAME: topping up into beer that is still surging stirs that left-over
     // surge up into loose foam (CLAIM, unverified as a measured effect):

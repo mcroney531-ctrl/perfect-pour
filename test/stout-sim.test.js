@@ -78,10 +78,10 @@ test('settling runs with the tap shut: the surge sinks, the dark beer rises, the
   assert.ok(s.closedOnce && s.phase === 'settling');
 });
 
-test('readiness is a state of the beer: settled about 8 s after set-down, when the cloudy band has all but gone', () => {
+test('readiness is a state of the beer: settled about 5.4 s after set-down, when the cloudy band has all but gone', () => {
   const s = S.policyPour({});
   const m = S.evaluate(s).metrics;
-  assert.ok(m.readyAfterS >= 6.5 && m.readyAfterS <= 9.5, `ready after ${m.readyAfterS} s`);
+  assert.ok(m.readyAfterS >= 4.5 && m.readyAfterS <= 6.5, `ready after ${m.readyAfterS} s`);
   // At readiness the surge band is under 2% of the glass height; at set-down it was far larger.
   let t = S.initState();
   for (let i = 0; i < 30; i++) t = S.step(t, { pour: false, target: 45 });
@@ -89,7 +89,8 @@ test('readiness is a state of the beer: settled about 8 s after set-down, when t
   for (let i = 0; i < 40; i++) t = S.step(t, { pour: false, target: 0 });
   const atDown = S.bands(t).surge;
   while (!S.isSettled(t)) t = S.step(t, { pour: false, target: 0 });
-  assert.ok(atDown > 0.25, `cloudy at set-down (${atDown})`);
+  // (Over 20% of the glass: the faster settle, settleTau 3.15, has already thinned it from about 25%.)
+  assert.ok(atDown > 0.2, `cloudy at set-down (${atDown})`);
   assert.ok(S.bands(t).surge < 0.05, `clean at readiness (${S.bands(t).surge})`);
 });
 
@@ -226,7 +227,7 @@ test('future parking: the state is plain data; a round-tripped state continues i
 });
 
 test('a touch-early top-up passes with a note, and the feedback does not claim it fully settled', () => {
-  const s = S.policyPour({ wait: 7.5 }), r = S.evaluate(s), f = S.feedback(r);
+  const s = S.policyPour({ wait: 5.25 }), r = S.evaluate(s), f = S.feedback(r);
   assert.ok(r.metrics.topUpShare > STOUT.settledShare && r.metrics.topUpShare <= STOUT.waitTol);
   assert.equal(Array.from(s.events).find(e => e.type === 'topUp').verdict, 'littleEarly');
   assert.equal(r.pass, true);
