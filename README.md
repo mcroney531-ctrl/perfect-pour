@@ -452,7 +452,7 @@ slight dome.
 `js/stout-sim.js` (`StoutSim`) is its own pure, fixed-step sim.
 
 - **The two-stage pour:** stage one to about three-quarters, set down, settle, top up upright to a slight dome.
-- **The beer keeps changing with the tap shut.** It is three parts (dark liquid, cloudy surge, head), and the surge settles over about 10 s of compressed time.
+- **The beer keeps changing with the tap shut.** It is three parts (dark liquid, cloudy surge, head), and the surge settles over about 8 s of compressed time (shortened from 10 s after the owner's playtest).
 - **When to top up is the learner's call.** It is never blocked: an early top-up is recorded and stirs the left-over surge into a loose head, and the debrief explains it.
 - **Tests:** 23 isolated node tests.
 - **Spec:** targets, the "what happens when" table, samples and open decisions are in `docs/nitro-behaviour.md`.

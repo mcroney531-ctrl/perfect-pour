@@ -55,11 +55,11 @@ opposite of Pilsner and Hefeweizen, where the head freezes when the tap closes.
   - Visually, the surge band is under 5% of the glass height.
   - At set-down it is over 25%.
   - It is a state of the beer, never a timer.
-- **The measured settle:** about **10 s after set-down** (10.3 s for the reference pour; the test holds 8–12 s).
+- **The measured settle:** about **8 s after set-down** (7.6 s for the reference pour; the test holds 6.5–9.5 s). It was about 10 s (`settleTau` 5) and was shortened to `settleTau` 4 after the owner's playtest.
   - The reference pour runs about 25 s in all, Watch demo included.
   - Real settles quoted in sources run about 60–120 s, and differ. This is a compressed training animation. Copy never states a duration, and a test forbids it.
 - **Same settle in all three modes.** No countdown anywhere.
-- **Why about 10 s:**
+- **Why about 8 s (was 10 s):**
   - Long enough that topping up at once, or after a few seconds, is visibly premature: the cloudy band is still large.
   - Short enough not to drag through repeated attempts.
   - Changing `settleTau` scales it. A test holds the band.
@@ -82,7 +82,7 @@ opposite of Pilsner and Hefeweizen, where the head freezes when the tap closes.
 |---|---|---|---|
 | Stage one: level at set-down | **Preferred 66–75%** (SOURCED ⅔–¾: BA p. 32, Guinness; GPT review). **Passing 60–82%** (GAME, deliberately more forgiving; a pass outside 66–75% carries a note naming the target) | as stated | 73% |
 | Stage one: tilt | Open at ≥ 35°; upright (≤ 15°) when the tap closes | SOURCED 45° start, upright as it fills; thresholds GAME | 45°, closed at 0° |
-| Readiness | Surge ≤ 6% of the beer; settle ≈ 10 s | GAME (compressed) | Ready 10.3 s after set-down |
+| Readiness | Surge ≤ 6% of the beer; settle ≈ 8 s (was ≈ 10 s) | GAME (compressed) | Ready 7.6 s after set-down |
 | Top-up timing | Surge ≤ 9% when the tap reopens | GAME | 5% (waited 11.3 s) |
 | Top-up angle | ≤ 15° throughout | SOURCED upright top-up; threshold GAME | 0° |
 | Finish (level incl. head) | 99–105% (a slight dome; was 99–103%, widened after the owner's playtest) | GAME | 101.6% |
@@ -345,16 +345,17 @@ events (with surge share) and metrics.
 Measured from the rendered SVG (Solo, no coaching), reference pour set down at
 about 72%:
 
-| Viewport | Surge band at set-down | At 6 s | At 11 s (settled) |
+| Viewport | Surge band at set-down | At 4 s | At 8.5 s (settled) |
 |---|---|---|---|
-| 844×390 | 59 px, 40 bubbles | 17 px, 14 bubbles | 6 px, 5 bubbles |
-| 667×375 | 56 px | 17 px | 6 px |
-| 1280×720 | 112 px | 33 px | 12 px |
+| 844×390 | 44 px, 35 bubbles | 19 px, 15 bubbles | 6 px, 5 bubbles |
+| 667×375 | 42 px | 18 px | 6 px |
+
+Re-measured after the settle was shortened (`settleTau` 4). The first measurement, at `settleTau` 5, was 59 / 17 / 6 px at 844×390, at set-down, 6 s and 11 s. Times run from the tap closing.
 
 Surging, nearly settled and settled look clearly different at both phone
 sizes: a thick, busy, lighter band; a thin band with a few bubbles; a crisp
 dark-to-cream line. No threshold was changed to compensate. Readiness arrives
-about 10.3 s after set-down. Whether that feels like watching beer rather
+about 7.6 s after set-down (was 10.3 s). Whether that feels like watching beer rather
 than waiting out a timer is the hands-on question.
 
 ## 11. Open presentation items

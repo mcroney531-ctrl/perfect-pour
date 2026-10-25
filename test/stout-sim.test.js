@@ -78,10 +78,10 @@ test('settling runs with the tap shut: the surge sinks, the dark beer rises, the
   assert.ok(s.closedOnce && s.phase === 'settling');
 });
 
-test('readiness is a state of the beer: settled about 10 s after set-down, when the cloudy band has all but gone', () => {
+test('readiness is a state of the beer: settled about 8 s after set-down, when the cloudy band has all but gone', () => {
   const s = S.policyPour({});
   const m = S.evaluate(s).metrics;
-  assert.ok(m.readyAfterS >= 8 && m.readyAfterS <= 12, `ready after ${m.readyAfterS} s`);
+  assert.ok(m.readyAfterS >= 6.5 && m.readyAfterS <= 9.5, `ready after ${m.readyAfterS} s`);
   // At readiness the surge band is under 2% of the glass height; at set-down it was far larger.
   let t = S.initState();
   for (let i = 0; i < 30; i++) t = S.step(t, { pour: false, target: 45 });
@@ -226,7 +226,7 @@ test('future parking: the state is plain data; a round-tripped state continues i
 });
 
 test('a touch-early top-up passes with a note, and the feedback does not claim it fully settled', () => {
-  const s = S.policyPour({ wait: 9.5 }), r = S.evaluate(s), f = S.feedback(r);
+  const s = S.policyPour({ wait: 7.5 }), r = S.evaluate(s), f = S.feedback(r);
   assert.ok(r.metrics.topUpShare > STOUT.settledShare && r.metrics.topUpShare <= STOUT.waitTol);
   assert.equal(Array.from(s.events).find(e => e.type === 'topUp').verdict, 'littleEarly');
   assert.equal(r.pass, true);
