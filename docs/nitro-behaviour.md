@@ -1,7 +1,7 @@
 # Nitro Stout: simulation, behaviour and calibration (for review)
 
 **Status:**
-- **Built:** the simulation (`js/stout-sim.js`, 23 node tests) and the playable station (`js/stout-station.js`, registered by `js/stations/stout.js`, 9 browser tests in `test/ui/stout.test.mjs`). See §10.
+- **Built:** the simulation (`js/stout-sim.js`, 23 node tests) and the playable station (`js/stout-station.js`, registered by `js/stations/stout.js`, 13 browser tests in `test/ui/stout.test.mjs`). See §10.
 - **Not built:** final art, Final Rush integration.
 - **Provisional:** the settle length and all scoring bands, until the hands-on review.
 - **Unchanged:** the Pilsner and Hefeweizen sims and stations.
@@ -261,11 +261,40 @@ about 6 s long, not a replay of the whole pour), tops up into the surge, and
 ends on a result titled "Example: topped up too early". Its first caption
 says it is an example of what not to do.
 
-**Guided (and Watch): training marks.** Added after the owner's Nitro playtest: they were consistently stopping the top-up short. Both use Hefeweizen's pattern: sketched (faint dashed outline), then active with a short pulse while the beer is in them (three 0.9 s breaths, none with reduced motion), then quiet.
-- **SET DOWN** (stage one's preferred 66–75%): sketched from the start, lit while the level is in it, quiet if the pour passes it, gone once the glass is set down. Spoken: "In the SET DOWN range."
-- **RIM** (the finish band, 99–103%: just under the rim to a slight dome): sketched once stage one is down, lit while topping up inside it, quiet after. A short stop leaves it sketched as the target for another top-up. Spoken: "At the rim: let go at a slight dome."
-  - The finish is judged on the settled beer, but settling keeps the total volume, so the level when the tap closes is the level judged. The band is an honest target.
-- Presentation only: bands, verdicts and scoring are unchanged. None in Solo.
+**Guided (and Watch): training marks.** These were added after the owner's Nitro playtest. The owner was stopping the top-up short: coming from Pilsner, with its LINE below the rim, they didn't realise Nitro goes to the brim. Both marks are presentation only: bands, verdicts and scoring are unchanged, and there are none in Solo.
+
+- **SET DOWN** (stage one's preferred 66–75%), using Hefeweizen's pattern:
+  - Sketched (faint dashed outline) from the start.
+  - Active with a short pulse while the level is in range (three 0.9 s breaths, none with reduced motion).
+  - Quiet if the pour passes it, and gone once the glass is set down.
+  - Spoken: "In the SET DOWN range."
+- **The dome finish** replaces a short-lived flat RIM band. It is an outline arc sitting on the rim: the crown of foam the top-up aims for, not a fill line. It appears from the first top-up. Its label sits right of the rim, clear of the HEAD gauge at the set-down spot.
+
+  | State | When (visible level, while topping up) | Look | Guided cue (caption · pad · spoken) |
+  |---|---|---|---|
+  | Target | below 94% | faint cream dashed arc, "TO THE BRIM" | pad "Glass upright. Finish at the brim." |
+  | Near | 94% to 98.5% | brighter solid cream arc | "Almost there. Let the foam just crown the rim." · same · "Almost there." |
+  | Active | 98.5% to 102% | green filled crown, "STOP", short pulse | "STOP: release the pad." · same · "Stop." |
+  | Over | above 102% | no green, amber "TOO FULL" | "Past the crown: let go now." · "Too full: let go now." · "Too full." |
+  | Done / short | tap closed | in band: quiet, no label. Short (below 99%): back to Target | short: "Not quite full. Hold again to finish at the brim." |
+
+  - **Why STOP lights before the brim.** Above the rim the level climbs about 1% every 0.11 s at full flow, and closing the tap adds about 0.65% after letting go.
+    - Lighting STOP only once the crown (101–102%) had formed would leave 0.12 s, which no thumb can react to. By then the pour would be nearly over the band.
+    - So STOP lights at 98.5%, and a normal reaction lands on the crown.
+    - The ideal crown (about 101–102%) is drawn as the dome's shape. The whole passing band (99–103%) is not shown in green.
+    - The thresholds are GAME presentation settings (`DOME` in `js/stout-station.js`), not scoring.
+  - **Measured** (sim, settled glass at 72%, upright top-up at full flow):
+
+    | Release, seconds after STOP lights | 0.00 | 0.10 | 0.20 | 0.25 | 0.30 | 0.35 | 0.40 | 0.45 |
+    |---|---|---|---|---|---|---|---|---|
+    | Final level | 99.1% | 100.1% | 101.0% | 101.5% | 101.9% | 102.3% | 102.8% | 103.2% (over) |
+
+    - The near cue lights 0.52 s before STOP. STOP stays lit 0.40 s.
+    - Any release 0–0.42 s after STOP lights passes. 0.20–0.32 s lands the ideal crown.
+    - **Open for the owner and GPT:** the whole passing window at full flow is under half a second of release time. That is a property of the sim (full-flow top-up and the 99–103% band), and this slice does not change it. If the playtest shows it is too tight, the levers are sim or scoring decisions: a slower top-up near the rim, or a wider band.
+  - **Recovery** (checked in the sim): after a short stop, holding again tops up normally. A brim finish then passes, and the cues re-arm for the second top-up.
+  - **Watch:** the demo's captions now read "Top up to the brim, glass upright, faucet fully open." and "Stop when the foam just crowns the rim, then serve." The demo reaches the STOP crown.
+  - The sim's own "Nearly there" rim hint is not shown in Guided; the dome's near and STOP cues replace it.
 
 **Guided, earlier marks:**
 - (Superseded by the sketched/active SET DOWN above.) A SET DOWN band on the glass during stage one (preferred ⅔–¾).

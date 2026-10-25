@@ -498,8 +498,8 @@
       { t: r(marks.close), pour: false, caption: 'At about three-quarters, let go and set it down. Let it settle (shortened for training).' },
       { t: r(marks.close + 2.5), caption: 'Watch the cloudy surge sink and the dark beer rise. The head is separating.' },
       { t: r(marks.settled), caption: 'Settled: a clean line between the dark beer and the head.' },
-      { t: r(marks.top), pour: true, caption: 'Top up, glass upright, faucet fully open.' },
-      { t: r(marks.end), pour: false, caption: 'Let go as the head stands just proud of the rim, then serve.' },
+      { t: r(marks.top), pour: true, caption: 'Top up to the brim, glass upright, faucet fully open.' },
+      { t: r(marks.end), pour: false, caption: 'Stop when the foam just crowns the rim, then serve.' },
       { t: r(marks.end + 1.5), serve: true }
     ];
     let k = 0;

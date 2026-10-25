@@ -233,43 +233,154 @@ test('HEAD gauge: neutral while the pour is unfinished ("forming", never "below 
   await h.close();
 });
 
-test('Guided training marks: SET DOWN and RIM are sketched, light up (with a pulse) while the beer is in them, then go quiet; a short top-up leaves RIM as the target; none in Solo', async () => {
-  const markState = (h, id) => h.page.evaluate(i => { const g = document.getElementById(i); return g.style.display === 'none' ? 'hidden' : g.dataset.state; }, id);
+// ---- Training marks: SET DOWN, and the dome finish ----------------------------
+const markState = (h, id) => h.page.evaluate(i => { const g = document.getElementById(i); return g.style.display === 'none' ? 'hidden' : g.dataset.state; }, id);
+
+test('Guided SET DOWN: sketched, lit (with a pulse) in 66–75%, gone once set down', async () => {
   const h = await open(APP() + '#/stout', { init: seed() });
   await h.run(300); await mode(h, 'guided');
   assert.equal(await markState(h, 'setDownMark'), 'sketch');
-  assert.equal(await markState(h, 'rimMark'), 'hidden', 'no RIM until stage one is down');
-  const down = [], rim = [], spoken = new Set();
-  const watch = async () => {
-    const d = await markState(h, 'setDownMark'), r = await markState(h, 'rimMark');
-    if (down.at(-1) !== d) down.push(d);
-    if (rim.at(-1) !== r) rim.push(r);
+  assert.equal(await markState(h, 'domeMark'), 'hidden', 'no finish guide before the top-up');
+  const down = [], spoken = new Set();
+  await stageOne(h, { upAt: 50, stopAt: 72, watch: async () => {
+    const d = await markState(h, 'setDownMark'); if (down.at(-1) !== d) down.push(d);
     spoken.add(await h.text('#live'));
-  };
-  await stageOne(h, { upAt: 50, stopAt: 72, watch });
-  // Stop short first: RIM lights, then stays the target once the tap closes below it.
-  await waitAndTopUp(h, 12000, { stopAt: 97, watch });
-  assert.equal(await markState(h, 'rimMark'), 'sketch', 'short of the rim: RIM is still the target');
-  await h.page.keyboard.down(' ');
-  for (let i = 0; i < 2000 && (await h.level()) < 101; i++) { await h.run(16); await watch(); }
-  await h.page.keyboard.up(' '); await h.run(600); await watch();
-  assert.deepEqual(down, ['sketch', 'active', 'hidden'], 'SET DOWN: sketch, lit in 66–75%, gone once set down');
-  assert.deepEqual(rim, ['hidden', 'sketch', 'active', 'past'], 'RIM: sketch after set-down, lit at the rim while topping up, quiet after');
-  const said = [...spoken].join(' | ');
-  assert.match(said, /In the SET DOWN range\./);
-  assert.match(said, /At the rim: let go at a slight dome\./);
-  // The pulse is a CSS animation on the active band (none with reduced motion, as here).
+  } });
+  await h.run(1000);
+  assert.equal(await markState(h, 'setDownMark'), 'hidden');
+  assert.deepEqual(down, ['sketch', 'active']);
+  assert.match([...spoken].join(' | '), /In the SET DOWN range\./);
   const css = await h.page.evaluate(() => [...document.styleSheets].flatMap(s => { try { return [...s.cssRules].map(r => r.cssText); } catch (_) { return []; } }).join('\n'));
-  assert.match(css, /pp-st--stout #rimMark\[data-state="active"\] #rimBand/);
   assert.match(css, /pp-st--stout #setDownMark\[data-state="active"\] #setDownBand/);
+  assert.match(css, /pp-st--stout #domeMark\[data-state="active"\] #domeArc/);
+  assert.deepEqual(h.errors, []);
   await h.close();
+});
+
+test('Guided dome finish: target, near, then STOP from 98.5% (never sooner), clearing to TOO FULL past 102%; reduced motion keeps the green STOP', async () => {
+  const h = await open(APP() + '#/stout', { init: seed() });
+  await h.run(300); await mode(h, 'guided');
+  await stageOne(h);
+  for (let t = 0; t < 12000; t += 100) await h.run(100);
+  const seen = [], captions = new Set(), spoken = new Set(), pads = new Set();
+  let stopShownBelow = null;
+  await h.page.keyboard.down(' ');
+  for (let i = 0; i < 2000 && (await h.level()) < 103; i++) {
+    await h.run(16);
+    const st = await markState(h, 'domeMark'), lv = await h.level(), label = await h.text('#domeLabel');
+    if (seen.at(-1)?.[0] !== st) seen.push([st, lv]);
+    if (label === 'STOP' && lv < 98) stopShownBelow = lv;
+    captions.add(await h.text('#caption')); spoken.add(await h.text('#live')); pads.add(await h.text('#pourSub'));
+    if (st === 'active' && !(await h.page.evaluate(() => window.__checkedActive))) {
+      // Reduced motion (as in these tests): no animation, the state still reads: green, filled, STOP.
+      const look = await h.page.evaluate(() => { const a = document.getElementById('domeArc'); window.__checkedActive = true;
+        return { stroke: a.getAttribute('stroke'), fill: a.getAttribute('fill'), anim: getComputedStyle(a).animationName }; });
+      assert.equal(look.stroke, '#9fdc8a'); assert.notEqual(look.fill, 'none'); assert.equal(look.anim, 'none');
+      assert.equal(label, 'STOP');
+    }
+  }
+  await h.page.keyboard.up(' '); await h.run(800);
+  assert.equal(stopShownBelow, null, 'STOP never shows below 98%');
+  assert.deepEqual(seen.map(([st]) => st), ['target', 'near', 'active', 'over'], JSON.stringify(seen));
+  const at = Object.fromEntries(seen);
+  assert.ok(at.near >= 94 && at.near <= 95, `near at ${at.near}%`);
+  assert.ok(at.active >= 98 && at.active <= 99, `STOP at ${at.active}%`);
+  assert.ok(at.over >= 102 && at.over <= 103, `TOO FULL at ${at.over}%`);
+  const c = [...captions].join(' | ');
+  assert.match(c, /Almost there\. Let the foam just crown the rim\./);
+  assert.match(c, /STOP: release the pad\./);
+  assert.match(c, /Past the crown: let go now\./);
+  const p = [...pads].join(' | ');
+  for (const t of ['Glass upright. Finish at the brim.', 'Let the foam just crown the rim.', 'STOP: release the pad.', 'Too full: let go now.']) assert.ok(p.includes(t), t);
+  const said = [...spoken].join(' | ');
+  assert.match(said, /Almost there\./); assert.match(said, /Stop\./);
+  assert.ok(![...captions].some(x => /Nearly there: let go as the head/.test(x)), 'the old rim hint is replaced by the dome cues');
+  assert.equal(await h.text('#domeLabel'), 'TOO FULL', 'an overfilled pour never looks successful');
+  assert.notEqual(await h.page.getAttribute('#domeArc', 'stroke'), '#9fdc8a');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('Guided dome finish: stopping short says how to recover; holding again re-arms the cues and a brim finish passes', async () => {
+  const h = await open(APP() + '#/stout', { init: seed() });
+  await h.run(300); await mode(h, 'guided');
+  await stageOne(h);
+  const caps = new Set();
+  await waitAndTopUp(h, 12000, { stopAt: 96, watch: async () => caps.add(await h.text('#caption')) });
+  assert.equal(await h.text('#caption'), 'Not quite full. Hold again to finish at the brim.');
+  assert.equal(await markState(h, 'domeMark'), 'target', 'still the target');
+  const again = new Set();
+  await h.page.keyboard.down(' ');
+  for (let i = 0; i < 2000 && (await h.level()) < 100; i++) { await h.run(16); again.add(await h.text('#caption')); }
+  await h.page.keyboard.up(' '); await h.run(800);
+  assert.ok([...again].some(x => /STOP: release the pad\./.test(x)), 'the STOP cue shows again on the second top-up');
+  await serve(h);
+  assert.equal(await h.text('#resultTitle'), 'Clean pour');
+  assert.deepEqual(h.errors, []);
+  await h.close();
+});
+
+test('Watch: the demo tops up "to the brim" and lights the dome STOP; Solo shows and says nothing of the marks', async () => {
+  const w = await open(APP() + '#/stout', { init: seed() });
+  await w.run(300);
+  const states = new Set(), caps = new Set();
+  for (let i = 0; i < 1800 && !(await w.page.isVisible('#result')); i++) {
+    await w.run(16);
+    states.add(await markState(w, 'domeMark')); caps.add(await w.text('#caption'));
+  }
+  assert.ok(states.has('active'), 'the demo reaches the STOP crown');
+  assert.ok(caps.has('Top up to the brim, glass upright, faucet fully open.'));
+  assert.ok(caps.has('Stop when the foam just crowns the rim, then serve.'));
+  assert.equal(await w.text('#resultTitle'), 'Demo pour: clean');
+  await w.close();
   const s = await open(APP() + '#/stout', { init: seed() });
   await s.run(300); await mode(s, 'solo');
-  let seen = false;
-  const look = async () => { if ((await markState(s, 'setDownMark')) !== 'hidden' || (await markState(s, 'rimMark')) !== 'hidden') seen = true; };
+  let seen = false; const spoken = new Set();
+  const look = async () => {
+    if ((await markState(s, 'setDownMark')) !== 'hidden' || (await markState(s, 'domeMark')) !== 'hidden') seen = true;
+    spoken.add(await s.text('#live'));
+  };
   await stageOne(s, { watch: look });
   await waitAndTopUp(s, 12000, { watch: look });
   assert.equal(seen, false, 'no marks in Solo');
+  assert.doesNotMatch([...spoken].join(' | '), /SET DOWN range|Almost there|Stop\.|Too full/);
+  assert.doesNotMatch(await s.text('#pourSub'), /brim|crown|STOP/);
   assert.deepEqual(s.errors, []);
   await s.close();
+});
+
+test('phone held sideways: the dome label fits in the frame and clear of the HEAD gauge, under the tap and at the set-down spot', async () => {
+  for (const size of [{ width: 844, height: 390 }, { width: 667, height: 375 }]) {
+    const h = await open(APP() + '#/stout', { init: seed(), size });
+    await h.run(300); await mode(h, 'guided');
+    await stageOne(h);
+    const check = async where => {
+      const r = await h.page.evaluate(() => {
+        const f = document.getElementById('app-root').getBoundingClientRect(), l = document.getElementById('domeLabel').getBoundingClientRect();
+        const g = ['gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText'].map(id => document.getElementById(id).getBoundingClientRect());
+        const hit = g.some(b => b.width && !(l.right < b.left || l.left > b.right || l.bottom < b.top || l.top > b.bottom));
+        return { inside: l.left >= f.left && l.right <= f.right && l.top >= f.top, hit, w: l.width };
+      });
+      assert.ok(r.w > 0 && r.inside, `${size.width} ${where}: label in frame`);
+      assert.ok(!r.hit, `${size.width} ${where}: label clear of the gauge`);
+    };
+    await waitAndTopUp(h, 12000, { stopAt: 99 });                  // in range, released: done (no label) ...
+    await h.page.keyboard.down(' '); for (let i = 0; i < 3; i++) await h.run(16);
+    await check('under the tap');
+    await h.page.keyboard.up(' '); await h.close();
+    const k = await open(APP() + '#/stout', { init: seed(), size });
+    await k.run(300); await mode(k, 'guided');
+    await stageOne(k);
+    await (async () => { for (let t = 0; t < 12000; t += 100) await k.run(100); await k.page.keyboard.down(' ');
+      for (let i = 0; i < 2000 && (await k.level()) < 95; i++) await k.run(16); await k.page.keyboard.up(' '); await k.run(1500); })();
+    const r = await k.page.evaluate(() => {
+      const f = document.getElementById('app-root').getBoundingClientRect(), l = document.getElementById('domeLabel').getBoundingClientRect();
+      const g = ['gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText'].map(id => document.getElementById(id).getBoundingClientRect());
+      return { inside: l.left >= f.left && l.right <= f.right, hit: g.some(b => b.width && !(l.right < b.left || l.left > b.right || l.bottom < b.top || l.top > b.bottom)), text: document.getElementById('domeLabel').textContent };
+    });
+    assert.equal(r.text, 'TO THE BRIM', 'short: the target is back');
+    assert.ok(r.inside && !r.hit, `${size.width} set-down spot: label in frame and clear of the gauge`);
+    assert.deepEqual(k.errors, []);
+    await k.close();
+  }
 });

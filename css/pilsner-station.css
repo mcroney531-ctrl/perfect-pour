@@ -227,12 +227,12 @@ html, body {
   .pp-st--hefe #ghostActions button { padding: 0 4px; font-size: 0.9rem; }
 }
 
-/* Training ranges (Hefeweizen BRING UP; Nitro SET DOWN and RIM): when one
+/* Training ranges (Hefeweizen BRING UP; Nitro SET DOWN and the dome finish): when one
    turns active, the band breathes three times (the station's 0.9 s pulse
    rhythm), then holds steady. */
 .pp-st--hefe #bringMark[data-state="active"] #bringBand,
 .pp-st--stout #setDownMark[data-state="active"] #setDownBand,
-.pp-st--stout #rimMark[data-state="active"] #rimBand { animation: bringPulse 0.9s ease-in-out 3; }
+.pp-st--stout #domeMark[data-state="active"] #domeArc { animation: bringPulse 0.9s ease-in-out 3; }
 @keyframes bringPulse { 50% { fill: rgba(159, 220, 138, 0.5); stroke-width: 2.6px; } }
 
 /* Reduced motion: no pulse, no bubbles, no wobble (the renderer checks the
@@ -241,7 +241,7 @@ html, body {
   .pp-st #angleCtl.pulse, .pp-st #pour.cue { animation: none; border-style: dashed; box-shadow: none; }
   .pp-st--hefe #bringMark[data-state="active"] #bringBand,
   .pp-st--stout #setDownMark[data-state="active"] #setDownBand,
-  .pp-st--stout #rimMark[data-state="active"] #rimBand { animation: none; }
+  .pp-st--stout #domeMark[data-state="active"] #domeArc { animation: none; }
   .pp-st #pour.cue { outline: 4px dashed var(--ink); outline-offset: 2px; }
 }
 

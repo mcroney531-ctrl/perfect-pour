@@ -100,16 +100,18 @@
              lines). Each is sketched (a faint dashed outline), active (filled,
              with a short pulse) while the beer is in it, and quiet after.
              SET DOWN: stage one's target, about two-thirds to three-quarters,
-             until the glass is set down. RIM: the top-up's finish, from just
-             under the rim to a slight dome, once stage one is down. -->
+             until the glass is set down. -->
         <g id="setDownMark" data-state="sketch">
           <polygon id="setDownBand" fill="none" stroke="#9fdc8a" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="3 4"/>
           <text id="setDownLabel" font-size="8.5" font-weight="700" style="fill:#9fdc8a">SET DOWN</text>
         </g>
-        <g id="rimMark" style="display:none" data-state="sketch">
-          <polygon id="rimBand" fill="none" stroke="#9fdc8a" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="3 4"/>
-          <text id="rimLabel" font-size="8.5" font-weight="700" text-anchor="end" style="fill:#9fdc8a">RIM ▲</text>
-          <text id="rimNote" font-size="7" text-anchor="end" style="fill:#9fdc8a">slight dome</text>
+        <!-- The finish (Watch and Guided, from the first top-up): a dome
+             outline sitting on the rim, the crown of foam the top-up aims for.
+             Not a fill line: Nitro finishes at the brim. States: target,
+             near, active (green, STOP), over (TOO FULL, never green), done. -->
+        <g id="domeMark" style="display:none" data-state="target">
+          <path id="domeArc" fill="none" stroke="#e7c983" stroke-opacity="0.45" stroke-width="1.2" stroke-dasharray="3 3" stroke-linecap="round"/>
+          <text id="domeLabel" font-size="9" font-weight="800" style="fill:#e7c983">TO THE BRIM</text>
         </g>
       </g>
 
@@ -149,6 +151,13 @@
     const { STEP, STOUT, CONTROL, POLY, PROFILE, initState, step, canServe, evaluate, feedback,
       GHOST, GHOST_STEPS, EARLY, EARLY_STEPS, inputAt, HINTS, guidedHints, surfaceAt, levelOf, bands, surgeShare,
       isSettled, heightOf, VERDICT_TEXT, padTarget } = StoutSim;
+    // GAME (presentation only): the dome finish guide. Above the rim the level
+    // climbs about 1% every 0.11 s at full flow, and the tap's close adds
+    // about 0.65% after letting go, so STOP lights a little before the brim:
+    // a normal reaction (about a quarter of a second) then lands a crown of
+    // about 101-102%. Letting go anywhere from 98.4% to 102.4% passes the
+    // unchanged 99-103% finish band (docs/nitro-behaviour.md).
+    const DOME = { near: 0.94, stopFrom: 0.985, stopTo: 1.02, crown: 0.025 };
     host.insertAdjacentHTML('beforeend', MARKUP);
     host.classList.add('pp-st', 'pp-st--stout');
     const emit = (type, detail) => { try { if (opts.onEvent) opts.onEvent(type, detail); } catch (_) { /* host's problem */ } };
@@ -196,7 +205,7 @@
       const E = {};
       ['clipPoly', 'headFill', 'headTex', 'surgeFill', 'surgeTex', 'cascade', 'liquidFill', 'sepEdge', 'stream', 'streamCore', 'spill',
        'glass', 'glassBack', 'glassBackArt', 'glassArt', 'tapGlow', 'handle', 'surgeGrad', 'headGrad',
-       'setDownMark', 'setDownBand', 'setDownLabel', 'rimMark', 'rimBand', 'rimLabel', 'rimNote', 'surgeCue', 'surgeCueLine', 'surgeCueText',
+       'setDownMark', 'setDownBand', 'setDownLabel', 'domeMark', 'domeArc', 'domeLabel', 'surgeCue', 'surgeCueLine', 'surgeCueText',
        'gaugeBar', 'gaugeBarTex', 'gaugeBand', 'gaugeHi', 'gaugeLo', 'gaugeVal', 'gaugeState', 'levelText']
         .forEach(id => { E[id] = $(id); });
 
@@ -314,7 +323,7 @@
         setAttr(E.handle, 'transform', `rotate(${(-30 * s.flow).toFixed(1)} 210 24)`);
         setAttr(E.tapGlow, 'opacity', (0.8 * s.flow).toFixed(2));
 
-        // Training marks (view.setDownMark / view.rimMark: null, 'sketch',
+        // Training marks (view.setDownMark: null, 'sketch',
         // 'active' or 'past'; the pulse is CSS on data-state="active").
         const markLook = (g, band, texts, state) => {
           g.style.display = state ? '' : 'none';
@@ -334,13 +343,30 @@
           zone(E.setDownBand, m0, m1);
           setAttr(E.setDownLabel, 'x', (halfAt(m1) + wall + 4).toFixed(1)); setAttr(E.setDownLabel, 'y', ((yAt(m0) + yAt(m1)) / 2 + 3).toFixed(1));
         }
-        if (markLook(E.rimMark, E.rimBand, [E.rimLabel, E.rimNote], view.coach ? view.rimMark : null)) {
-          // Above the rim the band follows the dome's height (yAt is linear in
-          // height; halfAt holds the rim's width there).
-          const [f0, f1] = cfg.finishBand, lx = (-halfAt(1) - wall - 4).toFixed(1);
-          zone(E.rimBand, f0, f1);
-          setAttr(E.rimLabel, 'x', lx); setAttr(E.rimLabel, 'y', ((yAt(f0) + yAt(f1)) / 2 + 1).toFixed(1));
-          setAttr(E.rimNote, 'x', lx); setAttr(E.rimNote, 'y', ((yAt(f0) + yAt(f1)) / 2 + 9).toFixed(1));
+        // The dome finish target: an arc from rim to rim, peaking at a slight
+        // crown (DOME.crown above the rim). Cream while it is the target,
+        // brighter when near, green with STOP while letting go now lands a
+        // crown, back to quiet (no STOP) once past it.
+        const dome = view.coach ? view.dome : null;
+        E.domeMark.style.display = dome ? '' : 'none';
+        if (dome) {
+          const on = dome === 'active', near = dome === 'near', rx = halfAt(1) + 1, peak = RIM - DOME.crown * H;
+          const arc = `M${-rx},${RIM} Q0,${(2 * peak - RIM).toFixed(1)} ${rx},${RIM}`;
+          setAttr(E.domeMark, 'data-state', dome);
+          setAttr(E.domeArc, 'd', on ? arc + 'Z' : arc);
+          setAttr(E.domeArc, 'stroke', on ? '#9fdc8a' : '#e7c983');
+          setAttr(E.domeArc, 'fill', on ? 'rgba(159,220,138,0.22)' : 'none');
+          setAttr(E.domeArc, 'stroke-opacity', on || near ? 1 : 0.45);
+          setAttr(E.domeArc, 'stroke-width', on ? 2 : near ? 1.6 : 1.2);
+          setAttr(E.domeArc, 'stroke-dasharray', on || near ? 'none' : '3 3');
+          const over = dome === 'over';
+          const label = on ? 'STOP' : over ? 'TOO FULL' : dome === 'target' || near ? 'TO THE BRIM' : '';
+          setText(E.domeLabel, label);
+          E.domeLabel.style.fill = on ? '#9fdc8a' : over ? '#f2b632' : '#e7c983';
+          setAttr(E.domeLabel, 'font-size', on ? 11 : 9);
+          setAttr(E.domeLabel, 'opacity', on || near || over ? 1 : 0.6);
+          // Right of the rim: clear of the HEAD gauge at the set-down spot too.
+          setAttr(E.domeLabel, 'x', (halfAt(1) + wall + 5).toFixed(1)); setAttr(E.domeLabel, 'y', (RIM + 4).toFixed(1));
         }
 
         // The surge bracket: beside the glass, over the cloudy band, while
@@ -462,7 +488,7 @@
       sim = mode === 'watch' && demo === 'early' ? JSON.parse(JSON.stringify(EARLY.start)) : initState();
       served = null;
       ghost.pour = false; ghost.stepIndex = -1;
-      hintsFired = new Set(); said = new Set(); pulseUntil = -1;
+      hintsFired = new Set(); said = new Set(); pulseUntil = -1; domeSaid = new Set();
       straightenVia = null;
       setTarget(0);
       setCaption(OPENING[mode]);
@@ -610,11 +636,12 @@
       const lines = [];
       let hint = false;
       for (const e of sim.events.slice(prev.events.length)) {
-        lines.push(VERDICT_TEXT[VERDICT_KEY[e.type]][e.verdict]);
+        lines.push(e.type === 'stop' && e.verdict === 'short' ? 'Not quite full. Hold again to finish at the brim.' : VERDICT_TEXT[VERDICT_KEY[e.type]][e.verdict]);
         if (!(e.verdict === 'inBand' || e.verdict === 'settled' || e.verdict === 'finish')) hint = true;
       }
       for (const id of guidedHints(prev, sim, hintsFired, cfg)) {
         hintsFired.add(id);
+        if (id === 'nearRim') continue;          // the dome's own near/STOP cues say this (markTick)
         lines.push(HINTS[id]);
         hint = true;
         if (id === 'settled') pulseUntil = sim.elapsed + 3;
@@ -632,19 +659,27 @@
       const lv = levelOf(s), [q0, q1] = cfg.stage1Preferred;
       return lv > q1 ? 'past' : lv >= q0 ? 'active' : 'sketch';
     }
-    function rimMarkState(s) {
-      if (!s.closedOnce) return null;
+    function domeState(s) {
+      if (s.topUpTick === null) return null;
       const lv = levelOf(s), [f0, f1] = cfg.finishBand;
-      if (lv > f1) return 'past';
-      if (lv >= f0) return s.phase === 'topUp' ? 'active' : 'past';
-      return 'sketch';
+      if (s.phase === 'topUp') return lv > DOME.stopTo ? 'over' : lv >= DOME.stopFrom ? 'active' : lv >= DOME.near ? 'near' : 'target';
+      return lv < f0 ? 'target' : lv > f1 ? 'over' : 'done';
     }
-    // Watch and Guided: say it when a mark lights, once per pour.
+    // Watch and Guided: say it when SET DOWN lights, once per pour. Guided
+    // only: the dome's near and STOP cues, on the caption and spoken, once per
+    // top-up (a short stop re-arms them for the next one).
+    let domeSaid = new Set();
     function markTick(prev) {
       if (mode === 'solo') return;
       const say = (key, text) => { if (!said.has(key)) { said.add(key); announce(text); } };
       if (setDownMarkState(sim) === 'active' && setDownMarkState(prev) !== 'active') say('markDown', 'In the SET DOWN range.');
-      if (rimMarkState(sim) === 'active' && rimMarkState(prev) !== 'active') say('markRim', 'At the rim: let go at a slight dome.');
+      if (mode !== 'guided') return;
+      const now = domeState(sim), was = domeState(prev);
+      const cue = (key, caption, spoken) => { if (domeSaid.has(key)) return; domeSaid.add(key); setCaption(caption, 'hint'); announce(spoken); };
+      if (now === 'near' && was !== 'near') cue('near', 'Almost there. Let the foam just crown the rim.', 'Almost there.');
+      if (now === 'active' && was !== 'active') cue('stop', 'STOP: release the pad.', 'Stop.');
+      if (now === 'over' && was !== 'over' && sim.phase === 'topUp') cue('over', 'Past the crown: let go now.', 'Too full.');
+      if (sim.events.length > prev.events.length && sim.events.at(-1).type === 'stop' && sim.events.at(-1).verdict === 'short') domeSaid = new Set();
     }
     // Every mode: what the beer is doing, in words (the spoken equivalent of
     // what the glass shows; it describes the beer, it does not coach).
@@ -669,7 +704,11 @@
       setText($('pourText'), mode === 'watch' && !served ? (pouring ? 'Demo: pouring…' : 'Demo') :
         locked() ? 'Locked' : pouring ? (Pad.tapMode() || input.latch ? 'Tap to stop' : toppingUp ? 'Topping up…' : 'Pouring…')
           : toppingUp ? (Pad.tapMode() ? 'Tap to top up' : 'Hold to top up') : (Pad.tapMode() ? 'Tap to pour' : 'Hold to pour'));
+      const dome = mode === 'guided' && toppingUp ? domeState(sim) : null;
       setText($('pourSub'), mode === 'watch' ? 'watch the thumb'
+        : dome === 'active' ? 'STOP: release the pad.' : dome === 'near' ? 'Let the foam just crown the rim.'
+        : dome === 'over' && pouring ? 'Too full: let go now.'
+        : mode === 'guided' && toppingUp ? 'Glass upright. Finish at the brim.'
         : pouring ? (toppingUp ? 'Glass upright. Let go at a slight dome.' : 'Keep holding. Slide up slowly to bring the glass upright.')
         : toppingUp ? 'glass upright, faucet fully open' : 'then slide up slowly to straighten');
       const finger = $('padFinger');
@@ -715,7 +754,7 @@
     const Loop = Kit.loop(STEP, tick, () => {
       const coach = mode !== 'solo';
       Renderer.render(sim, { reducedMotion: motionQuery.matches, coach,
-        setDownMark: coach ? setDownMarkState(sim) : null, rimMark: coach ? rimMarkState(sim) : null,
+        setDownMark: coach ? setDownMarkState(sim) : null, dome: coach ? domeState(sim) : null,
         setDown: sim.closedOnce && sim.flow === 0 && !sim.pouring && served === null,
         finished: served !== null,
         pulse: mode === 'guided' && sim.elapsed < pulseUntil });
