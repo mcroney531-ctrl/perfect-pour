@@ -148,7 +148,7 @@ test('the top-up: tilted, short, too tall a dome, overflow', () => {
   assert.equal(pour({ topAngle: 20 }).primary, 'tiltedTopUp');
   assert.equal(pour({ topAngle: 10 }).primary, 'tiltSpill', 'a slight tilt spills over the lower lip: the advice is upright');
   assert.equal(pour({ finish: 0.95 }).primary, 'short');
-  assert.equal(pour({ finish: 1.034 }).primary, 'overDome');
+  assert.equal(pour({ finish: 1.054 }).primary, 'overDome');
   assert.equal(pour({ overpour: 1 }).primary, 'overflow');
 });
 

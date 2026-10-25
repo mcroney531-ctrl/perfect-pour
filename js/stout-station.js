@@ -108,7 +108,8 @@
         <!-- The finish (Watch and Guided, from the first top-up): a dome
              outline sitting on the rim, the crown of foam the top-up aims for.
              Not a fill line: Nitro finishes at the brim. States: target,
-             near, active (green, STOP), over (TOO FULL, never green), done. -->
+             near, active (green, STOP), over (LET GO while pouring, TOO FULL
+             once closed above the band; never green), done. -->
         <g id="domeMark" style="display:none" data-state="target">
           <path id="domeArc" fill="none" stroke="#e7c983" stroke-opacity="0.45" stroke-width="1.2" stroke-dasharray="3 3" stroke-linecap="round"/>
           <text id="domeLabel" font-size="9" font-weight="800" style="fill:#e7c983">TO THE BRIM</text>
@@ -155,9 +156,10 @@
     // climbs about 1% every 0.11 s at full flow, and the tap's close adds
     // about 0.65% after letting go, so STOP lights a little before the brim:
     // a normal reaction (about a quarter of a second) then lands a crown of
-    // about 101-102%. Letting go anywhere from 98.4% to 102.4% passes the
-    // unchanged 99-103% finish band (docs/nitro-behaviour.md).
-    const DOME = { near: 0.94, stopFrom: 0.985, stopTo: 1.02, crown: 0.025 };
+    // about 101-102%. STOP clears at 103.5% (letting go then still lands
+    // inside the band); letting go anywhere from 98.4% to 104.4% passes the
+    // 99-105% finish band (docs/nitro-behaviour.md).
+    const DOME = { near: 0.94, stopFrom: 0.985, stopTo: 1.035, crown: 0.03 };
     host.insertAdjacentHTML('beforeend', MARKUP);
     host.classList.add('pp-st', 'pp-st--stout');
     const emit = (type, detail) => { try { if (opts.onEvent) opts.onEvent(type, detail); } catch (_) { /* host's problem */ } };
@@ -360,7 +362,9 @@
           setAttr(E.domeArc, 'stroke-width', on ? 2 : near ? 1.6 : 1.2);
           setAttr(E.domeArc, 'stroke-dasharray', on || near ? 'none' : '3 3');
           const over = dome === 'over';
-          const label = on ? 'STOP' : over ? 'TOO FULL' : dome === 'target' || near ? 'TO THE BRIM' : '';
+          // Past the crown while still pouring: LET GO (letting go at once may
+          // still pass); TOO FULL only once the tap has closed above the band.
+          const label = on ? 'STOP' : over ? (s.phase === 'topUp' ? 'LET GO' : 'TOO FULL') : dome === 'target' || near ? 'TO THE BRIM' : '';
           setText(E.domeLabel, label);
           E.domeLabel.style.fill = on ? '#9fdc8a' : over ? '#f2b632' : '#e7c983';
           setAttr(E.domeLabel, 'font-size', on ? 11 : 9);
@@ -589,7 +593,7 @@
       svg.innerHTML =
         `<polygon points="${[...sideAt(0, 1, -1), ...sideAt(0, 1, 1).reverse()].join(' ')}" fill="rgba(210,228,255,0.06)" stroke="rgba(230,240,255,0.8)" stroke-width="2"/>` +
         band(q0, q1, 'rgba(159,220,138,0.25)', '#9fdc8a', '1 2') +
-        tick(m.stage1Level, '#9fdc8a') + tick(Math.min(1.04, m.finalLevel), '#f6eedf');
+        tick(m.stage1Level, '#9fdc8a') + tick(Math.min(1 + cfg.domeMax, m.finalLevel), '#f6eedf');
       const parts = [];
       parts.push(m.stage1Level === null ? 'Stage one was never set down.'
         : `Stage one: set down at <b>${pctOf(m.stage1Level)}%</b> (target ${pctOf(q0)}–${pctOf(q1)}%).`);
@@ -678,7 +682,7 @@
       const cue = (key, caption, spoken) => { if (domeSaid.has(key)) return; domeSaid.add(key); setCaption(caption, 'hint'); announce(spoken); };
       if (now === 'near' && was !== 'near') cue('near', 'Almost there. Let the foam just crown the rim.', 'Almost there.');
       if (now === 'active' && was !== 'active') cue('stop', 'STOP: release the pad.', 'Stop.');
-      if (now === 'over' && was !== 'over' && sim.phase === 'topUp') cue('over', 'Past the crown: let go now.', 'Too full.');
+      if (now === 'over' && was !== 'over' && sim.phase === 'topUp') cue('over', 'Past the crown: let go now.', 'Let go now.');
       if (sim.events.length > prev.events.length && sim.events.at(-1).type === 'stop' && sim.events.at(-1).verdict === 'short') domeSaid = new Set();
     }
     // Every mode: what the beer is doing, in words (the spoken equivalent of
@@ -707,7 +711,7 @@
       const dome = mode === 'guided' && toppingUp ? domeState(sim) : null;
       setText($('pourSub'), mode === 'watch' ? 'watch the thumb'
         : dome === 'active' ? 'STOP: release the pad.' : dome === 'near' ? 'Let the foam just crown the rim.'
-        : dome === 'over' && pouring ? 'Too full: let go now.'
+        : dome === 'over' && pouring ? 'Past the crown: let go now.'
         : mode === 'guided' && toppingUp ? 'Glass upright. Finish at the brim.'
         : pouring ? (toppingUp ? 'Glass upright. Let go at a slight dome.' : 'Keep holding. Slide up slowly to bring the glass upright.')
         : toppingUp ? 'glass upright, faucet fully open' : 'then slide up slowly to straighten');

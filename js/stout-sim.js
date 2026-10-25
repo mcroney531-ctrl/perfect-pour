@@ -56,7 +56,7 @@
     setDownMin: 0.6,          // s
     // PHYSICAL (simplified): foam can stand a little proud of the rim (the
     // dome); liquid cannot.
-    domeMax: 0.04,            // share of glass height
+    domeMax: 0.06,            // share of glass height (room for the finish band's top, 105%)
     // SOURCED (BA p. 32, Guinness, via GPT review): stage one to about
     // two-thirds to three-quarters. GAME: the band around it.
     // The preferred level is the sourced two-thirds to three-quarters; the
@@ -64,8 +64,10 @@
     // pass outside the preferred range says so.
     stage1Preferred: [0.66, 0.75],
     stage1Band: [0.6, 0.82],  // level (all parts) as a share of glass height
-    // GAME: the finish. Level counts the head, so above 1 is a dome.
-    finishBand: [0.99, 1.03],
+    // GAME: the finish. Level counts the head, so above 1 is a dome. The top
+    // was 103%; widened to 105% after the owner's playtest so letting go has
+    // about 0.67 s of leeway at full flow instead of 0.45 s.
+    finishBand: [0.99, 1.05],
     headBand: [0.08, 0.15],   // settled head height, share of glass height
     wasteTol: 0.02,
     tiltThreshold: 35, straightenThreshold: 15

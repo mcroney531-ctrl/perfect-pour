@@ -85,7 +85,7 @@ opposite of Pilsner and Hefeweizen, where the head freezes when the tap closes.
 | Readiness | Surge ≤ 6% of the beer; settle ≈ 10 s | GAME (compressed) | Ready 10.3 s after set-down |
 | Top-up timing | Surge ≤ 9% when the tap reopens | GAME | 5% (waited 11.3 s) |
 | Top-up angle | ≤ 15° throughout | SOURCED upright top-up; threshold GAME | 0° |
-| Finish (level incl. head) | 99–103% (a slight dome) | GAME | 101.6% |
+| Finish (level incl. head) | 99–105% (a slight dome; was 99–103%, widened after the owner's playtest) | GAME | 101.6% |
 | Head (settled) | 8–15% of glass height | GAME | 12.2% |
 | Spill | ≤ 2% | GAME (same as the other stations) | 0% |
 | Flow | 0.10 glass/s, fully open for both pours | SOURCED fully open (BA); rate GAME | |
@@ -217,7 +217,7 @@ identical results (tested). No `park`, `advance` or `judge` API is built:
 ## 8b. Corrections after the simulation review
 - **Verdicts:** lined up with the tolerance (§2).
 - **Stage one:** the preferred range is distinguished from the passing band (§3).
-- **The pass line describes the actual finish:** "finished with a slight dome" above the rim, "finished level with the rim" otherwise. The 99–103% band accepts both.
+- **The pass line describes the actual finish:** "finished with a slight dome" above the rim, "finished level with the rim" otherwise. The finish band (now 99–105%) accepts both.
 - **Early top-up wording:** the explanation now says what happened "in this pour". The agitation model is GAME, not verified beer physics.
 - **Notes:** a pass can carry notes (`littleEarly`, `stage1Wide`) as its secondary line.
 - **Tests:** four new tests hold all of this (22 in all).
@@ -274,24 +274,27 @@ says it is an example of what not to do.
   |---|---|---|---|
   | Target | below 94% | faint cream dashed arc, "TO THE BRIM" | pad "Glass upright. Finish at the brim." |
   | Near | 94% to 98.5% | brighter solid cream arc | "Almost there. Let the foam just crown the rim." · same · "Almost there." |
-  | Active | 98.5% to 102% | green filled crown, "STOP", short pulse | "STOP: release the pad." · same · "Stop." |
-  | Over | above 102% | no green, amber "TOO FULL" | "Past the crown: let go now." · "Too full: let go now." · "Too full." |
-  | Done / short | tap closed | in band: quiet, no label. Short (below 99%): back to Target | short: "Not quite full. Hold again to finish at the brim." |
+  | Active | 98.5% to 103.5% | green filled crown, "STOP", short pulse | "STOP: release the pad." · same · "Stop." |
+  | Over | above 103.5% | no green, amber "LET GO" (letting go at once may still pass) | "Past the crown: let go now." · same · "Let go now." |
+  | Done / short / too full | tap closed | in band: quiet, no label. Short (below 99%): back to Target. Above 105%: amber "TOO FULL" | short: "Not quite full. Hold again to finish at the brim." |
 
   - **Why STOP lights before the brim.** Above the rim the level climbs about 1% every 0.11 s at full flow, and closing the tap adds about 0.65% after letting go.
     - Lighting STOP only once the crown (101–102%) had formed would leave 0.12 s, which no thumb can react to. By then the pour would be nearly over the band.
     - So STOP lights at 98.5%, and a normal reaction lands on the crown.
-    - The ideal crown (about 101–102%) is drawn as the dome's shape. The whole passing band (99–103%) is not shown in green.
+    - The ideal crown (about 101–102%) is drawn as the dome's shape. The whole passing band (99–105%) is not shown in green.
     - The thresholds are GAME presentation settings (`DOME` in `js/stout-station.js`), not scoring.
   - **Measured** (sim, settled glass at 72%, upright top-up at full flow):
 
-    | Release, seconds after STOP lights | 0.00 | 0.10 | 0.20 | 0.25 | 0.30 | 0.35 | 0.40 | 0.45 |
-    |---|---|---|---|---|---|---|---|---|
-    | Final level | 99.1% | 100.1% | 101.0% | 101.5% | 101.9% | 102.3% | 102.8% | 103.2% (over) |
+    | Release, seconds after STOP lights | 0.00 | 0.10 | 0.20 | 0.25 | 0.30 | 0.40 | 0.50 | 0.60 | 0.65 | 0.70 |
+    |---|---|---|---|---|---|---|---|---|---|---|
+    | Final level | 99.1% | 100.1% | 101.0% | 101.5% | 101.9% | 102.8% | 103.6% | 104.5% | 104.9% | 105.4% (over) |
 
-    - The near cue lights 0.52 s before STOP. STOP stays lit 0.40 s.
-    - Any release 0–0.42 s after STOP lights passes. 0.20–0.32 s lands the ideal crown.
-    - **Open for the owner and GPT:** the whole passing window at full flow is under half a second of release time. That is a property of the sim (full-flow top-up and the 99–103% band), and this slice does not change it. If the playtest shows it is too tight, the levers are sim or scoring decisions: a slower top-up near the rim, or a wider band.
+    - The near cue lights 0.52 s before STOP. STOP stays lit 0.58 s.
+    - Any release 0–0.66 s after STOP lights passes. 0.20–0.32 s lands the ideal crown.
+    - **Widened after the owner's playtest (decided by the owner).** At 99–103% the whole window was about 0.45 s; at 99–105% it is about 0.67 s, half as much time again.
+      - The glass's dome allowance went from 4% to 6% above the rim (`domeMax`), so the beer can reach 105% without spilling.
+      - The head stays inside its 8–15% band across the range (13.0% at the top).
+      - 105% is about a 13 px crown on screen, roughly 1 cm on a real pint: the generous side of "slight dome", and a GAME setting.
   - **Recovery** (checked in the sim): after a short stop, holding again tops up normally. A brim finish then passes, and the cues re-arm for the second top-up.
   - **Watch:** the demo's captions now read "Top up to the brim, glass upright, faucet fully open." and "Stop when the foam just crowns the rim, then serve." The demo reaches the STOP crown.
   - The sim's own "Nearly there" rim hint is not shown in Guided; the dome's near and STOP cues replace it.

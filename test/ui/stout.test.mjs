@@ -257,7 +257,7 @@ test('Guided SET DOWN: sketched, lit (with a pulse) in 66–75%, gone once set d
   await h.close();
 });
 
-test('Guided dome finish: target, near, then STOP from 98.5% (never sooner), clearing to TOO FULL past 102%; reduced motion keeps the green STOP', async () => {
+test('Guided dome finish: target, near, then STOP from 98.5% (never sooner), clearing to TOO FULL past 103.5%; reduced motion keeps the green STOP', async () => {
   const h = await open(APP() + '#/stout', { init: seed() });
   await h.run(300); await mode(h, 'guided');
   await stageOne(h);
@@ -265,11 +265,12 @@ test('Guided dome finish: target, near, then STOP from 98.5% (never sooner), cle
   const seen = [], captions = new Set(), spoken = new Set(), pads = new Set();
   let stopShownBelow = null;
   await h.page.keyboard.down(' ');
-  for (let i = 0; i < 2000 && (await h.level()) < 103; i++) {
+  for (let i = 0; i < 2000 && (await h.level()) < 105; i++) {
     await h.run(16);
     const st = await markState(h, 'domeMark'), lv = await h.level(), label = await h.text('#domeLabel');
     if (seen.at(-1)?.[0] !== st) seen.push([st, lv]);
     if (label === 'STOP' && lv < 98) stopShownBelow = lv;
+    if (st === 'over') assert.equal(label, 'LET GO', 'still pouring past the crown: LET GO, not yet TOO FULL');
     captions.add(await h.text('#caption')); spoken.add(await h.text('#live')); pads.add(await h.text('#pourSub'));
     if (st === 'active' && !(await h.page.evaluate(() => window.__checkedActive))) {
       // Reduced motion (as in these tests): no animation, the state still reads: green, filled, STOP.
@@ -285,15 +286,15 @@ test('Guided dome finish: target, near, then STOP from 98.5% (never sooner), cle
   const at = Object.fromEntries(seen);
   assert.ok(at.near >= 94 && at.near <= 95, `near at ${at.near}%`);
   assert.ok(at.active >= 98 && at.active <= 99, `STOP at ${at.active}%`);
-  assert.ok(at.over >= 102 && at.over <= 103, `TOO FULL at ${at.over}%`);
+  assert.ok(at.over >= 103 && at.over <= 104, `TOO FULL at ${at.over}%`);
   const c = [...captions].join(' | ');
   assert.match(c, /Almost there\. Let the foam just crown the rim\./);
   assert.match(c, /STOP: release the pad\./);
   assert.match(c, /Past the crown: let go now\./);
   const p = [...pads].join(' | ');
-  for (const t of ['Glass upright. Finish at the brim.', 'Let the foam just crown the rim.', 'STOP: release the pad.', 'Too full: let go now.']) assert.ok(p.includes(t), t);
+  for (const t of ['Glass upright. Finish at the brim.', 'Let the foam just crown the rim.', 'STOP: release the pad.', 'Past the crown: let go now.']) assert.ok(p.includes(t), t);
   const said = [...spoken].join(' | ');
-  assert.match(said, /Almost there\./); assert.match(said, /Stop\./);
+  assert.match(said, /Almost there\./); assert.match(said, /Stop\./); assert.match(said, /Let go now\./);
   assert.ok(![...captions].some(x => /Nearly there: let go as the head/.test(x)), 'the old rim hint is replaced by the dome cues');
   assert.equal(await h.text('#domeLabel'), 'TOO FULL', 'an overfilled pour never looks successful');
   assert.notEqual(await h.page.getAttribute('#domeArc', 'stroke'), '#9fdc8a');
@@ -343,7 +344,7 @@ test('Watch: the demo tops up "to the brim" and lights the dome STOP; Solo shows
   await stageOne(s, { watch: look });
   await waitAndTopUp(s, 12000, { watch: look });
   assert.equal(seen, false, 'no marks in Solo');
-  assert.doesNotMatch([...spoken].join(' | '), /SET DOWN range|Almost there|Stop\.|Too full/);
+  assert.doesNotMatch([...spoken].join(' | '), /SET DOWN range|Almost there|Stop\.|Let go now/);
   assert.doesNotMatch(await s.text('#pourSub'), /brim|crown|STOP/);
   assert.deepEqual(s.errors, []);
   await s.close();
