@@ -11,7 +11,7 @@ let browser, server, URL0;
 test.before(async () => { ({ server, url: URL0 } = await startServer()); browser = await chromium.launch(); });
 test.after(async () => { await browser?.close(); server?.close(); });
 
-const APP = () => URL0 + '/brewery.html';
+const APP = () => URL0 + '/';
 const st = (status = 'new') => ({ status, attempts: 0, passes: 0, abandoned: 0, lastPlayed: null });
 // A returning learner who has seen both intros; `seq` presets which pour
 // comes next in each mode (riverside.hefe.scenario).

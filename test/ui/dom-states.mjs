@@ -51,7 +51,7 @@ async function pour(h, at, stopAt, upEvery) {
 // Each scenario: a page, then a list of [stateName, action] run in order.
 function scenarios(base) {
   const app = (station, seq = { guided: 0, solo: 0 }) => ({
-    url: `${base}/brewery.html#/${station}`, opts: { mobile: false, size: SIZE, reducedMotion: 'reduce', init: RETURNING(seq), exactClock: true }, root: '#stationHost'
+    url: `${base}/#/${station}`, opts: { mobile: false, size: SIZE, reducedMotion: 'reduce', init: RETURNING(seq), exactClock: true }, root: '#stationHost'
   });
   const mode = m => h => h.page.click(`#modes [data-mode=${m}]`).then(() => h.run(300));
   const untilResult = async h => { for (let i = 0; i < 1200 && !(await h.page.isVisible('#result')); i++) await h.run(16); await h.run(200); };
@@ -73,7 +73,7 @@ function scenarios(base) {
       ['guided-result', h => pour(h, 52, 94, 150)],
       ['solo-idle', mode('solo')]
     ] },
-    legacy: { url: `${base}/index.html`, opts: { exactClock: true }, root: '#pp-root', steps: [
+    legacy: { url: `${base}/pilsner.html`, opts: { exactClock: true }, root: '#pp-root', steps: [
       ['watch-mid', h => h.run(5000)],
       ['guided-idle', mode('guided')]
     ] }

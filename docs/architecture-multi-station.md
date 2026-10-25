@@ -262,7 +262,17 @@ Same method as M5, per station:
   - The backdrop must stay calm enough for a near-black glass to read: **contrast behind the glass is the art risk for stout.** This is the opposite of Pilsner, where transparent glass was the risk.
 - **Visual consistency:** one backdrop per station, the same bar and the same light direction. The hub plate already shows all three taps, so station art should match what the hub shows at that tap.
 
-## 8. Entry-point migration plan (documented only; do not migrate yet)
+## 8. Entry-point migration (done)
+
+**Done (front-door slice, approved by GPT and the owner).** As built:
+- `index.html` is the brewery.
+- `pilsner.html` is the standalone Pilsner, at the root: no path changes, so its pixel tests guard the same output.
+- `brewery.html` redirects to `./` with `location.replace()`, keeping the query and the route (the hub, `#/`, if none was given).
+- Old root bookmarks with the prototype's options and no route (`/?angle=`, `/?glass=`, `/?debug=1`) forward to `pilsner.html`.
+- All brewery cache tags are bumped (`?v=fd1`).
+- `test/ui/front-door.test.mjs` covers the root, saved progress, the redirect (routes, query, Back) and the legacy forwarding.
+
+The original plan follows, for the record.
 
 **Goal:** `brewery.html` becomes the front door at the site root, and
 `index.html` (standalone Pilsner) is kept as a legacy page.

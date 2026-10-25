@@ -4,21 +4,93 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Perfect Pour (prototype v2.3)</title>
-<link rel="stylesheet" href="css/pilsner-station.css">
+<title>The Bar · Riverside Brewing Co.</title>
+<script>
+  // Front door (site root). Old bookmarks to the standalone Pilsner page used
+  // the root with its options and no route (/?angle=staged, /?glass=b,
+  // /?debug=1): forward those to pilsner.html, keeping the query. With a
+  // route (/?debug=1#/pilsner) they stay here: the app's Pilsner reads them.
+  (function () {
+    var q = new URLSearchParams(location.search);
+    if ((location.hash === '' || location.hash === '#') && (q.has('angle') || q.has('glass') || q.has('debug')))
+      location.replace('pilsner.html' + location.search);
+  })();
+</script>
+<link rel="stylesheet" href="css/tokens.css?v=fd1">
+<link rel="stylesheet" href="css/components.css?v=fd1">
+<link rel="stylesheet" href="css/pilsner-station.css?v=fd1">
+<link rel="stylesheet" href="css/brewery.css?v=fd1">
 </head>
 <body>
-<div id="pp-root"></div>
+<!-- Brand symbols shared by the hub (same as design/components.html). -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="pp-emblem" viewBox="0 0 64 64">
+      <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M32 6v6M32 9c4-3 9-3 12-1-3 3-8 4-12 1"/>
+        <path d="M32 12C46 18 48 38 32 58 16 38 18 18 32 12Z"/>
+        <path d="M23 21l9-7 9 7M20 29l12-8 12 8M21 37l11-8 11 8M24 45l8-7 8 7M28 52l4-4 4 4"/>
+      </g>
+    </symbol>
+    <linearGradient id="pp-gold-metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe39a"/><stop offset="0.45" stop-color="#e7b143"/><stop offset="1" stop-color="#9a6a17"/>
+    </linearGradient>
+    <!-- Mini glasses for station cards. Pilsner matches the game's glass A shape. -->
+    <symbol id="pp-glass-pils" viewBox="0 0 46 72">
+      <path d="M8 4 L38 4 L33 64 L13 64 Z" fill="#f2b232"/><path d="M8 4 L38 4 L37.2 14 L8.8 14 Z" fill="#fbf2dd"/>
+      <path d="M6 2 L40 2 L34 66 L12 66 Z" fill="none" stroke="#e8f1ff" stroke-width="1.6"/><rect x="11" y="66" width="24" height="4" rx="1.5" fill="#cfd8e3"/>
+    </symbol>
+    <symbol id="pp-glass-hefe" viewBox="0 0 46 72">
+      <path d="M12 4 C6 20 18 30 14 44 C11 54 14 62 16 64 L30 64 C32 62 35 54 32 44 C28 30 40 20 34 4 Z" fill="#e9a74a" opacity="0.55"/>
+      <path d="M12 4 C6 20 18 30 14 44 C11 54 14 62 16 64 L30 64 C32 62 35 54 32 44 C28 30 40 20 34 4 Z" fill="none" stroke="#dfe4e6" stroke-width="1.6" stroke-dasharray="3 3"/>
+    </symbol>
+    <symbol id="pp-glass-stout" viewBox="0 0 46 72">
+      <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="#2a160c" opacity="0.6"/><path d="M9 4 L37 4 L36.6 10 L9.4 10 Z" fill="#e8d6b4" opacity="0.6"/>
+      <path d="M9 4 L37 4 L34 64 L12 64 Z" fill="none" stroke="#dfe4e6" stroke-width="1.6" stroke-dasharray="3 3"/>
+    </symbol>
+    <!-- Riverside certification seal (from the M2 component sheet). -->
+    <!-- The seal is shared; its lower arc names the station and is drawn per
+         seal by js/brewery.js (sealSvg) along pp-seal-bot. -->
+    <path id="pp-seal-bot" d="M39.7 156 A84 84 0 0 0 180.3 156" fill="none"/>
+    <symbol id="pp-seal" viewBox="0 0 220 220">
+      <path id="pp-seal-top" d="M30 110 A80 80 0 0 1 190 110" fill="none"/>
+      <circle cx="110" cy="110" r="104" fill="url(#pp-gold-metal)"/>
+      <circle cx="110" cy="110" r="96" fill="#0f2a23" stroke="#f7d27a" stroke-width="1.5"/>
+      <circle cx="110" cy="110" r="66" fill="none" stroke="#c98d24" stroke-width="1.2" stroke-dasharray="2 4"/>
+      <text style="font: 800 15px 'Barlow Condensed', sans-serif; letter-spacing: 2.5px" fill="#f7d27a"><textPath href="#pp-seal-top" startOffset="50%" text-anchor="middle">RIVERSIDE BREWING CO.</textPath></text>
+      <svg x="82" y="56" width="56" height="56" style="color:#f0bd4a"><use href="#pp-emblem"/></svg>
+      <path d="M34 122 H186 L176 136 L186 150 H34 L44 136 Z" fill="url(#pp-gold-metal)" stroke="#7d5512"/>
+      <text x="110" y="142" text-anchor="middle" style="font: 800 20px 'Barlow Condensed', sans-serif; letter-spacing: 3px" fill="#1c1406">CERTIFIED</text>
+    </symbol>
+  </defs>
+</svg>
+<div id="app-root"></div>
+<div class="rotate" id="rotatePrompt" role="dialog" aria-labelledby="rotateTitle">
+  <svg class="rotate__icon" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="22" y="8" width="20" height="36" rx="3"/><path d="M14 50c6 6 18 8 28 4M38 50l4 4-4 4"/></g></svg>
+  <p class="rotate__title" id="rotateTitle">Turn your phone sideways</p>
+  <p class="rotate__sub">Perfect Pour is made for landscape.</p>
+  <button type="button" class="pp-btn pp-btn--ghost" id="rotateDismiss">Continue anyway</button>
+</div>
 
-<script src="js/sim.js"></script>
-<script src="js/station-kit.js"></script>
-<script src="js/station-markup.js"></script>
-<script src="js/station-input.js"></script>
-<script src="js/pilsner-station.js"></script>
-<script>
-  // Boot: one station, full page. The brewery app (brewery.html) mounts and
-  // unmounts the same station from its hub. Exposed for tests and debugging.
-  window.ppStation = PilsnerStation.mount(document.getElementById('pp-root'));
-</script>
+<script src="js/sim.js?v=fd1"></script>
+<script src="js/station-kit.js?v=fd1"></script>
+<script src="js/station-markup.js?v=fd1"></script>
+<script src="js/station-input.js?v=fd1"></script>
+<script src="js/pilsner-station.js?v=fd1"></script>
+<script src="js/hefe-sim.js?v=fd1"></script>
+<script src="js/hefe-station.js?v=fd1"></script>
+<script src="js/stout-sim.js?v=fd1"></script>
+<script src="js/stout-station.js?v=fd1"></script>
+<script src="js/stations.js?v=fd1"></script>
+<script src="js/progress.js?v=fd1"></script>
+<script src="js/hub-scenes.js?v=fd1"></script>
+<script src="js/station-look.js?v=fd1"></script>
+<script src="js/station-cues.js?v=fd1"></script>
+<script src="js/station-chrome.js?v=fd1"></script>
+<script src="js/stations/pilsner.js?v=fd1"></script>
+<script src="js/stations/hefeweizen.js?v=fd1"></script>
+<script src="js/stations/stout.js?v=fd1"></script>
+<script src="js/brewery.js?v=fd1"></script>
 </body>
 </html>

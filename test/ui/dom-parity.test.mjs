@@ -2,7 +2,7 @@
 // (docs/shared-station-ui.md): the stations' DOM at fixed points of a
 // deterministic run, what the live region said and in what order, and the
 // level shown every 250 ms, for Pilsner and Hefeweizen in the app and for the
-// legacy standalone page (index.html). Compared exactly with the committed
+// legacy standalone page (pilsner.html). Compared exactly with the committed
 // fixtures in test/ui/fixtures/.
 //   UPDATE_FIXTURES=1 node --test test/ui/dom-parity.test.mjs   # after an intended change
 import test from 'node:test';

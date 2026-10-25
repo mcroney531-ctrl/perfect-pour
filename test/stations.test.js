@@ -43,8 +43,8 @@ test('bad definitions are refused with a reason', () => {
 
 test('the app registers all three stations as playable, in hub order, matching progress and hub anchors', () => {
   const ctx = registry({ PilsnerStation: { mount() {} }, HefeStation: { mount() {} }, StoutStation: { mount() {} } });
-  // The same files, in the same order, as brewery.html.
-  const html = fs.readFileSync(path.join(__dirname, '..', 'brewery.html'), 'utf8');
+  // The same files, in the same order, as index.html (the brewery).
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const files = [...html.matchAll(/src="js\/(stations\/[a-z-]+\.js)/g)].map(m => m[1]);
   assert.deepEqual(files, ['stations/pilsner.js', 'stations/hefeweizen.js', 'stations/stout.js']);
   for (const f of files) vm.runInContext(src(f), ctx);

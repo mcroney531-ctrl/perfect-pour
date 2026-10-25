@@ -1,16 +1,53 @@
-# Perfect Pour: prototype v2.3 (one glass, one pilsner)
+# Perfect Pour: Riverside Brewing Co. bartender training
 
-A prototype for E-Learning Heroes challenge #570: gamified onboarding for a new
-bartender at a fictional brewery. The goal is **procedural memory first,
-precision second, speed third**: after training, the learner should be able to
-rehearse the pour in their head ("tilt, open fully, bring it up past half,
-finish upright, stop at the line").
+A gamified onboarding experience for a new bartender at a fictional brewery
+(E-Learning Heroes challenge #570). The learner walks into the bar, picks a
+station, and learns three draught pours, each with Watch, Guided and Solo
+modes. A passing Solo pour certifies the station. The goal is **procedural
+memory first, precision second, speed third**: after training, the learner can
+rehearse each pour in their head.
 
-v2 tests one open question: **staged or continuous straightening?** Both use
-the same simulation, rendering, scoring and feedback; only the straightening
-input differs.
+| Station | What it teaches | Status |
+|---|---|---|
+| **Pilsner** | The pour sequence: tilt, open fully, bring it up past half, finish upright, stop at the line | Locked |
+| **Hefeweizen** (Foam Control) | Adapting to the foam: livelier pours want a later bring-up | Signed off after hands-on play |
+| **Nitro Stout** | Staged pouring and patience: pour, set down, let it settle, top up to the brim | Owner-approved baseline (settle about 5.4 s, finish 99–105%) |
+| **Final Rush** | All three under service pressure | Not built yet (`docs/final-rush-outline.md`) |
 
-## Status: Pilsner pour mechanic settled
+Static site, no build step, hosted on GitHub Pages. Progress is saved in the
+browser on this device.
+
+## Links
+
+| Page | What it is |
+|---|---|
+| `/` | **The brewery (front door):** landing, the bar hub, the three stations, certification and progress |
+| `/#/pilsner`, `/#/hefeweizen`, `/#/stout` | Open a station directly (`/#/welcome` replays the landing) |
+| `/brewery.html` | Old address of the brewery; redirects to `/`, keeping the route and any query |
+| `/pilsner.html` | **The standalone Pilsner prototype** (v2.3), kept for comparison and its regression and pixel tests |
+| `/pilsner.html?angle=staged` | Prototype variant A: staged. Hold the pad to pour; swipe up once to start straightening. The glass comes upright at a fixed rate. |
+| `/pilsner.html?angle=continuous` (default) | Prototype variant B: continuous. Hold the pad to pour; slide up to bring the glass upright (down to tilt more). |
+| `/pilsner.html?debug=1` | Adds ⚙: live state, tuning, variant switch, ghost check, pour log download |
+| `/v2.2/`, `/v2.1/`, `/v2/`, `/v1/` | Earlier Pilsner prototypes, frozen for comparison |
+
+`?angle=slider` and `?angle=toggle` still give the v1 controls, kept as
+accessible fallbacks. The prototype's options also work inside the brewery's
+Pilsner station when given with a route (`/?debug=1#/pilsner`).
+
+**Old bookmarks:** the site root used to be the standalone Pilsner page. Root
+links carrying its options and no route (`/?angle=staged`, `/?glass=b`,
+`/?debug=1`) are forwarded to `/pilsner.html` with the same options; a bare `/`
+now opens the brewery.
+
+## The standalone Pilsner prototype (v2.3)
+
+The sections below, down to "Visual pass", describe the single-glass Pilsner
+prototype that became the brewery's first station. v2 tested one open
+question: **staged or continuous straightening?** Both use the same
+simulation, rendering, scoring and feedback; only the straightening input
+differs.
+
+### Status: Pilsner pour mechanic settled
 
 First-timer cold-start test (main link, no explanation): passed on the first
 attempt, brought the glass up slowly (the gradual motion the Watch demo
@@ -19,21 +56,6 @@ straightening ("how do I… ah, I see"), resolved within seconds. Decision: the
 mechanic is settled; making the straighten gesture more obvious is a
 presentation task for the station redesign (M5), not a mechanics change.
 Head gauge: kept (revisit only if testers watch it instead of the foam).
-
-## Links
-
-| Page | What it is |
-|---|---|
-| `/?angle=staged` | **A: staged.** Hold the pad to pour; swipe up once to start straightening. The glass comes upright at a fixed rate. |
-| `/` or `/?angle=continuous` (default) | **B: continuous.** Hold the pad to pour; slide up to bring the glass upright (down to tilt more). |
-| `/?debug=1` | Adds ⚙: live state, tuning, variant switch, ghost check, pour log download |
-| `/v2.2/` | v2.2 (glass is the meter, A/B), frozen for comparison |
-| `/v2.1/` | v2.1 (fixed dial), frozen for comparison |
-| `/v2/` | v2 as first playtested (moving arc), frozen for comparison |
-| `/v1/` | The v1 prototype, frozen as a comparison baseline |
-
-`?angle=slider` and `?angle=toggle` still give the v1 controls, kept as
-accessible fallbacks.
 
 ## Controls
 
@@ -150,7 +172,7 @@ glass is.**
 
 ```
 npm test            # Pilsner sim (61), Hefeweizen sim (16), Nitro Stout sim (23), hub layout (8), station registry (3), progress (4), entry points (3), station kit (5), station markup (2); Node 18+, no installs
-npm run test:ui     # browser: 112 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
+npm run test:ui     # browser: 115 Playwright tests, incl. DOM/speech parity, lifecycle and input (npm install first)
 npm run test:all    # both
 ```
 
@@ -180,6 +202,7 @@ pixel-parity checks across refactors.
   - Unmount: abandoned once, safe to repeat, nothing left behind.
   - The log's key, fields, cap and attempt numbering.
 - `test/entry-points.test.js` checks script order on both pages.
+- `test/ui/front-door.test.mjs` checks the front door. The root is the brewery and saved progress carries over. `brewery.html` redirects with its route and query, and stays out of Back history. Old root bookmarks with the prototype's options reach `pilsner.html`.
 - After an intended change: `UPDATE_FIXTURES=1 node --test test/ui/dom-parity.test.mjs test/ui/lifecycle.test.mjs`.
 - `node tools/station-parity.mjs shoot <dir>` / `compare <a> <b>` gives before/after screenshots at 1280×720 and 844×390. It separates real differences from Chromium's few-pixel rasteriser noise.
 
@@ -253,7 +276,7 @@ pixel-parity checks across refactors.
   [`docs/art-brief-pilsner-station-16x9.md`](docs/art-brief-pilsner-station-16x9.md)
   (`node tools/make-station-template.mjs` regenerates them).
 - Simulation, scoring, controls and timing unchanged; standalone
-  `index.html` keeps the original layout, so its regression and pixel
+  `pilsner.html` keeps the original layout, so its regression and pixel
   tests still guard the mechanics. Intro goal copy updated.
 
 ## M4: landing, first visit, station intro, transitions (approved)
@@ -287,9 +310,10 @@ pixel-parity checks across refactors.
 
 ## M3: brewery hub and navigation (approved)
 
-**`/brewery.html`** is the brewery app: a U-shaped bar hub, and the Pilsner
-station opened from it. `index.html` stays the standalone station (the test
-links and the composite page use it); M4 can make the app the front door.
+The brewery app (now the site root, `index.html`; it was `brewery.html` until
+the front-door move): a U-shaped bar hub, and the stations opened from it.
+`pilsner.html` is the standalone station (its tests and the composite page
+use it).
 
 - **Hub (visual pass, in review):** an image-based brewery scene with live
   hotspots. The composition (one 16:9 landscape plate) has station
@@ -385,12 +409,13 @@ All levels are shares of the glass height, upright.
 ## Architecture
 
 No build step; static files on GitHub Pages. Classic scripts (not ES
-modules) so `index.html` still opens by double-click from disk.
+modules) so the pages still open by double-click from disk.
 
 | File | What it is |
 |---|---|
-| `index.html` | The standalone Pilsner station: a stylesheet link, a host element and a three-line boot |
-| `brewery.html`, `js/brewery.js`, `css/brewery.css` | The brewery app (M3): hub, hash router, station mounting |
+| `index.html`, `js/brewery.js`, `css/brewery.css` | The brewery app, the site's front door: landing, hub, hash router, station mounting. Forwards old root Pilsner bookmarks to `pilsner.html` |
+| `brewery.html` | Redirect to `./`, keeping the query and the route (old shared links) |
+| `pilsner.html` | The standalone Pilsner station: a stylesheet link, a host element and a three-line boot |
 | `js/hub-scenes.js` | Hub plates, station anchors (plate pixels) and the pure `layoutScene()` mapping |
 | `assets/hub/`, `tools/make-hub-plates.mjs` | The hub plate, and a provisional-template generator (from the station table) for future plates |
 | `js/progress.js` | Versioned training progress on this device (`RiversideProgress`). Older or damaged saves are repaired per station, never wiped |

@@ -3,7 +3,7 @@
 // Logic only: no markup, no beer. Each station still owns its sim, renderer,
 // controls, coaching, result sheet and what goes into its log.
 // Classic script; publishes RiversideStationKit. Loaded before any station,
-// on both entry points (brewery.html and the legacy index.html).
+// on both entry points (index.html, the brewery, and the legacy pilsner.html).
 (function (global) {
   'use strict';
 

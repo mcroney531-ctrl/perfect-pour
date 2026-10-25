@@ -40,7 +40,7 @@ const INSTRUMENT = `(() => {
 })()`;
 const listeners = h => h.page.evaluate(() => [...window.__pp.live.values()].reduce((n, s) => n + s.size, 0));
 const pressed = h => h.page.getAttribute('#pour', 'aria-pressed');
-const app = (station, extra = '') => openPage(browser, `${URL0}/brewery.html#/${station}`,
+const app = (station, extra = '') => openPage(browser, `${URL0}/#/${station}`,
   { mobile: false, size: { width: 1280, height: 720 }, reducedMotion: 'reduce', exactClock: true, init: RETURNING + ';' + extra });
 async function startPour(h) {
   await h.page.click('#modes [data-mode=guided]'); await h.run(200);
@@ -179,7 +179,7 @@ for (const station of ['pilsner', 'hefeweizen', 'stout']) {
 }
 
 test('legacy page: unmount closes the tap and leaves nothing behind; its log is the Pilsner log', async () => {
-  const h = await openPage(browser, URL0 + '/index.html', { exactClock: true, init: INSTRUMENT });
+  const h = await openPage(browser, URL0 + '/pilsner.html', { exactClock: true, init: INSTRUMENT });
   await h.run(300);
   await h.page.tap('#modes [data-mode=guided]'); await h.run(200);
   await h.page.keyboard.press('t'); await h.run(400);

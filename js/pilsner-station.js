@@ -5,7 +5,7 @@
 //   const station = PilsnerStation.mount(hostElement, { search: '?angle=staged' });
 //   station.unmount();
 //
-// Markup comes from <template id="pp-pilsner-station"> in index.html.
+// Markup comes from <template id="pp-pilsner-station"> in pilsner.html.
 (function (global) {
   'use strict';
 

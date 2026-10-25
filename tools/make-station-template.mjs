@@ -33,7 +33,7 @@ const page = await ctx.newPage();
 await page.addInitScript(SEEN);
 await page.clock.install({ time: new Date('2026-01-01T12:00:00Z') });
 await page.clock.pauseAt(new Date('2026-01-01T12:00:01Z'));
-await page.goto(url + '/brewery.html#/pilsner');
+await page.goto(url + '/#/pilsner');
 await page.clock.runFor(300);
 
 const zones = await page.evaluate(SCENE => {

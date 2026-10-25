@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Perfect Pour (prototype v2.3)</title>
+<link rel="stylesheet" href="css/pilsner-station.css">
+</head>
+<body>
+<div id="pp-root"></div>
+
+<script src="js/sim.js"></script>
+<script src="js/station-kit.js"></script>
+<script src="js/station-markup.js"></script>
+<script src="js/station-input.js"></script>
+<script src="js/pilsner-station.js"></script>
+<script>
+  // Boot: one station, full page. The brewery app (index.html) mounts and
+  // unmounts the same station from its hub. Exposed for tests and debugging.
+  window.ppStation = PilsnerStation.mount(document.getElementById('pp-root'));
+</script>
+</body>
+</html>

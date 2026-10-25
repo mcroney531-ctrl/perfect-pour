@@ -18,9 +18,9 @@ const RETURNING = `(() => {
     seen: { landing: true, 'intro.pilsner': true, 'intro.hefeweizen': true, 'intro.stout': true } }));
 })()`;
 const STATIONS = {
-  pilsner: q => openPage(browser, `${URL0}/index.html${q || ''}`, { mobile: false, size: { width: 1280, height: 800 }, exactClock: true }),
-  hefeweizen: () => openPage(browser, `${URL0}/brewery.html#/hefeweizen`, { mobile: false, size: { width: 1280, height: 720 }, reducedMotion: 'reduce', exactClock: true, init: RETURNING }),
-  stout: () => openPage(browser, `${URL0}/brewery.html#/stout`, { mobile: false, size: { width: 1280, height: 720 }, reducedMotion: 'reduce', exactClock: true, init: RETURNING })
+  pilsner: q => openPage(browser, `${URL0}/pilsner.html${q || ''}`, { mobile: false, size: { width: 1280, height: 800 }, exactClock: true }),
+  hefeweizen: () => openPage(browser, `${URL0}/#/hefeweizen`, { mobile: false, size: { width: 1280, height: 720 }, reducedMotion: 'reduce', exactClock: true, init: RETURNING }),
+  stout: () => openPage(browser, `${URL0}/#/stout`, { mobile: false, size: { width: 1280, height: 720 }, reducedMotion: 'reduce', exactClock: true, init: RETURNING })
 };
 const angle = h => h.page.evaluate(() => +/rotate\(([-\d.]+)\)/.exec(document.getElementById('glass').getAttribute('transform'))[1]);
 const pressed = h => h.page.getAttribute('#pour', 'aria-pressed');

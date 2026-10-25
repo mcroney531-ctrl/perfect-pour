@@ -85,7 +85,7 @@ check? If not, revisit the procedure before building Nitro.
 4. Art: a stout backdrop with a set-down spot, a stout faucet and a calm contrast behind the dark glass.
 
 ## Step 4 — Consolidate the entry point, then Final Rush
-1. **Entry-point migration** (architecture §8): `brewery.html` becomes the root front door, and the legacy Pilsner page gets its own path.
+1. **Entry-point migration** (architecture §8): **done.** The brewery is `index.html`, the legacy Pilsner page is `pilsner.html`, and `brewery.html` redirects.
 2. **Final Rush** (`docs/final-rush-outline.md`):
    - The shell orchestrator, mode locking and the enriched `served` event (built here, for their first consumer).
    - A separate `finalRush` progress record.

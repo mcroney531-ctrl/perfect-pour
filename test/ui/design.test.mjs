@@ -10,7 +10,7 @@ let browser, server, URL0;
 test.before(async () => { ({ server, url: URL0 } = await startServer()); browser = await chromium.launch(); });
 test.after(async () => { await browser?.close(); server?.close(); });
 
-const gameFrame = h => h.page.frames().find(f => f.url().includes('/index.html'));
+const gameFrame = h => h.page.frames().find(f => f.url().includes('/pilsner.html'));
 
 test('component sheet loads with its fonts and no errors', async () => {
   const h = await openPage(browser, URL0 + '/design/components.html', { mobile: false });

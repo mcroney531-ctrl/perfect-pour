@@ -12,7 +12,7 @@ let browser, server, URL0;
 test.before(async () => { ({ server, url: URL0 } = await startServer()); browser = await chromium.launch(); });
 test.after(async () => { await browser?.close(); server?.close(); });
 
-const APP = () => URL0 + '/brewery.html';
+const APP = () => URL0 + '/';
 const seed = (status = {}) => `(() => {
   if (localStorage.getItem('riverside.progress')) return;
   const st = s => ({ status: s, attempts: 0, passes: 0, abandoned: 0, lastPlayed: null });

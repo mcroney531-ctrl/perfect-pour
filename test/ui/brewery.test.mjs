@@ -9,7 +9,7 @@ let browser, server, URL0;
 test.before(async () => { ({ server, url: URL0 } = await startServer()); browser = await chromium.launch(); });
 test.after(async () => { await browser?.close(); server?.close(); });
 
-const APP = () => URL0 + '/brewery.html';
+const APP = () => URL0 + '/';
 // Most hub tests are about a returning learner: landing and intro already
 // seen, and reduced motion so stations open without the camera push. The M4
 // tests at the end cover first visits and the push itself.
@@ -563,15 +563,15 @@ test('accessibility: the Guided cue is spoken once via a live region; the pad te
 });
 
 test('Storyline-style embed: releasing the pointer outside the iframe closes the tap', async () => {
-  const h = await openApp(browser, URL0 + '/brewery.html#/pilsner', { init: null });
-  await h.page.setContent(`<body style="margin:0;background:#333"><iframe id="wo" src="${URL0}/brewery.html#/pilsner"
+  const h = await openApp(browser, URL0 + '/#/pilsner', { init: null });
+  await h.page.setContent(`<body style="margin:0;background:#333"><iframe id="wo" src="${URL0}/#/pilsner"
     style="position:absolute;left:100px;top:60px;width:960px;height:540px;border:0"></iframe></body>`);
   await h.run(500);
-  const f = h.page.frames().find(x => x.url().includes('/brewery.html'));
+  const f = h.page.frames().find(x => x.url().includes('/'));
   await f.evaluate(() => { const st = () => ({ status: 'new', attempts: 0, passes: 0, abandoned: 0, lastPlayed: null });
     localStorage.setItem('riverside.progress', JSON.stringify({ version: 1, stations: { pilsner: st(), hefeweizen: st(), stout: st() }, seen: { landing: true, 'intro.pilsner': true } })); location.reload(); });
   await h.run(600);
-  const g = h.page.frames().find(x => x.url().includes('/brewery.html'));
+  const g = h.page.frames().find(x => x.url().includes('/'));
   await g.click('#modes [data-mode=guided]'); await h.run(200);
   const b = await g.locator('#pour').boundingBox();
   await h.page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);

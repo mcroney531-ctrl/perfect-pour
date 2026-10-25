@@ -24,7 +24,7 @@ async function touchPour(h, { at = 56, stop = 95, slow = true } = {}) {
 }
 
 test('loads cleanly in Watch mode and the demo pours a clean pilsner', async () => {
-  const h = await openPage(browser, URL0 + '/');
+  const h = await openPage(browser, URL0 + '/pilsner.html');
   assert.equal(await h.page.getAttribute('#modes [data-mode=watch]', 'aria-current'), 'true');
   await h.run(12000);
   assert.equal(await h.text('#resultTitle'), 'Demo pour: clean');
@@ -35,7 +35,7 @@ test('loads cleanly in Watch mode and the demo pours a clean pilsner', async () 
 });
 
 test('Guided: a slow touch pour passes, with live action feedback', async () => {
-  const h = await openPage(browser, URL0 + '/');
+  const h = await openPage(browser, URL0 + '/pilsner.html');
   await h.page.tap('#modes [data-mode=guided]'); await h.run(100);
   await h.page.tap('#angleToggle'); await h.run(400);
   const { x, y } = await h.padCenter();
@@ -53,7 +53,7 @@ test('Guided: a slow touch pour passes, with live action feedback', async () => 
 });
 
 test('Solo: no BRING UP band and no live verdicts; debrief explains afterwards; releasing at the line passes', async () => {
-  const h = await openPage(browser, URL0 + '/');
+  const h = await openPage(browser, URL0 + '/pilsner.html');
   await h.page.tap('#modes [data-mode=solo]'); await h.run(100);
   await touchPour(h, { at: 56, stop: 95 });
   assert.equal(await h.page.evaluate(() => document.getElementById('bringMark').style.display), 'none');
@@ -65,7 +65,7 @@ test('Solo: no BRING UP band and no live verdicts; debrief explains afterwards; 
 });
 
 test('a snap straighten is labelled "all at once" but can still pass', async () => {
-  const h = await openPage(browser, URL0 + '/');
+  const h = await openPage(browser, URL0 + '/pilsner.html');
   await h.page.tap('#modes [data-mode=solo]'); await h.run(100);
   await touchPour(h, { at: 56, stop: 95, slow: false });
   await h.page.tap('#serve'); await h.run(300);
@@ -74,7 +74,7 @@ test('a snap straighten is labelled "all at once" but can still pass', async () 
 });
 
 test('the result sheet sits above the pour pad (nothing shows through)', async () => {
-  const h = await openPage(browser, URL0 + '/');
+  const h = await openPage(browser, URL0 + '/pilsner.html');
   await h.run(12000);
   const hits = await h.page.evaluate(() => {
     const r = document.getElementById('result').getBoundingClientRect(); let n = 0;
@@ -86,7 +86,7 @@ test('the result sheet sits above the pour pad (nothing shows through)', async (
 });
 
 test('keyboard: T tilts, Space pours, ArrowUp straightens, S serves', async () => {
-  const h = await openPage(browser, URL0 + '/', { mobile: false });
+  const h = await openPage(browser, URL0 + '/pilsner.html', { mobile: false });
   await h.page.click('#modes [data-mode=solo]'); await h.run(100);
   await h.page.keyboard.press('t'); await h.run(400);
   await h.page.keyboard.down(' ');
@@ -100,7 +100,7 @@ test('keyboard: T tilts, Space pours, ArrowUp straightens, S serves', async () =
 });
 
 test('losing focus closes the tap', async () => {
-  const h = await openPage(browser, URL0 + '/', { mobile: false });
+  const h = await openPage(browser, URL0 + '/pilsner.html', { mobile: false });
   await h.page.click('#modes [data-mode=solo]'); await h.run(100);
   await h.page.keyboard.down(' '); await h.run(500);
   assert.equal(await h.page.getAttribute('#pour', 'aria-pressed'), 'true');
@@ -111,7 +111,7 @@ test('losing focus closes the tap', async () => {
 });
 
 test('tap mode: one tap starts the pour, another stops it', async () => {
-  const h = await openPage(browser, URL0 + '/');
+  const h = await openPage(browser, URL0 + '/pilsner.html');
   await h.page.tap('#modes [data-mode=guided]'); await h.run(100);
   await h.page.check('#tapMode');
   await h.page.tap('#pour'); await h.run(1000);
@@ -122,7 +122,7 @@ test('tap mode: one tap starts the pour, another stops it', async () => {
 });
 
 test('staged control (?angle=staged) still works: one swipe straightens', async () => {
-  const h = await openPage(browser, URL0 + '/?angle=staged');
+  const h = await openPage(browser, URL0 + '/pilsner.html?angle=staged');
   await h.page.tap('#modes [data-mode=solo]'); await h.run(100);
   await h.page.tap('#angleToggle'); await h.run(400);
   const { x, y } = await h.padCenter(0.5);
@@ -137,7 +137,7 @@ test('staged control (?angle=staged) still works: one swipe straightens', async 
 });
 
 test('each served pour is logged to localStorage', async () => {
-  const h = await openPage(browser, URL0 + '/');
+  const h = await openPage(browser, URL0 + '/pilsner.html');
   await h.page.tap('#modes [data-mode=solo]'); await h.run(100);
   await touchPour(h);
   await h.page.tap('#serve'); await h.run(300);
@@ -183,7 +183,7 @@ const INSTRUMENT = () => {
 const counts = h => h.page.evaluate(() => ({ listeners: [...window.__pp.live.values()].reduce((n, s) => n + s.size, 0), raf: window.__pp.raf }));
 
 test('unmount removes every global listener, stops the loop, and leaves keys inert', async () => {
-  const h = await openPage(browser, URL0 + '/', { mobile: false, init: INSTRUMENT });
+  const h = await openPage(browser, URL0 + '/pilsner.html', { mobile: false, init: INSTRUMENT });
   await h.run(200);
   const mounted = await counts(h);
   assert.ok(mounted.listeners >= 8, `station registers its global listeners (${mounted.listeners})`);
@@ -209,9 +209,9 @@ test('mount → unmount → remount behaves exactly like a fresh page', async ()
     await h.page.keyboard.down(' '); await h.run(3000); await h.page.keyboard.up(' '); await h.run(300);
     return h.page.evaluate(() => document.getElementById('levelText').textContent);
   };
-  const a = await openPage(browser, URL0 + '/', { mobile: false, init: INSTRUMENT });
+  const a = await openPage(browser, URL0 + '/pilsner.html', { mobile: false, init: INSTRUMENT });
   const fresh = await pourFor(a, false);
-  const b = await openPage(browser, URL0 + '/', { mobile: false, init: INSTRUMENT });
+  const b = await openPage(browser, URL0 + '/pilsner.html', { mobile: false, init: INSTRUMENT });
   const re = await pourFor(b, true);
   assert.equal(re, fresh, 'same pour after remount (a leaked second loop or listener would change it)');
   assert.equal((await counts(b)).listeners, (await counts(a)).listeners, 'listener count matches a single mount');

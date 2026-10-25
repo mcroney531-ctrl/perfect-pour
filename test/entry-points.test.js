@@ -21,7 +21,7 @@ const NEEDS = {
   'js/brewery.js': ['js/progress.js', 'js/hub-scenes.js', 'js/stations.js', 'js/stations/pilsner.js', 'js/stations/hefeweizen.js', 'js/stations/stout.js']
 };
 
-for (const page of ['brewery.html', 'index.html']) {
+for (const page of ['index.html', 'pilsner.html']) {
   test(`${page}: every script's dependencies load before it`, () => {
     const list = scripts(page);
     for (const [i, s] of list.entries()) {
@@ -35,5 +35,5 @@ for (const page of ['brewery.html', 'index.html']) {
 }
 
 test('the legacy page is still the standalone Pilsner station', () => {
-  assert.deepEqual(scripts('index.html'), ['js/sim.js', 'js/station-kit.js', 'js/station-markup.js', 'js/station-input.js', 'js/pilsner-station.js']);
+  assert.deepEqual(scripts('pilsner.html'), ['js/sim.js', 'js/station-kit.js', 'js/station-markup.js', 'js/station-input.js', 'js/pilsner-station.js']);
 });
